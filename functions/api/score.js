@@ -35,7 +35,7 @@ export async function onRequestPost(context) {
 
   try {
     logs.push(`🐾 [DEBUG] 正在请求 Face++ 接口...`);
-    const resp = await fetch("https://api-cn.faceplusplus.com/facepp/v3/detect", {
+    const resp = await fetch("https://api-us.faceplusplus.com/facepp/v3/detect", {
       method: "POST",
       body: formData,
     });
