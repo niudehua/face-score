@@ -20,7 +20,7 @@ jobs:
       - name: Publish Worker 🚀
         run: wrangler publish
         env:
-          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.ACCOUNT_ID }}
           FACEPP_KEY: ${{ secrets.FACEPP_KEY }}
           FACEPP_SECRET: ${{ secrets.FACEPP_SECRET }}
@@ -28,7 +28,7 @@ jobs:
       - name: Deploy Pages 🔥
         uses: cloudflare/pages-action@v1
         with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.ACCOUNT_ID }}
           projectName: "face-score-pages" 
           directory: "public"            
