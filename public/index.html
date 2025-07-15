@@ -4,24 +4,42 @@
     <meta charset="UTF-8" />
     <link rel="icon" href="/favicon.png" type="image/png">
     <title>颜值打分机 😻</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <style>
       body {
         font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-        background: #fdf6f0;
+        background: linear-gradient(135deg, #fef5ef, #ffeaea);
         color: #444;
-        text-align: center;
-        margin: 50px auto;
-        max-width: 400px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
         padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 8px 16px rgba(255, 150, 150, 0.15);
+      }
+      .container {
+        background: white;
+        padding: 30px 20px;
+        border-radius: 16px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        max-width: 400px;
+        width: 100%;
       }
       h1 {
         color: #e85d75;
-        margin-bottom: 10px;
+        margin-top: 0;
+        font-size: 1.8em;
+      }
+      p {
+        margin: 10px 0 20px;
+        font-size: 0.95em;
+        color: #666;
       }
       input[type="file"] {
         margin: 15px 0;
+        display: block;
+        width: 100%;
       }
       button {
         background: #e85d75;
@@ -31,31 +49,101 @@
         border-radius: 30px;
         font-size: 16px;
         cursor: pointer;
+        width: 100%;
         transition: background 0.3s ease;
       }
       button:hover {
         background: #d1445a;
       }
       #result {
-        margin-top: 25px;
-        font-size: 18px;
+        margin-top: 20px;
+        font-size: 16px;
         font-weight: 600;
         min-height: 48px;
         color: #555;
-        user-select: none;
+        word-break: break-word;
+        white-space: pre-wrap;
+      }
+
+      @media (max-width: 500px) {
+        .container {
+          padding: 20px 15px;
+        }
+        h1 {
+          font-size: 1.5em;
+        }
+        button {
+          font-size: 15px;
+          padding: 10px 20px;
+        }
+        p {
+          font-size: 0.9em;
+        }
       }
     </style>
   </head>
   <body>
-    <h1>颜值打分机 🚀</h1>
-    <p>上传一张照片，看看 AI 给你多少颜值分吧～</p>
-    <input type="file" id="fileInput" accept="image/*" />
-    <br />
-    <button id="submitBtn">开始评分</button>
-    <div id="result"></div>
+    <div class="container">
+      <h1>颜值打分机 🚀</h1>
+      <p>上传一张照片，让 AI 猫猫帮你评分吧～</p>
+      <input type="file" id="fileInput" accept="image/*" />
+      <button id="submitBtn">开始评分</button>
+      <div id="result"></div>
+    </div>
 
     <script>
       document.getElementById("submitBtn").onclick = async function () {
+  const fileInput = document.getElementById("fileInput");
+  if (!fileInput.files.length) {
+    alert("喵～先选张照片才能评分哦！");
+    return;
+  }
+  const file = fileInput.files[0];
+  const reader = new FileReader();
+  reader.onload = async function () {
+    const base64 = reader.result.split(",")[1];
+    const resultDiv = document.getElementById("result");
+    resultDiv.innerText = "评分中，猫猫正在认真分析中喵...";
+
+    try {
+      const res = await fetch("/api/score", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: base64 }),
+      });
+      if (!res.ok) throw new Error("接口请求失败喵～");
+      const data = await res.json();
+
+      if (data.score !== undefined && data.score !== null) {
+        const score = Number(data.score.toFixed(1));
+        let msg = `颜值分数：${score} / 100 🐾\n\n`;
+
+        if (score < 40) {
+          msg += "🐱 喵呜，内在美才是最最重要的！抱抱～";
+        } else if (score < 50) {
+          msg += "💫 你有那种治愈系的可爱气质，慢慢展现会更迷人喵～";
+        } else if (score < 60) {
+          msg += "✨ 中等颜值，但有着特别的小闪光点，越看越舒服～";
+        } else if (score < 70) {
+          msg += "😻 哇，已经很有吸引力啦，有点明星气场呢！";
+        } else if (score < 80) {
+          msg += "🌟 超棒！你走在街上绝对是回头率超高的小猫猫！";
+        } else {
+          msg += "🔥 绝绝子！你的颜值突破天际，猫猫都要尖叫啦！";
+        }
+
+        resultDiv.innerText = msg;
+      } else {
+        resultDiv.innerText = "检测失败，喵呜～换张更清晰的照片试试吧？";
+      }
+    } catch (e) {
+      resultDiv.innerText = "出错了喵～请稍后再试一下！";
+      console.error("评分请求错误:", e);
+    }
+  };
+  reader.readAsDataURL(file);
+};
+
         const fileInput = document.getElementById("fileInput");
         if (!fileInput.files.length) {
           alert("喵～先选张照片才能评分哦！");
@@ -66,7 +154,8 @@
         reader.onload = async function () {
           const base64 = reader.result.split(",")[1];
           const resultDiv = document.getElementById("result");
-          resultDiv.innerText = "评分中，猫猫努力计算颜值中...";
+          resultDiv.innerText = "评分中，猫猫正在努力计算颜值中...";
+
           try {
             const res = await fetch("/api/score", {
               method: "POST",
@@ -75,24 +164,25 @@
             });
             if (!res.ok) throw new Error("接口请求失败喵～");
             const data = await res.json();
+
             if (data.score !== undefined && data.score !== null) {
               const score = Number(data.score.toFixed(1));
-              let msg = `颜值分数：${score} / 100 🐾\n`;
+              let msg = `颜值分数：${score} / 100 🐾\n\n`;
               if (score >= 80) {
-                msg += "🌟 哇！你的颜值相当在线，魅力满分！";
+                msg += "🌟 哇！颜值天花板，回头率 100%！";
               } else if (score >= 60) {
-                msg += "✨ 不错哦，有自己的独特气质～";
+                msg += "✨ 不错喔，有种独特小猫气质～";
               } else if (score >= 40) {
-                msg += "💫 平凡也有平凡的美，继续加油喵！";
+                msg += "💫 平凡中透露出小可爱，继续加油喵～";
               } else {
-                msg += "🐱 喵喵，不要气馁，内在美最重要！";
+                msg += "🐱 喵喵，不要灰心，灵魂的美才最珍贵！";
               }
               resultDiv.innerText = msg;
             } else {
-              resultDiv.innerText = "检测失败，喵呜～换张照片试试吧？";
+              resultDiv.innerText = "检测失败，喵呜～换张更清晰的照片试试吧？";
             }
           } catch (e) {
-            resultDiv.innerText = "出错了喵～请稍后重试！";
+            resultDiv.innerText = "出错了喵～请稍后再试一下！";
             console.error("评分请求错误:", e);
           }
         };
