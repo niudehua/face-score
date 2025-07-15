@@ -20,7 +20,7 @@ jobs:
       - name: Publish Worker 🚀
         run: wrangler publish
         env:
-          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.ACCOUNT_ID }}
           FACEPP_KEY: ${{ secrets.FACEPP_KEY }}
           FACEPP_SECRET: ${{ secrets.FACEPP_SECRET }}
