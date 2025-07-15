@@ -30,6 +30,6 @@ jobs:
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.ACCOUNT_ID }}
-          projectName: "face-score-pages" # Pages 项目名，需要和 Cloudflare 控制台一致
-          directory: "public"            # 前端构建好的目录
+          projectName: "face-score-pages" 
+          directory: "public"            
           branch: main
