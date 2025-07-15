@@ -3,11 +3,22 @@ async function fetchWithRetry(url, options, retries = 3, delayMs = 1000) {
     try {
       console.log(`🐾 [DEBUG] 第 ${i + 1} 次调用 Face++ 接口`);
       const resp = await fetch(url, options);
-      if (!resp.ok) {
-        console.warn(`⚠️ [WARN] 请求失败，状态码: ${resp.status}`);
-        throw new Error(`HTTP ${resp.status}`);
+
+      // 如果响应是成功的，直接返回
+      if (resp.ok) {
+        return resp;
       }
-      return resp;
+
+      // 如果是 4xx（客户端错误），不再重试
+      if (resp.status >= 400 && resp.status < 500) {
+        console.warn(`⚠️ [WARN] 客户端错误（${resp.status}），不再重试～`);
+        return resp;
+      }
+
+      // 如果是 5xx（服务器错误），可以继续重试
+      console.warn(`⚠️ [WARN] 服务器错误，状态码: ${resp.status}`);
+      throw new Error(`HTTP ${resp.status}`);
+
     } catch (err) {
       console.error(`❌ [ERROR] 第 ${i + 1} 次调用失败:`, err.message);
       if (i < retries - 1) {
@@ -20,6 +31,7 @@ async function fetchWithRetry(url, options, retries = 3, delayMs = 1000) {
     }
   }
 }
+
 
 export async function onRequestPost(context) {
   const { FACEPP_KEY, FACEPP_SECRET } = context.env;
