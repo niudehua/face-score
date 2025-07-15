@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>颜值打分机 😻</title>
+    <style>
+      body { font-family: sans-serif; text-align: center; margin-top: 50px; }
+      input, button { margin: 10px; }
+      #result { margin-top: 20px; font-size: 20px; font-weight: bold; }
+    </style>
+  </head>
+  <body>
+    <h1>颜值打分机 🚀</h1>
+    <p>上传一张照片，让 AI 给你打个分吧～</p>
+    <input type="file" id="fileInput" accept="image/*" />
+    <br />
+    <button id="submitBtn">开始评分</button>
+    <div id="result"></div>
+
+    <script>
+      document.getElementById("submitBtn").onclick = async function () {
+        const fileInput = document.getElementById("fileInput");
+        if (!fileInput.files.length) {
+          alert("喵～先选张照片啦！");
+          return;
+        }
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        reader.onload = async function () {
+          const base64 = reader.result.split(",")[1];
+          document.getElementById("result").innerText = "评分中，喵呜...";
+          const res = await fetch("/api/score", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image: base64 }),
+          });
+          const data = await res.json();
+          if (data.score) {
+            let msg = `颜值分数：${data.score} / 100 😎`;
+            if (data.score >= 85) {
+              msg += " 🌟🌟 OMG！你简直帅（美）炸了！";
+            } else if (data.score >= 70) {
+              msg += " ✨ 不错哦，稳稳的魅力！";
+            } else {
+              msg += " 🐱 没关系，气质才是最重要的鸭～";
+            }
+            document.getElementById("result").innerText = msg;
+          } else {
+            document.getElementById("result").innerText = "检测失败，喵呜～试试别的照片？";
+          }
+        };
+        reader.readAsDataURL(file);
+      };
+    </script>
+  </body>
+</html>
