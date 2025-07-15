@@ -1,0 +1,35 @@
+name: Deploy to Cloudflare
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy Worker & Pages
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code 🐾
+        uses: actions/checkout@v3
+
+      - name: Install Wrangler ✨
+        run: npm install -g wrangler
+
+      - name: Publish Worker 🚀
+        run: wrangler publish
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.ACCOUNT_ID }}
+          FACEPP_KEY: ${{ secrets.FACEPP_KEY }}
+          FACEPP_SECRET: ${{ secrets.FACEPP_SECRET }}
+
+      - name: Deploy Pages 🔥
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.ACCOUNT_ID }}
+          projectName: "face-score-pages" # Pages 项目名，需要和 Cloudflare 控制台一致
+          directory: "public"            # 前端构建好的目录
+          branch: main
