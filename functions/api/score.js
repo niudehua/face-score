@@ -1,34 +1,3 @@
-async function fetchWithRetry(url, options, retries = 3, delayMs = 1000, logs = []) {
-  for (let i = 0; i < retries; i++) {
-    try {
-      logs.push(`🐾 [DEBUG] 第 ${i + 1} 次调用 Face++ 接口`);
-      const resp = await fetch(url, options);
-
-      if (resp.ok) {
-        logs.push(`✅ [DEBUG] 第 ${i + 1} 次调用成功，状态码: ${resp.status}`);
-        return resp;
-      }
-
-      if (resp.status >= 400 && resp.status < 500) {
-        logs.push(`⚠️ [WARN] 客户端错误（${resp.status}），不再重试`);
-        return resp;
-      }
-
-      logs.push(`⚠️ [WARN] 服务器错误，状态码: ${resp.status}`);
-      throw new Error(`HTTP ${resp.status}`);
-    } catch (err) {
-      logs.push(`❌ [ERROR] 第 ${i + 1} 次调用失败: ${err.message}`);
-      if (i < retries - 1) {
-        logs.push(`⏳ 等待 ${delayMs}ms 后重试...`);
-        await new Promise(r => setTimeout(r, delayMs));
-      } else {
-        logs.push("🚫 重试次数用完啦～");
-        throw err;
-      }
-    }
-  }
-}
-
 export async function onRequestPost(context) {
   const { FACEPP_KEY, FACEPP_SECRET } = context.env;
   const logs = [];
@@ -65,17 +34,24 @@ export async function onRequestPost(context) {
   formData.append("return_attributes", "beauty");
 
   try {
-    const resp = await fetchWithRetry("https://api-cn.faceplusplus.com/facepp/v3/detect", {
+    logs.push(`🐾 [DEBUG] 正在请求 Face++ 接口...`);
+    const resp = await fetch("https://api-cn.faceplusplus.com/facepp/v3/detect", {
       method: "POST",
       body: formData,
-    }, 3, 1000, logs);
+    });
 
+    logs.push(`📡 [DEBUG] 返回状态码: ${resp.status}`);
     const result = await resp.json();
     logs.push(`✅ [DEBUG] Face++ 返回结果: ${JSON.stringify(result)}`);
 
-    if (result.error_message) {
-      logs.push(`❌ [ERROR] Face++ 返回错误: ${result.error_message}`);
-      return new Response(JSON.stringify({ error: "Face++ 接口错误喵～", detail: result.error_message, logs: debug ? logs : undefined }), {
+    if (!resp.ok) {
+      logs.push(`❌ [ERROR] 接口非正常响应: HTTP ${resp.status}`);
+      return new Response(JSON.stringify({
+        error: "Face++ 接口响应错误喵～",
+        status: resp.status,
+        detail: result.error_message || "未知错误",
+        logs: debug ? logs : undefined,
+      }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
       });
@@ -93,6 +69,7 @@ export async function onRequestPost(context) {
         headers: { "Content-Type": "application/json" },
       });
     }
+
   } catch (e) {
     logs.push(`❌ [ERROR] Face++ 调用异常: ${e.message}`);
     return new Response(JSON.stringify({ error: "Face++ 调用失败喵～", detail: e.message, logs: debug ? logs : undefined }), {
