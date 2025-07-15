@@ -1,6 +1,28 @@
+async function fetchWithRetry(url, options, retries = 3, delayMs = 1000) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      console.log(`🐾 [DEBUG] 第 ${i + 1} 次调用 Face++ 接口`);
+      const resp = await fetch(url, options);
+      if (!resp.ok) {
+        console.warn(`⚠️ [WARN] 请求失败，状态码: ${resp.status}`);
+        throw new Error(`HTTP ${resp.status}`);
+      }
+      return resp;
+    } catch (err) {
+      console.error(`❌ [ERROR] 第 ${i + 1} 次调用失败:`, err.message);
+      if (i < retries - 1) {
+        console.log(`⏳ 等待 ${delayMs}ms 后重试...`);
+        await new Promise(r => setTimeout(r, delayMs));
+      } else {
+        console.log("🚫 重试次数用完啦～");
+        throw err;
+      }
+    }
+  }
+}
+
 export async function onRequestPost(context) {
   const { FACEPP_KEY, FACEPP_SECRET } = context.env;
-  
   console.log("🐾 [DEBUG] FACEPP_KEY:", FACEPP_KEY ? "已设置" : "未设置");
   console.log("🐾 [DEBUG] FACEPP_SECRET:", FACEPP_SECRET ? "已设置" : "未设置");
 
@@ -32,11 +54,10 @@ export async function onRequestPost(context) {
   formData.append("return_attributes", "beauty");
 
   try {
-    console.log("🔎 [DEBUG] 正在调用 Face++ 接口...");
-    const resp = await fetch("https://api-cn.faceplusplus.com/facepp/v3/detect", {
+    const resp = await fetchWithRetry("https://api-cn.faceplusplus.com/facepp/v3/detect", {
       method: "POST",
       body: formData,
-    });
+    }, 3, 1000); // 重试3次，间隔1秒
 
     const result = await resp.json();
     console.log("✅ [DEBUG] Face++ 返回结果:", result);
@@ -49,9 +70,11 @@ export async function onRequestPost(context) {
       });
     }
 
-    let score = 0;
     if (result.faces && result.faces.length > 0) {
-      score = result.faces[0].attributes.beauty.male_score;
+      const score = result.faces[0].attributes.beauty.male_score;
+      return new Response(JSON.stringify({ score }), {
+        headers: { "Content-Type": "application/json" },
+      });
     } else {
       console.warn("⚠️ [WARN] 没有检测到人脸");
       return new Response(JSON.stringify({ error: "没有检测到人脸喵～" }), {
@@ -59,11 +82,6 @@ export async function onRequestPost(context) {
         headers: { "Content-Type": "application/json" },
       });
     }
-
-    return new Response(JSON.stringify({ score }), {
-      headers: { "Content-Type": "application/json" },
-    });
-
   } catch (e) {
     console.error("❌ [ERROR] Face++ 调用异常:", e);
     return new Response(JSON.stringify({ error: "Face++ 调用失败喵～", detail: e.message }), {
