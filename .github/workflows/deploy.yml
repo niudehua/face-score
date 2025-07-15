@@ -7,23 +7,12 @@ on:
 
 jobs:
   deploy:
-    name: Deploy Worker & Pages
+    name: Deploy Pages (with Functions)
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code 🐾
         uses: actions/checkout@v3
-
-      - name: Install Wrangler ✨
-        run: npm install -g wrangler
-
-      - name: Publish Worker 🚀
-        run: wrangler publish
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.ACCOUNT_ID }}
-          FACEPP_KEY: ${{ secrets.FACEPP_KEY }}
-          FACEPP_SECRET: ${{ secrets.FACEPP_SECRET }}
 
       - name: Deploy Pages 🔥
         uses: cloudflare/pages-action@v1
