@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@cloudflare/ai": "^1.2.2"
+  }
+}

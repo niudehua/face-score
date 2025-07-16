@@ -51,3 +51,19 @@ coverage/
 package-lock.json
 yarn.lock
 pnpm-lock.yaml 
+
+# Cloudflare Pages local env
+.dev.vars
+
+# Vercel (if ever used)
+.vercel/
+
+# Editor/IDE/OS temp files
+*.sublime-workspace
+*.sublime-project
+*.tmp
+*.bak
+*.orig
+
+# Local config
+*.local.* 

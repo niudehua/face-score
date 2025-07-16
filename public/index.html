@@ -51,9 +51,23 @@
         cursor: pointer;
         width: 100%;
         transition: background 0.3s ease;
+        margin-bottom: 10px;
       }
       button:hover {
         background: #d1445a;
+      }
+      #preview {
+        display: none;
+        max-width: 100%;
+        max-height: 220px;
+        margin: 18px auto 10px;
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(232,93,117,0.10);
+        object-fit: cover;
+        transition: box-shadow 0.3s;
+      }
+      #preview.show {
+        display: block;
       }
       #result {
         margin-top: 20px;
@@ -86,12 +100,31 @@
     <div class="container">
       <h1>颜值打分机 🚀</h1>
       <p>上传一张照片，让 AI 猫猫帮你评分吧～</p>
+      <label for="fileInput">选择照片：</label>
       <input type="file" id="fileInput" accept="image/*" />
       <button id="submitBtn">开始评分</button>
+      <img id="preview" />
       <div id="result"></div>
     </div>
 
     <script>
+      // 文件选择后立即预览
+      document.getElementById("fileInput").onchange = function () {
+        const fileInput = this;
+        if (!fileInput.files.length) {
+          document.getElementById("preview").classList.remove("show");
+          return;
+        }
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        reader.onload = function () {
+          const previewImg = document.getElementById("preview");
+          previewImg.src = reader.result;
+          previewImg.classList.add("show");
+        };
+        reader.readAsDataURL(file);
+      };
+
       document.getElementById("submitBtn").onclick = async function () {
         const fileInput = document.getElementById("fileInput");
         if (!fileInput.files.length) {
