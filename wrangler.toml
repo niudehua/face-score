@@ -1,5 +1,8 @@
 name = "face-score"
 compatibility_date = "2025-07-15"
 
+[build]
+external = ["@cloudflare/ai"]
+
 [ai]
 binding = "AI"
