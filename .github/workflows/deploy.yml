@@ -1,4 +1,4 @@
-name: Deploy to Cloudflare
+name: Deploy to Cloudflare Pages
 
 on:
   push:
@@ -14,10 +14,22 @@ jobs:
       - name: Checkout code 🐾
         uses: actions/checkout@v3
 
-      - name: Deploy to Cloudflare Pages ✨
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (if needed)
+        run: npm run build # 如果没有构建命令可以删掉这步
+
+      - name: Deploy to Cloudflare Pages 🔥
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.ACCOUNT_ID }}
           projectName: "face-score-pages"
-          directory: "public"
+          directory: "public"  # 你的静态文件目录，根据项目调整
+          branch: main
