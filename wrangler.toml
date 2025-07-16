@@ -1,0 +1,5 @@
+name = "face-score"
+compatibility_date = "2025-07-15"
+
+[ai]
+binding = "AI"
