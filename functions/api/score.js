@@ -1,5 +1,3 @@
-import { Ai } from "@cloudflare/ai";
-
 export async function onRequestPost(context) {
   const { FACEPP_KEY, FACEPP_SECRET } = context.env;
   const logs = [];
@@ -152,7 +150,7 @@ export async function onRequestPost(context) {
       
       log(`🎨 [DEBUG] 生成点评 prompt: ${prompt}`);
 
-      const ai = new Ai(context.env.AI);
+      const ai = context.env.AI;
       const aiRes = await ai.run("@cf/meta/llama-3-8b-instruct", {
         messages: [{ role: "user", content: prompt }],
       });
