@@ -1,0 +1,53 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# dotenv environment variables
+.env
+.env.*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Build output
+/dist/
+/build/
+public/build/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+
+# Wrangler/Cloudflare
+.wrangler/
+wrangler.toml
+
+# Misc
+coverage/
+*.tgz
+
+# Optional: ignore local configuration
+*.local
+
+# Ignore by default
+.sass-cache/
+.cache/
+
+# Ignore test coverage
+coverage/
+
+# Ignore production files
+*.min.js
+
+# Ignore lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml 
