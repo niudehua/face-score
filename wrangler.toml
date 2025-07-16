@@ -2,6 +2,10 @@ name = "face-score"
 compatibility_date = "2025-07-15"
 
 [build]
+command = "npm run build"  
+upload.format = "service-worker"
+
+[build]
 external = ["@cloudflare/ai"]
 
 [ai]
