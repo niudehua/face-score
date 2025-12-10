@@ -5,6 +5,7 @@
     <link rel="icon" href="/favicon.png" type="image/png">
     <title>颜值打分机 😻</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>
     <style>
       body {
         font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -56,6 +57,11 @@
       button:hover {
         background: #d1445a;
       }
+      .turnstile-container {
+        margin: 15px 0;
+        display: flex;
+        justify-content: center;
+      }
       #preview {
         display: none;
         max-width: 100%;
@@ -102,6 +108,9 @@
       <p>上传一张照片，让 AI 猫猫帮你评分吧～</p>
       <label for="fileInput">选择照片：</label>
       <input type="file" id="fileInput" accept="image/*" />
+      <div class="turnstile-container">
+        <div class="cf-turnstile" id="turnstile-widget" data-theme="light"></div>
+      </div>
       <button id="submitBtn">开始评分</button>
       <img id="preview" />
       <div id="result"></div>
@@ -125,6 +134,29 @@
         reader.readAsDataURL(file);
       };
 
+      // 动态初始化 Turnstile 组件
+      async function initTurnstile() {
+        try {
+          const res = await fetch('/api/turnstile');
+          const data = await res.json();
+          
+          if (data.site_key) {
+            // 使用获取到的站点密钥初始化 Turnstile 组件
+            turnstile.render('#turnstile-widget', {
+              sitekey: data.site_key,
+              theme: 'light'
+            });
+          } else {
+            console.warn('Turnstile site key not configured');
+          }
+        } catch (error) {
+          console.error('Failed to initialize Turnstile:', error);
+        }
+      }
+
+      // 页面加载完成后初始化 Turnstile
+      document.addEventListener('DOMContentLoaded', initTurnstile);
+
       document.getElementById("submitBtn").onclick = async function () {
         const fileInput = document.getElementById("fileInput");
         if (!fileInput.files.length) {
@@ -139,10 +171,20 @@
           resultDiv.innerText = "评分中，猫猫正在认真分析中喵...";
       
           try {
+            // 获取 Turnstile 响应令牌
+            const token = turnstile.getResponse();
+            if (!token) {
+              resultDiv.innerText = "验证失败，请完成验证码喵～";
+              return;
+            }
+            
             const res = await fetch("/api/score", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ image: base64 }),
+              body: JSON.stringify({ 
+                image: base64, 
+                turnstile_response: token 
+              }),
             });
             if (!res.ok) throw new Error("接口请求失败喵～");
             const data = await res.json();

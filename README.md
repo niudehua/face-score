@@ -104,6 +104,24 @@ Cloudflare Pages 本地开发（如使用 `wrangler pages dev`）会自动加载
 5. 保存设置后，复制生成的 "Site key" 和 "Secret key"
 6. 将这两个密钥分别配置到环境变量 `TURNSTILE_SITE_KEY` 和 `TURNSTILE_SECRET_KEY` 中
 
+### 前端 Turnstile 配置
+
+1. 在 `public/index.html` 文件中，找到以下代码行：
+   ```html
+   <div class="cf-turnstile" data-sitekey="YOUR_TURNSTILE_SITE_KEY" data-theme="light"></div>
+   ```
+
+2. 将 `YOUR_TURNSTILE_SITE_KEY` 替换为你从 Cloudflare 控制台获取的 "Site key"
+
+3. 保存文件并部署到 Cloudflare Pages
+
+### 本地开发测试
+
+在本地开发时，你可以：
+1. 暂时注释掉 Turnstile 相关代码
+2. 或者使用 Cloudflare 提供的测试站点密钥
+3. 或者从环境变量中动态获取站点密钥（进阶用法）
+
 ### Cloudflare KV 配置（用于限流）
 
 1. 登录 Cloudflare 控制台
