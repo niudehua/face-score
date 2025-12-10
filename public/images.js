@@ -8,7 +8,6 @@ let sortBy = 'timestamp';
 let sortOrder = 'desc';
 let dateFrom = '';
 let dateTo = '';
-let turnstileSiteKey = '';
 
 // DOM元素
 const imageGrid = document.getElementById('image-grid');
@@ -36,26 +35,6 @@ function initEventListeners() {
   });
 }
 
-// 动态初始化 Turnstile 组件
-async function initTurnstile() {
-  try {
-    const res = await fetch('/api/turnstile');
-    const data = await res.json();
-    
-    if (data.site_key) {
-      // 使用获取到的站点密钥初始化 Turnstile 组件
-      turnstile.render('#turnstile-widget', {
-        sitekey: data.site_key,
-        theme: 'light'
-      });
-    } else {
-      console.warn('Turnstile site key not configured');
-    }
-  } catch (error) {
-    console.error('Failed to initialize Turnstile:', error);
-  }
-}
-
 // 格式化时间
 function formatTime(timestamp) {
   const date = new Date(timestamp);
@@ -73,16 +52,8 @@ async function loadImages(page = 1) {
   pagination.innerHTML = '';
   
   try {
-    // 获取 Turnstile 响应令牌
-    const token = turnstile.getResponse();
-    if (!token) {
-      loading.style.display = 'none';
-      alert("验证失败，请完成验证码喵～");
-      return;
-    }
-    
     // 构建请求URL
-    let url = `/api/images?page=${page}&limit=${limit}&sort_by=${sortBy}&order=${sortOrder}&turnstile_response=${token}`;
+    let url = `/api/images?page=${page}&limit=${limit}&sort_by=${sortBy}&order=${sortOrder}`;
     
     // 添加时间筛选
     if (dateFrom) {
@@ -277,11 +248,7 @@ function resetFilter() {
 // 初始化
 function init() {
   initEventListeners();
-  initTurnstile();
-  // 等待 Turnstile 初始化完成后再加载图片
-  setTimeout(() => {
-    loadImages();
-  }, 1000);
+  loadImages();
 }
 
 // 页面加载完成后初始化

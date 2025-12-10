@@ -28,59 +28,8 @@ export async function onRequestGet(context) {
     return rateLimitResult.response;
   }
 
-  // 2. Turnstile 验证
-  let isMiniProgram = false;
-  
-  // 检查请求是否来自小程序
-  try {
-    const body = await context.request.clone().json();
-    // 检查请求体中的标识
-    if (body.app_type === 'miniprogram') {
-      isMiniProgram = true;
-      log(`🐱 [DEBUG] 检测到小程序请求，跳过 Turnstile 验证`);
-    }
-  } catch (err) {
-    // 忽略 JSON 解析错误
-  }
-  
-  // 检查请求头中的标识
-  if (!isMiniProgram && context.request.headers.get('X-App-Type') === 'miniprogram') {
-    isMiniProgram = true;
-    log(`🐱 [DEBUG] 检测到小程序请求头，跳过 Turnstile 验证`);
-  }
-  
-  if (TURNSTILE_SECRET_KEY && !isMiniProgram) {
-    try {
-      const turnstileToken = await extractTurnstileToken(context.request);
-      const isVerified = await verifyTurnstile(turnstileToken, TURNSTILE_SECRET_KEY);
-      
-      if (!isVerified) {
-        log(`❌ [ERROR] Turnstile 验证失败: 无效或缺失令牌`);
-        return new Response(JSON.stringify({ 
-          error: "验证失败，请检查您的请求喵～", 
-          logs 
-        }), {
-          status: 403,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-      
-      log(`✅ [DEBUG] Turnstile 验证成功`);
-    } catch (err) {
-      log(`❌ [ERROR] Turnstile 验证过程出错: ${err.message}`);
-      return new Response(JSON.stringify({ 
-        error: "验证过程出错，请稍后重试喵～", 
-        logs 
-      }), {
-        status: 403,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-  } else if (isMiniProgram) {
-    log(`🐱 [DEBUG] 小程序请求，跳过 Turnstile 验证`);
-  } else {
-    log(`⚠️ [WARN] Turnstile 密钥未配置，跳过验证`);
-  }
+  // 2. 照片列表不需要 Turnstile 验证，跳过验证逻辑
+  log(`⚠️ [DEBUG] 照片列表请求，跳过 Turnstile 验证`);
 
   // 3. 解析请求参数
   try {
