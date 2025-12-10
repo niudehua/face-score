@@ -9,7 +9,7 @@ type = "ai"
 [[d1_databases]]
 binding = "FACE_SCORE_DB"
 database_name = "face-score-db"
-database_id = "f081ceb00df741d29d5a82500c2adaed"
+database_id = "a6b84b41-18ba-4b75-9f5a-9f466ce8e283"
 
 [[r2_buckets]]
 binding = "FACE_IMAGES"
