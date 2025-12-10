@@ -296,6 +296,99 @@ async function getCleanupStatus(d1, cutoffTimestamp) {
   }
 }
 
+/**
+ * 分页获取图片列表
+ * @param {D1Database} d1 - D1数据库实例
+ * @param {Object} options - 查询选项
+ * @param {number} options.page - 页码，默认1
+ * @param {number} options.limit - 每页数量，默认10
+ * @param {string} options.sort_by - 排序字段，可选值：timestamp、score，默认timestamp
+ * @param {string} options.order - 排序方向，可选值：asc、desc，默认desc
+ * @param {string} options.date_from - 开始时间，ISO格式
+ * @param {string} options.date_to - 结束时间，ISO格式
+ * @returns {Promise<Object>} - 图片列表和分页信息
+ */
+async function getImages(d1, options = {}) {
+  try {
+    // 默认参数
+    const { 
+      page = 1, 
+      limit = 10, 
+      sort_by = 'timestamp', 
+      order = 'desc',
+      date_from = null,
+      date_to = null
+    } = options;
+    
+    // 验证排序字段
+    const validSortFields = ['timestamp', 'score'];
+    const sortField = validSortFields.includes(sort_by) ? sort_by : 'timestamp';
+    
+    // 验证排序方向
+    const orderBy = order.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+    
+    // 计算偏移量
+    const offset = (page - 1) * limit;
+    
+    // 构建查询条件
+    let whereClause = '';
+    const params = [];
+    
+    if (date_from && date_to) {
+      whereClause = 'WHERE timestamp BETWEEN ? AND ?';
+      params.push(date_from, date_to);
+    } else if (date_from) {
+      whereClause = 'WHERE timestamp >= ?';
+      params.push(date_from);
+    } else if (date_to) {
+      whereClause = 'WHERE timestamp <= ?';
+      params.push(date_to);
+    }
+    
+    // 构建查询语句
+    const countQuery = `SELECT COUNT(*) as total FROM face_scores ${whereClause}`;
+    const dataQuery = `
+      SELECT id, score, comment, gender, age, timestamp, image_url, md5 
+      FROM face_scores 
+      ${whereClause}
+      ORDER BY ${sortField} ${orderBy}
+      LIMIT ? OFFSET ?
+    `;
+    
+    // 获取总记录数
+    const countResult = await d1.prepare(countQuery)
+      .bind(...params)
+      .first();
+    const total = countResult?.total || 0;
+    
+    // 获取数据
+    const dataParams = [...params, limit, offset];
+    const dataResult = await d1.prepare(dataQuery)
+      .bind(...dataParams)
+      .all();
+    const results = dataResult.results || [];
+    
+    // 计算分页信息
+    const totalPages = Math.ceil(total / limit);
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
+    
+    return {
+      data: results,
+      pagination: {
+        page,
+        limit,
+        total,
+        total_pages: totalPages,
+        has_next: hasNext,
+        has_prev: hasPrev
+      }
+    };
+  } catch (err) {
+    throw new Error(`D1获取图片列表失败: ${err.message}`);
+  }
+}
+
 export {
   init,
   ensureTableExists,
@@ -304,5 +397,6 @@ export {
   deleteOldRecords,
   getStats,
   getRetentionStats,
-  getCleanupStatus
+  getCleanupStatus,
+  getImages
 };

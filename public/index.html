@@ -57,6 +57,18 @@
       button:hover {
         background: #d1445a;
       }
+      .secondary-btn {
+        background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);
+        color: #666;
+        margin-top: 20px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+      }
+      .secondary-btn:hover {
+        background: linear-gradient(135deg, #e0e0e0 0%, #d0d0d0 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      }
       .turnstile-container {
         margin: 15px 0;
         display: flex;
@@ -114,6 +126,7 @@
       <button id="submitBtn">开始评分</button>
       <img id="preview" />
       <div id="result"></div>
+      <button id="imagesBtn" class="secondary-btn">浏览所有颜值照片</button>
     </div>
 
     <script>
@@ -154,8 +167,18 @@
         }
       }
 
-      // 页面加载完成后初始化 Turnstile
-      document.addEventListener('DOMContentLoaded', initTurnstile);
+      // 页面加载完成后初始化 Turnstile 和事件监听
+      document.addEventListener('DOMContentLoaded', () => {
+        initTurnstile();
+        
+        // 添加查看所有图片按钮的点击事件
+        const imagesBtn = document.getElementById('imagesBtn');
+        if (imagesBtn) {
+          imagesBtn.addEventListener('click', () => {
+            window.location.href = '/images.html';
+          });
+        }
+      });
 
       document.getElementById("submitBtn").onclick = async function () {
         const fileInput = document.getElementById("fileInput");
