@@ -8,10 +8,12 @@ type = "ai"
 
 [[d1_databases]]
 binding = "FACE_SCORE_DB"
-database_name = "face-score-db"
+database_name = "face_score_db"
 database_id = "a6b84b41-18ba-4b75-9f5a-9f466ce8e283"
+remote = true
 
 [[r2_buckets]]
 binding = "FACE_IMAGES"
 bucket_name = "face-score-images"
 preview_bucket_name = "face-score-images-preview"
+remote = true

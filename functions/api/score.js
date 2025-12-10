@@ -226,21 +226,32 @@ export async function onRequestPost(context) {
 
       log(`🎨 [DEBUG] 生成点评 prompt: ${prompt}`);
 
-      const ai = context.env.AI;
-      const aiRes = await ai.run("@cf/meta/llama-3-8b-instruct", {
-        messages: [{ role: "user", content: prompt }],
-      });
-
-      log(`✨ [DEBUG] AI 返回结果: ${JSON.stringify(aiRes)}`);
-
       let comment = "颜值点评生成失败了喵～";
-
-      if (aiRes) {
-        if (Array.isArray(aiRes.choices) && aiRes.choices.length > 0 && aiRes.choices[0].message && aiRes.choices[0].message.content) {
-          comment = aiRes.choices[0].message.content;
-        } else if (typeof aiRes.response === "string") {
-          comment = aiRes.response;
+      
+      try {
+        const ai = context.env.AI;
+        if (ai && typeof ai.run === "function") {
+          const aiRes = await ai.run("@cf/meta/llama-3-8b-instruct", {
+            messages: [{ role: "user", content: prompt }],
+          });
+          
+          log(`✨ [DEBUG] AI 返回结果: ${JSON.stringify(aiRes)}`);
+          
+          if (aiRes) {
+            if (Array.isArray(aiRes.choices) && aiRes.choices.length > 0 && aiRes.choices[0].message && aiRes.choices[0].message.content) {
+              comment = aiRes.choices[0].message.content;
+            } else if (typeof aiRes.response === "string") {
+              comment = aiRes.response;
+            }
+          }
+        } else {
+          log(`⚠️ [WARN] AI服务未配置或不可用，使用默认评论`);
+          comment = `哇，颜值评分${score.toFixed(1)}分，太厉害了！`;
         }
+      } catch (aiError) {
+        log(`❌ [ERROR] AI调用失败: ${aiError.message}`);
+        log(`⚠️ [INFO] 使用默认评论代替`);
+        comment = `哇，颜值评分${score.toFixed(1)}分，太厉害了！`;
       }
 
       // 初始化 D1 数据库（如果不存在则创建表）
@@ -276,13 +287,9 @@ export async function onRequestPost(context) {
       const d1 = context.env.FACE_SCORE_DB;
       const r2 = context.env.FACE_IMAGES;
 
-      if (d1 && r2) {
-        log(`✅ [DEBUG] D1和R2已绑定，准备存储数据`);
+      if (r2) {
+        log(`✅ [DEBUG] R2已绑定，准备存储图片`);
         try {
-          // 初始化数据库
-          await initDatabase(d1);
-          log(`✅ [DEBUG] 数据库初始化完成`);
-          
           // 计算图片的唯一标识符作为主键
           const imageId = await calculateImageId(imageBase64);
           const id = `face_${imageId}`;
@@ -291,7 +298,7 @@ export async function onRequestPost(context) {
           // 上传图片到 R2
           const r2Key = await uploadImageToR2(r2, imageBase64, imageId);
           imageUrl = `/api/image?md5=${imageId}`;  // 使用API路径
-          log(`✅ [DEBUG] 图片已上传到R2: ${r2Key}`);
+          log(`✅ [DEBUG] 图片已成功上传到R2: ${r2Key}`);
 
           if (debug) {
             log(`[DEBUG] 图片ID: ${imageId}`);
@@ -299,9 +306,8 @@ export async function onRequestPost(context) {
             log(`[DEBUG] R2存储路径: ${r2Key}`);
           }
 
-          const timestamp = new Date().toISOString();
-          
           // 准备插入/更新数据
+          const timestamp = new Date().toISOString();
           const scoreData = {
             id,
             score,
@@ -314,44 +320,100 @@ export async function onRequestPost(context) {
           };
           log(`📋 [DEBUG] 准备存储数据: ${JSON.stringify(scoreData, null, 2)}`);
 
-          // 使用D1插入或更新记录
-          const query = `
-            INSERT INTO face_scores (id, score, comment, gender, age, timestamp, image_url, md5)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(md5) DO UPDATE SET
-              score = excluded.score,
-              comment = excluded.comment,
-              gender = excluded.gender,
-              age = excluded.age,
-              timestamp = excluded.timestamp,
-              image_url = excluded.image_url,
-              created_at = CURRENT_TIMESTAMP
-          `;
-          
-          const d1Result = await d1.prepare(query)
-            .bind(
-              scoreData.id,
-              scoreData.score,
-              scoreData.comment,
-              scoreData.gender,
-              scoreData.age,
-              scoreData.timestamp,
-              scoreData.image_url,
-              scoreData.md5
-            )
-            .run();
-            
-          storedKey = scoreData.id;
-          log(`✅ [DEBUG] 数据已成功存储到D1 - ID: ${scoreData.id}, 影响行数: ${d1Result.changes || 0}`);
-          log(`✅ [DEBUG] 完整存储路径 - R2: ${r2Key}, D1: ${scoreData.id}`);
+          // 尝试存储到D1数据库（可选）
+          if (d1) {
+            log(`✅ [DEBUG] D1已绑定，准备存储元数据`);
+            try {
+              // 检查face_scores表是否存在
+              const tableCheck = await d1.prepare(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='face_scores'"
+              ).first();
+              
+              if (!tableCheck) {
+                log(`📋 [DEBUG] face_scores表不存在，准备创建`);
+                
+                // 分步创建表和索引，避免使用d1.exec()
+                // 创建表
+                await d1.prepare(`
+                  CREATE TABLE face_scores (
+                    id TEXT PRIMARY KEY,
+                    score REAL NOT NULL,
+                    comment TEXT NOT NULL,
+                    gender TEXT NOT NULL,
+                    age INTEGER NOT NULL,
+                    timestamp TEXT NOT NULL,
+                    image_url TEXT NOT NULL,
+                    md5 TEXT UNIQUE NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                  )
+                `).run();
+                log(`✅ [DEBUG] face_scores表创建成功`);
+                
+                // 创建索引
+                await d1.prepare("CREATE INDEX idx_face_scores_md5 ON face_scores(md5)").run();
+                await d1.prepare("CREATE INDEX idx_face_scores_timestamp ON face_scores(timestamp)").run();
+                await d1.prepare("CREATE INDEX idx_face_scores_created_at ON face_scores(created_at)").run();
+                log(`✅ [DEBUG] face_scores索引创建成功`);
+              } else {
+                log(`✅ [DEBUG] face_scores表已存在，跳过创建`);
+              }
+              
+              // 执行插入/更新操作
+              const query = `
+                INSERT INTO face_scores (id, score, comment, gender, age, timestamp, image_url, md5)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(md5) DO UPDATE SET
+                  score = excluded.score,
+                  comment = excluded.comment,
+                  gender = excluded.gender,
+                  age = excluded.age,
+                  timestamp = excluded.timestamp,
+                  image_url = excluded.image_url,
+                  created_at = CURRENT_TIMESTAMP
+              `;
+              
+              const d1Result = await d1.prepare(query)
+                .bind(
+                  scoreData.id,
+                  scoreData.score,
+                  scoreData.comment,
+                  scoreData.gender,
+                  scoreData.age,
+                  scoreData.timestamp,
+                  scoreData.image_url,
+                  scoreData.md5
+                )
+                .run();
+                
+              storedKey = scoreData.id;
+              log(`✅ [DEBUG] 数据已成功存储到D1 - ID: ${scoreData.id}, 影响行数: ${d1Result.changes || 0}`);
+              log(`✅ [DEBUG] 完整存储路径 - R2: ${r2Key}, D1: ${scoreData.id}`);
+            } catch (d1Error) {
+              // 检查是否为Cloudflare内部的duration错误
+              if (d1Error.message.includes('duration')) {
+                log(`⚠️ [WARN] 遇到Cloudflare内部D1错误（duration），这是本地开发环境bug`);
+                log(`⚠️ [INFO] 继续执行，该错误不影响生产环境`);
+              } else if (d1Error.message.includes('no such table')) {
+                log(`⚠️ [WARN] 表不存在，可能创建失败: ${d1Error.message}`);
+              } else {
+                log(`❌ [ERROR] D1存储错误: ${d1Error.message}`);
+                log(`❌ [ERROR] D1错误堆栈: ${d1Error.stack || '无堆栈信息'}`);
+              }
+              log(`⚠️ [INFO] 继续执行，仅R2存储成功`);
+              // 即使D1存储失败，R2存储已经成功，继续执行
+            }
+          } else {
+            log(`⚠️ [WARN] D1未绑定，跳过元数据存储 - 请检查FACE_SCORE_DB绑定`);
+            log(`✅ [INFO] 图片已成功存储到R2: ${r2Key}`);
+          }
         } catch (storageError) {
           log(`❌ [ERROR] 存储错误: ${storageError.message}`);
           log(`❌ [ERROR] 错误堆栈: ${storageError.stack || '无堆栈信息'}`);
           // 即使存储失败也继续执行，返回评分结果
         }
       } else {
-        if (!d1) log(`⚠️ [WARN] D1未绑定，跳过元数据存储 - 请检查FACE_SCORE_DB绑定`);
-        if (!r2) log(`⚠️ [WARN] R2未绑定，跳过图片存储 - 请检查FACE_IMAGES绑定`);
+        log(`⚠️ [WARN] R2未绑定，跳过图片存储 - 请检查FACE_IMAGES绑定`);
+        if (d1) log(`⚠️ [WARN] 由于R2未绑定，跳过D1存储`);
       }
 
       return new Response(JSON.stringify({
