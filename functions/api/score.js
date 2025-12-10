@@ -1,9 +1,11 @@
 // 导入模块
 import { calculateImageId, uploadImage, getImageUrl, compressImage } from '../lib/storage.js';
 import { insertOrUpdateScore } from '../lib/db.js';
+import { verifyTurnstile, extractTurnstileToken } from '../lib/turnstile.js';
+import { rateLimit, addRateLimitHeaders } from '../lib/rate-limit.js';
 
 export async function onRequestPost(context) {
-  const { FACEPP_KEY, FACEPP_SECRET } = context.env;
+  const { FACEPP_KEY, FACEPP_SECRET, TURNSTILE_SECRET_KEY } = context.env;
   const logs = [];
 
   function log(msg) {
@@ -30,6 +32,40 @@ export async function onRequestPost(context) {
 
   log(`🐾 [DEBUG] FACEPP_KEY: ${FACEPP_KEY ? "已设置" : "未设置"}`);
   log(`🐾 [DEBUG] FACEPP_SECRET: ${FACEPP_SECRET ? "已设置" : "未设置"}`);
+  log(`🐾 [DEBUG] TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY ? "已设置" : "未设置"}`);
+
+  // 1. 实施限流
+  const rateLimitResult = await rateLimit(context.request, context, {
+    path: '/api/score',
+    limit: 10, // 每分钟10次请求
+    windowSeconds: 60
+  });
+
+  if (rateLimitResult.limited) {
+    log(`❌ [ERROR] 请求被限流: ${rateLimitResult.response.status}`);
+    return rateLimitResult.response;
+  }
+
+  // 2. Turnstile 验证
+  if (TURNSTILE_SECRET_KEY) {
+    const turnstileToken = await extractTurnstileToken(context.request);
+    const isVerified = await verifyTurnstile(turnstileToken, TURNSTILE_SECRET_KEY);
+    
+    if (!isVerified) {
+      log(`❌ [ERROR] Turnstile 验证失败: 无效或缺失令牌`);
+      return new Response(JSON.stringify({ 
+        error: "验证失败，请检查您的请求喵～", 
+        logs 
+      }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    
+    log(`✅ [DEBUG] Turnstile 验证成功`);
+  } else {
+    log(`⚠️ [WARN] Turnstile 密钥未配置，跳过验证`);
+  }
 
   let body;
   try {
@@ -72,7 +108,7 @@ export async function onRequestPost(context) {
 
     if (!resp.ok) {
       log(`❌ [ERROR] 接口非正常响应: HTTP ${resp.status}`);
-      return new Response(JSON.stringify({
+      let response = new Response(JSON.stringify({
         error: "Face++ 接口响应错误喵～",
         status: resp.status,
         detail: result.error_message || "未知错误",
@@ -81,6 +117,10 @@ export async function onRequestPost(context) {
         status: 500,
         headers: { "Content-Type": "application/json" },
       });
+
+      // 添加限流响应头
+      response = addRateLimitHeaders(response, rateLimitResult);
+      return response;
     }
 
     if (result.faces && result.faces.length > 0) {
@@ -274,7 +314,7 @@ export async function onRequestPost(context) {
         if (d1) log(`⚠️ [WARN] 由于R2未绑定，跳过D1存储`);
       }
 
-      return new Response(JSON.stringify({
+      let response = new Response(JSON.stringify({
         score,
         comment,
         logs: debug ? logs : undefined,
@@ -283,19 +323,33 @@ export async function onRequestPost(context) {
       }), {
         headers: { "Content-Type": "application/json" },
       });
+
+      // 添加限流响应头
+      response = addRateLimitHeaders(response, rateLimitResult);
+      return response;
     } else {
       log("⚠️ [WARN] 没有检测到人脸");
-      return new Response(JSON.stringify({ error: "没有检测到人脸喵～", logs: debug ? logs : undefined }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      let response = new Response(JSON.stringify({ error: "没有检测到人脸喵～", logs: debug ? logs : undefined }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+
+    // 添加限流响应头
+    response = addRateLimitHeaders(response, rateLimitResult);
+    return response;
     }
 
   } catch (e) {
     log(`❌ [ERROR] Face++ 调用异常: ${e.message}`);
-    return new Response(JSON.stringify({ error: "Face++ 调用失败喵～", detail: e.message, logs: debug ? logs : undefined }), {
+    let response = new Response(JSON.stringify({
+      error: "Face++ 调用失败喵～", detail: e.message, logs: debug ? logs : undefined
+    }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
+
+    // 添加限流响应头
+    response = addRateLimitHeaders(response, rateLimitResult);
+    return response;
   }
 }

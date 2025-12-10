@@ -53,11 +53,14 @@ face-score/
 ### 环境变量
 - `FACEPP_KEY`：Face++ API Key
 - `FACEPP_SECRET`：Face++ API Secret
+- `TURNSTILE_SITE_KEY`：Cloudflare Turnstile 客户端站点密钥（可选，用于前端验证）
+- `TURNSTILE_SECRET_KEY`：Cloudflare Turnstile 服务器端密钥（可选，用于后端验证）
 
 ### Cloudflare 资源绑定
 - `AI`：Cloudflare AI 绑定（自动提供，无需手动设置）
 - `FACE_SCORE_DB`：Cloudflare D1 数据库绑定（用于存储评分记录）
 - `FACE_IMAGES`：Cloudflare R2 存储桶绑定（用于存储人脸图片）
+- `RATE_LIMIT_KV`：Cloudflare KV 命名空间绑定（可选，用于请求限流）
 
 ### 如何申请 Face++ API Key 和 Secret
 
@@ -74,6 +77,9 @@ face-score/
 ```
 FACEPP_KEY=你的key
 FACEPP_SECRET=你的secret
+# 可选：Turnstile 配置
+TURNSTILE_SITE_KEY=你的turnstile站点密钥
+TURNSTILE_SECRET_KEY=你的turnstile服务器密钥
 ```
 
 Cloudflare Pages 本地开发（如使用 `wrangler pages dev`）会自动加载 `.dev.vars` 文件并注入到 `context.env`，无需修改代码。
@@ -83,6 +89,32 @@ Cloudflare Pages 本地开发（如使用 `wrangler pages dev`）会自动加载
 在 Cloudflare Pages 的项目设置中，添加环境变量：
 - `FACEPP_KEY`
 - `FACEPP_SECRET`
+- `TURNSTILE_SITE_KEY`（可选，用于前端 Turnstile 验证）
+- `TURNSTILE_SECRET_KEY`（可选，用于后端 Turnstile 验证）
+
+### Cloudflare Turnstile 配置
+
+1. 登录 Cloudflare 控制台，进入你的域名管理页面
+2. 点击左侧菜单中的 "Turnstile" 选项
+3. 点击 "Add a site" 添加你的网站
+4. 配置 Turnstile 设置：
+   - 选择 "Managed" 模式
+   - 选择 "Non-interactive" 或 "Invisible" 样式
+   - 添加你的域名到允许列表
+5. 保存设置后，复制生成的 "Site key" 和 "Secret key"
+6. 将这两个密钥分别配置到环境变量 `TURNSTILE_SITE_KEY` 和 `TURNSTILE_SECRET_KEY` 中
+
+### Cloudflare KV 配置（用于限流）
+
+1. 登录 Cloudflare 控制台
+2. 点击左侧菜单中的 "Workers & Pages" 选项
+3. 选择 "KV" 标签页
+4. 点击 "Create namespace" 创建一个新的命名空间
+5. 命名为 "RATE_LIMIT_KV"（或自定义名称）
+6. 在 Pages 项目的 "Settings" -> "Functions" -> "KV Namespace Bindings" 中添加绑定：
+   - 变量名：`RATE_LIMIT_KV`
+   - KV 命名空间：选择你创建的命名空间
+   - 环境：Production 和 Preview（根据需要）
 
 ## 💻 本地开发与调试
 
@@ -112,18 +144,46 @@ Cloudflare Pages 本地开发（如使用 `wrangler pages dev`）会自动加载
 - Content-Type: `application/json`
 
 #### 请求体参数
-| 字段    | 类型   | 必填 | 说明                 |
-| ------- | ------ | ---- | -------------------- |
-| image   | string | 是   | 图片的 Base64 字符串 |
-| debug   | bool   | 否   | 是否返回调试日志     |
+| 字段                | 类型   | 必填 | 说明                 |
+| ------------------- | ------ | ---- | -------------------- |
+| image               | string | 是   | 图片的 Base64 字符串 |
+| debug               | bool   | 否   | 是否返回调试日志     |
+| turnstile_response  | string | 否   | Cloudflare Turnstile 响应令牌（当启用 Turnstile 验证时必填） |
 
 **示例：**
 ```json
 {
   "image": "base64字符串",
-  "debug": true
+  "debug": true,
+  "turnstile_response": "0.mZ...（Turnstile响应令牌）"
 }
 ```
+
+#### Turnstile 验证说明
+
+当服务器配置了 `TURNSTILE_SECRET_KEY` 环境变量时，`/api/score` 端点会要求提供有效的 Turnstile 响应令牌。
+
+您可以通过以下方式提供 Turnstile 令牌：
+1. 在请求体中添加 `turnstile_response` 字段
+2. 在请求头中添加 `X-Turnstile-Response` 头
+3. 在 URL 查询参数中添加 `turnstile_response` 参数
+
+#### 限流说明
+
+所有 API 端点都实施了基于 IP 的请求限流：
+
+| API 端点 | 限流规则 |
+|---------|--------|
+| `/api/score` | 每 IP 每分钟 10 次请求 |
+| `/api/image` | 每 IP 每分钟 50 次请求 |
+| `/api/cleanup` | 每 IP 每分钟 5 次请求 |
+| `/api/verify` | 每 IP 每分钟 5 次请求 |
+
+限流响应头：
+- `X-RateLimit-Limit`：每分钟允许的最大请求数
+- `X-RateLimit-Remaining`：当前窗口剩余的请求数
+- `X-RateLimit-Reset`：当前窗口重置剩余时间（秒）
+- `Retry-After`：请求被限流时，建议重试时间（秒）
 
 #### 返回
 | 字段    | 类型   | 说明                 |

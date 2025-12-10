@@ -1,8 +1,20 @@
 // 导入模块
 import { getOldRecords, deleteOldRecords } from '../lib/db.js';
 import { deleteImage } from '../lib/storage.js';
+import { rateLimit, addRateLimitHeaders } from '../lib/rate-limit.js';
 
 export async function onRequestGet(context) {
+  // 实施限流 - 管理端点，限制更严格
+  const rateLimitResult = await rateLimit(context.request, context, {
+      path: '/api/cleanup',
+      limit: 5, // 每分钟5次请求
+      windowSeconds: 60
+  });
+
+  if (rateLimitResult.limited) {
+      return rateLimitResult.response;
+  }
+
   const logs = [];
   
   function log(msg) {
@@ -15,10 +27,12 @@ export async function onRequestGet(context) {
     const r2 = context.env.FACE_IMAGES;
     
     if (!d1) {
-      return new Response(JSON.stringify({ 
+      let response = new Response(JSON.stringify({ 
         error: "D1 database not configured", 
         logs 
       }), { status: 500, headers: { "Content-Type": "application/json" } });
+      response = addRateLimitHeaders(response, rateLimitResult);
+      return response;
     }
     
     if (!r2) {
@@ -72,20 +86,24 @@ export async function onRequestGet(context) {
     const deletedCount = deleteResult.changes || 0;
     log(`✅ [INFO] 数据清理完成，成功删除 ${deletedCount} 条记录`);
     
-    return new Response(JSON.stringify({ 
+    let response = new Response(JSON.stringify({ 
       success: true, 
       message: `数据清理完成，成功删除 ${deletedCount} 条记录`,
       deletedCount,
       cutoffDate: cutoffDate.toISOString(),
       logs 
     }), { headers: { "Content-Type": "application/json" } });
+    response = addRateLimitHeaders(response, rateLimitResult);
+    return response;
     
   } catch (error) {
     log(`❌ [ERROR] 数据清理任务失败: ${error.message}`);
-    return new Response(JSON.stringify({ 
+    let response = new Response(JSON.stringify({ 
       error: "数据清理任务失败", 
       detail: error.message, 
       logs 
     }), { status: 500, headers: { "Content-Type": "application/json" } });
+    response = addRateLimitHeaders(response, rateLimitResult);
+    return response;
   }
 }
