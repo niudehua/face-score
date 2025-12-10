@@ -5,6 +5,7 @@
     <link rel="icon" href="/favicon.png" type="image/png">
     <title>图片列表 - 颜值打分机 😻</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>
     <link rel="stylesheet" href="/images.css" />
     <style>
       /* 全局样式 */
@@ -199,6 +200,11 @@
   <body>
     <div class="container">
       <h1>图片列表 - 颜值打分机 😻</h1>
+      
+      <!-- Turnstile 验证 -->
+      <div class="turnstile-container">
+        <div class="cf-turnstile" id="turnstile-widget" data-theme="light"></div>
+      </div>
       
       <!-- 筛选和排序 -->
       <div class="filter-container">
