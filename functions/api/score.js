@@ -225,17 +225,47 @@ export async function onRequestPost(context) {
         }
       }
 
-      // 存储数据到 R2 和 KV
+      // 初始化 D1 数据库（如果不存在则创建表）
+      async function initDatabase(d1) {
+        try {
+          await d1.exec(`
+            CREATE TABLE IF NOT EXISTS face_scores (
+              id TEXT PRIMARY KEY,
+              score REAL NOT NULL,
+              comment TEXT NOT NULL,
+              gender TEXT NOT NULL,
+              age INTEGER NOT NULL,
+              timestamp TEXT NOT NULL,
+              image_url TEXT NOT NULL,
+              md5 TEXT UNIQUE NOT NULL,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            
+            CREATE INDEX IF NOT EXISTS idx_face_scores_md5 ON face_scores(md5);
+            CREATE INDEX IF NOT EXISTS idx_face_scores_timestamp ON face_scores(timestamp);
+            CREATE INDEX IF NOT EXISTS idx_face_scores_created_at ON face_scores(created_at);
+          `);
+          log(`✅ [DEBUG] D1数据库初始化完成`);
+        } catch (err) {
+          log(`❌ [ERROR] D1数据库初始化失败: ${err.message}`);
+          throw err;
+        }
+      }
+
+      // 存储数据到 R2 和 D1
       let storedKey = null;
       let imageUrl = null;
-      const kv = context.env.FACE_SCORE_DB;
+      const d1 = context.env.FACE_SCORE_DB;
       const r2 = context.env.FACE_IMAGES;
 
-      if (kv && r2) {
+      if (d1 && r2) {
         try {
+          // 初始化数据库
+          await initDatabase(d1);
+          
           // 计算图片的MD5作为主键
           const imageMd5 = await calculateMD5(imageBase64);
-          const key = `face_${imageMd5}`;
+          const id = `face_${imageMd5}`;
 
           // 上传图片到 R2
           const r2Key = await uploadImageToR2(r2, imageBase64, imageMd5);
@@ -248,39 +278,54 @@ export async function onRequestPost(context) {
           }
 
           const timestamp = new Date().toISOString();
+          
+          // 准备插入/更新数据
           const scoreData = {
-            score: score,
-            comment: comment,
+            id,
+            score,
+            comment,
             gender: genderCn,
             age: age.value,
-            timestamp: timestamp,
-            image_url: imageUrl,  // 存储图片 URL 而非 base64
+            timestamp,
+            image_url: imageUrl,
             md5: imageMd5
           };
 
-          // 检查是否已存在相同MD5的记录
-          let existingData = null;
-          try {
-            existingData = await kv.get(key);
-          } catch (getError) {
-            log(`[DEBUG] 获取现有记录失败: ${getError.message}，将创建新记录`);
-          }
-
-          // 存储元数据到 KV
-          await kv.put(key, JSON.stringify(scoreData));
-          storedKey = key;
-
-          if (existingData) {
-            log(`✅ [DEBUG] 数据已更新 - R2: ${r2Key}, KV: ${key}`);
-          } else {
-            log(`✅ [DEBUG] 数据已存储 - R2: ${r2Key}, KV: ${key}`);
-          }
+          // 使用D1插入或更新记录
+          const query = `
+            INSERT INTO face_scores (id, score, comment, gender, age, timestamp, image_url, md5)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(md5) DO UPDATE SET
+              score = excluded.score,
+              comment = excluded.comment,
+              gender = excluded.gender,
+              age = excluded.age,
+              timestamp = excluded.timestamp,
+              image_url = excluded.image_url,
+              created_at = CURRENT_TIMESTAMP
+          `;
+          
+          await d1.prepare(query)
+            .bind(
+              scoreData.id,
+              scoreData.score,
+              scoreData.comment,
+              scoreData.gender,
+              scoreData.age,
+              scoreData.timestamp,
+              scoreData.image_url,
+              scoreData.md5
+            )
+            .run();
+            
+          storedKey = scoreData.id;
+          log(`✅ [DEBUG] 数据已存储到D1 - ID: ${scoreData.id}, R2: ${r2Key}`);
         } catch (storageError) {
           log(`❌ [ERROR] 存储错误: ${storageError.message}`);
           // 即使存储失败也继续执行
         }
       } else {
-        if (!kv) log(`⚠️ [WARN] KV未绑定，跳过元数据存储`);
+        if (!d1) log(`⚠️ [WARN] D1未绑定，跳过元数据存储`);
         if (!r2) log(`⚠️ [WARN] R2未绑定，跳过图片存储`);
       }
 

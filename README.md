@@ -22,6 +22,8 @@
 - Node.js (ESM)
 - Face++ 人脸检测 API
 - Cloudflare AI (@cf/meta/llama-3-8b-instruct)
+- Cloudflare D1（SQLite 数据库）
+- Cloudflare R2（对象存储）
 
 ## 📁 目录结构
 
@@ -29,7 +31,10 @@
 face-score/
 ├── functions/
 │   └── api/
-│       └── score.js      # 主要 API 逻辑
+│       ├── score.js       # 主要 API 逻辑（D1 数据存储）
+│       ├── image.js       # 图片获取 API
+│       ├── cleanup.js     # 数据清理任务（自动删除6个月前数据）
+│       └── verify.js      # 数据验证和统计 API
 ├── public/
 │   └── index.html        # 静态页面（如有）
 ├── .dev.vars             # 本地开发环境变量
@@ -40,11 +45,16 @@ face-score/
 
 ## 🔑 环境变量配置
 
-本项目依赖以下环境变量：
+本项目依赖以下环境变量和资源绑定：
 
+### 环境变量
 - `FACEPP_KEY`：Face++ API Key
 - `FACEPP_SECRET`：Face++ API Secret
+
+### Cloudflare 资源绑定
 - `AI`：Cloudflare AI 绑定（自动提供，无需手动设置）
+- `FACE_SCORE_DB`：Cloudflare D1 数据库绑定（用于存储评分记录）
+- `FACE_IMAGES`：Cloudflare R2 存储桶绑定（用于存储人脸图片）
 
 ### 如何申请 Face++ API Key 和 Secret
 
@@ -92,7 +102,9 @@ Cloudflare Pages 本地开发（如使用 `wrangler pages dev`）会自动加载
 
 ## 📚 API 文档
 
-### 请求
+### 1. 颜值评分 API
+
+#### 请求
 - **POST** `/api/score`
 - Content-Type: `application/json`
 
@@ -110,7 +122,7 @@ Cloudflare Pages 本地开发（如使用 `wrangler pages dev`）会自动加载
 }
 ```
 
-### 返回
+#### 返回
 | 字段    | 类型   | 说明                 |
 | ------- | ------ | -------------------- |
 | score   | number | 颜值分数（0-100）    |
@@ -136,12 +148,143 @@ Cloudflare Pages 本地开发（如使用 `wrangler pages dev`）会自动加载
 }
 ```
 
+### 2. 图片获取 API
+
+#### 请求
+- **GET** `/api/image?md5={md5值}`
+
+#### 参数
+| 字段 | 类型   | 必填 | 说明          |
+| ---- | ------ | ---- | ------------- |
+| md5  | string | 是   | 图片的 MD5 值 |
+
+#### 返回
+- 成功：返回 JPEG 图片二进制数据
+- 失败：返回 JSON 格式错误信息
+
+### 3. 数据清理 API
+
+#### 请求
+- **GET** `/api/cleanup`
+
+#### 返回
+| 字段         | 类型   | 说明                 |
+| ------------ | ------ | -------------------- |
+| success      | bool   | 清理任务是否成功     |
+| message      | string | 清理结果消息         |
+| deletedCount | number | 删除的记录数量       |
+| cutoffDate   | string | 清理截止日期（ISO格式）|
+| logs         | array  | 清理过程日志         |
+
+### 4. 数据验证与统计 API
+
+#### 请求
+- **GET** `/api/verify?action={action}`
+
+#### 参数
+| 字段  | 类型   | 必填 | 说明                                  |
+| ----- | ------ | ---- | ------------------------------------- |
+| action| string | 否   | 验证操作类型：retention（默认）、stats、cleanup-status |
+
+#### 操作类型说明
+- `retention`：验证数据保留策略（检查是否有超过6个月的记录）
+- `stats`：获取数据库统计信息（总记录数、最新/最早记录等）
+- `cleanup-status`：获取清理状态（待删除记录数等）
+
+#### 返回示例（retention）
+```json
+{
+  "success": true,
+  "action": "retention",
+  "compliant": true,
+  "message": "数据保留策略符合要求",
+  "statistics": {
+    "totalRecords": 100,
+    "recentRecords": 100,
+    "oldRecords": 0,
+    "oldestRecord": "2024-01-01T12:00:00.000Z",
+    "newestRecord": "2024-06-30T12:00:00.000Z",
+    "cutoffDate": "2024-01-01T00:00:00.000Z"
+  },
+  "logs": ["...日志信息..."]
+}
+```
+
 ## 📊 核心功能说明
 
 1. **人脸检测**：调用 Face++ API 检测图片中的人脸
 2. **颜值评分**：根据性别返回相应的颜值分数
 3. **面部分析**：提取年龄、性别、表情、皮肤状态等多种面部特征
 4. **AI 趣味点评**：使用 Llama 3 模型生成俏皮、接地气的颜值评价
+5. **数据持久化**：使用 Cloudflare D1 数据库存储评分记录
+6. **自动数据清理**：定期删除超过6个月的旧数据
+7. **数据验证**：提供 API 验证数据保留策略合规性
+
+## 💾 D1 数据库实现
+
+### 数据库 schema
+
+```sql
+CREATE TABLE IF NOT EXISTS face_scores (
+  id TEXT PRIMARY KEY,
+  score REAL NOT NULL,
+  comment TEXT NOT NULL,
+  gender TEXT NOT NULL,
+  age INTEGER NOT NULL,
+  timestamp TEXT NOT NULL,
+  image_url TEXT NOT NULL,
+  md5 TEXT UNIQUE NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 索引设计
+CREATE INDEX IF NOT EXISTS idx_face_scores_md5 ON face_scores(md5);
+CREATE INDEX IF NOT EXISTS idx_face_scores_timestamp ON face_scores(timestamp);
+CREATE INDEX IF NOT EXISTS idx_face_scores_created_at ON face_scores(created_at);
+```
+
+### 数据保留策略
+
+- **保留期限**：仅保留最近6个月的数据
+- **清理方式**：自动清理超过6个月的旧记录
+- **清理机制**：通过 `/api/cleanup` API 执行
+- **建议调度**：每周在非高峰时段执行
+
+### 清理机制说明
+
+1. **事务支持**：使用事务确保数据完整性
+2. **安全措施**：
+   - 自动计算截止日期（6个月前）
+   - 执行前统计待删除记录数量
+   - 事务回滚机制防止数据损坏
+3. **日志记录**：详细记录清理过程和结果
+4. **性能优化**：使用索引加速查询和删除操作
+
+## 🧪 数据验证与监控
+
+### 验证 API
+
+1. **数据保留验证**：`GET /api/verify?action=retention`
+   - 检查是否存在超过6个月的记录
+   - 验证数据保留策略合规性
+   - 返回详细的记录统计信息
+
+2. **数据库统计**：`GET /api/verify?action=stats`
+   - 总记录数
+   - 最新/最早记录时间
+   - 今日记录数
+   - 本月记录数
+
+3. **清理状态检查**：`GET /api/verify?action=cleanup-status`
+   - 待删除记录数量
+   - 下次清理截止日期
+
+### 监控建议
+
+- **定期检查**：每周执行一次数据保留验证
+- **清理监控**：监控清理任务的执行结果
+- **日志分析**：定期检查数据库操作日志
+- **性能监控**：关注数据库查询和写入性能
 
 ## ❓ 常见问题 FAQ
 

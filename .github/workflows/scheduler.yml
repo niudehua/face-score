@@ -1,0 +1,18 @@
+name: Scheduled Tasks
+on:
+  schedule:
+    # 每周日凌晨 2 点运行
+    - cron: '0 2 * * 0'
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  run-scheduled-tasks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Cleanup Task
+        run: |
+          curl -X GET https://${{ secrets.PAGES_URL }}/api/cleanup
+      
+      - name: Run Verify Task
+        run: |
+          curl -X GET https://${{ secrets.PAGES_URL }}/api/verify?action=retention
