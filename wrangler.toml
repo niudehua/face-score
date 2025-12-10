@@ -1,5 +1,12 @@
 name = "face-score"
-compatibility_date = "2025-07-15"
+main = "functions/api/score.js"
+compatibility_date = "2024-01-01"
 
-[ai]
+[[unsafe.bindings]]
+name = "AI"
 binding = "AI"
+type = "ai"
+
+[[kv_namespaces]]
+binding = "FACE_SCORE_DB"
+id = "f081ceb00df741d29d5a82500c2adaed"  # 生产环境的KV命名空间ID

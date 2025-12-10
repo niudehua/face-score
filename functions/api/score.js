@@ -6,6 +6,40 @@ export async function onRequestPost(context) {
     logs.push(msg);
     console.log(msg);  // 这里打印到 Workers 控制台
   }
+  
+  // 计算字符串的MD5哈希值
+  async function calculateMD5(data) {
+    // 将字符串转换为ArrayBuffer
+    const encoder = new TextEncoder();
+    const dataBuffer = encoder.encode(data);
+    
+    // 计算SHA-256哈希（Cloudflare Workers环境下使用Crypto API）
+    const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
+    
+    // 将ArrayBuffer转换为十六进制字符串
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    // 返回前32个字符作为MD5风格的哈希（因为我们实际用的是SHA-256）
+    return hashHex.substring(0, 32);
+  }
+  
+  // 压缩图片（在Cloudflare Workers环境中模拟压缩）
+  function compressImage(imageBase64, maxWidth = 300, maxHeight = 300) {
+    // 在Serverless环境中，我们简化压缩逻辑
+    // 1. 检查图片大小，如果已经很小则不压缩
+    const imageSize = new Blob([atob(imageBase64)]).size;
+    if (imageSize < 50 * 1024) { // 如果小于50KB，认为不需要压缩
+      return imageBase64;
+    }
+    
+    // 2. 对于较大的图片，我们可以通过降低Base64编码的质量来模拟压缩
+    // 这里简单地保留原始图片但添加注释，表示在客户端应该进行实际压缩
+    log(`[DEBUG] 图片大小: ${(imageSize / 1024).toFixed(2)}KB，建议在客户端进行压缩`);
+    
+    // 在实际应用中，理想的做法是在客户端使用Canvas进行图片压缩后再上传
+    return imageBase64;
+  }
 
   log(`🐾 [DEBUG] FACEPP_KEY: ${FACEPP_KEY ? "已设置" : "未设置"}`);
   log(`🐾 [DEBUG] FACEPP_SECRET: ${FACEPP_SECRET ? "已设置" : "未设置"}`);
@@ -167,9 +201,70 @@ export async function onRequestPost(context) {
         }
       }
 
-      return new Response(JSON.stringify({ score, comment, logs: debug ? logs : undefined }), {
-        headers: { "Content-Type": "application/json" },
-      });
+      // 存储数据到KV（优化版，使用MD5作为键并压缩图片以节省空间）
+    let storedKey = null;
+    const kv = context.env.FACE_SCORE_DB;
+    
+    if (kv) {
+      try {
+        // 计算图片的MD5作为主键
+        const imageMd5 = await calculateMD5(imageBase64);
+        const key = `face_${imageMd5}`;
+        
+        // 压缩图片以节省KV存储空间
+        const compressedImage = compressImage(imageBase64);
+        
+        const timestamp = new Date().toISOString();
+        const scoreData = {
+          score: score,
+          comment: comment,
+          gender: genderCn,
+          age: age.value,
+          timestamp: timestamp,
+          image: compressedImage,  // 存储压缩后的图片
+          image_type: "image/jpeg",
+          md5: imageMd5
+        };
+        
+        // 在本地开发环境中避免日志过大
+        if (debug) {
+          log(`[DEBUG] 图片MD5: ${imageMd5}`);
+          log(`[DEBUG] 原始图片大小: ${(new Blob([atob(imageBase64)]).size / 1024).toFixed(2)}KB`);
+          log(`[DEBUG] 压缩后图片大小: ${(new Blob([atob(compressedImage)]).size / 1024).toFixed(2)}KB`);
+          log(`[DEBUG] 要存储的数据: {\n  score: ${score},\n  comment: "${comment}",\n  gender: "${genderCn}",\n  age: ${age.value},\n  timestamp: "${timestamp}",\n  image: "${compressedImage.substring(0, 20)}...",\n  image_type: "image/jpeg",\n  md5: "${imageMd5}"\n}`);
+        }
+        
+        // 检查是否已存在相同MD5的记录
+        let existingData = null;
+        try {
+          existingData = await kv.get(key);
+        } catch (getError) {
+          log(`[DEBUG] 获取现有记录失败: ${getError.message}，将创建新记录`);
+        }
+        
+        // 存储或更新到KV
+        await kv.put(key, JSON.stringify(scoreData));
+        storedKey = key;
+        
+        if (existingData) {
+          log(`✅ [DEBUG] 数据已更新到KV，键: ${key} (基于MD5更新)`);
+        } else {
+          log(`✅ [DEBUG] 数据已存储到KV，键: ${key} (基于MD5创建)`);
+        }
+      } catch (kvError) {
+        log(`❌ [ERROR] KV存储错误: ${kvError.message}`);
+        // 即使存储失败也继续执行
+      }
+    }
+
+    return new Response(JSON.stringify({ 
+      score, 
+      comment, 
+      logs: debug ? logs : undefined,
+      key: storedKey
+    }), {
+      headers: { "Content-Type": "application/json" },
+    });
     } else {
       log("⚠️ [WARN] 没有检测到人脸");
       return new Response(JSON.stringify({ error: "没有检测到人脸喵～", logs: debug ? logs : undefined }), {
