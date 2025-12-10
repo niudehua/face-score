@@ -1,5 +1,4 @@
 name = "face-score"
-main = "functions/api/score.js"
 compatibility_date = "2024-01-01"
 
 [[unsafe.bindings]]
@@ -7,9 +6,10 @@ name = "AI"
 binding = "AI"
 type = "ai"
 
-[[kv_namespaces]]
+[[d1_databases]]
 binding = "FACE_SCORE_DB"
-id = "f081ceb00df741d29d5a82500c2adaed"  # 生产环境的KV命名空间ID
+database_name = "face-score-db"
+database_id = "f081ceb00df741d29d5a82500c2adaed"
 
 [[r2_buckets]]
 binding = "FACE_IMAGES"

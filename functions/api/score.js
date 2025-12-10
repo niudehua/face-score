@@ -7,8 +7,8 @@ export async function onRequestPost(context) {
     console.log(msg);  // 这里打印到 Workers 控制台
   }
 
-  // 计算字符串的MD5哈希值
-  async function calculateMD5(data) {
+  // 计算字符串的SHA-256哈希值（用于生成唯一ID）
+  async function calculateSHA256(data) {
     // 将字符串转换为ArrayBuffer
     const encoder = new TextEncoder();
     const dataBuffer = encoder.encode(data);
@@ -20,7 +20,25 @@ export async function onRequestPost(context) {
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-    // 返回前32个字符作为MD5风格的哈希（因为我们实际用的是SHA-256）
+    // 返回完整的SHA-256哈希值
+    return hashHex;
+  }
+
+  // 计算图片的唯一标识符（使用SHA-256的前32位）
+  async function calculateImageId(imageBase64) {
+    // 先将base64转换为二进制数据，再计算哈希
+    const binaryString = atob(imageBase64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    
+    // 计算二进制数据的SHA-256哈希
+    const hashBuffer = await crypto.subtle.digest('SHA-256', bytes);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    // 返回前32个字符作为图片ID
     return hashHex.substring(0, 32);
   }
 
@@ -259,20 +277,24 @@ export async function onRequestPost(context) {
       const r2 = context.env.FACE_IMAGES;
 
       if (d1 && r2) {
+        log(`✅ [DEBUG] D1和R2已绑定，准备存储数据`);
         try {
           // 初始化数据库
           await initDatabase(d1);
+          log(`✅ [DEBUG] 数据库初始化完成`);
           
-          // 计算图片的MD5作为主键
-          const imageMd5 = await calculateMD5(imageBase64);
-          const id = `face_${imageMd5}`;
+          // 计算图片的唯一标识符作为主键
+          const imageId = await calculateImageId(imageBase64);
+          const id = `face_${imageId}`;
+          log(`✅ [DEBUG] 图片ID生成: ${imageId}`);
 
           // 上传图片到 R2
-          const r2Key = await uploadImageToR2(r2, imageBase64, imageMd5);
-          imageUrl = `/api/image?md5=${imageMd5}`;  // 使用API路径
+          const r2Key = await uploadImageToR2(r2, imageBase64, imageId);
+          imageUrl = `/api/image?md5=${imageId}`;  // 使用API路径
+          log(`✅ [DEBUG] 图片已上传到R2: ${r2Key}`);
 
           if (debug) {
-            log(`[DEBUG] 图片MD5: ${imageMd5}`);
+            log(`[DEBUG] 图片ID: ${imageId}`);
             log(`[DEBUG] 原始图片大小: ${(new Blob([atob(imageBase64)]).size / 1024).toFixed(2)}KB`);
             log(`[DEBUG] R2存储路径: ${r2Key}`);
           }
@@ -288,8 +310,9 @@ export async function onRequestPost(context) {
             age: age.value,
             timestamp,
             image_url: imageUrl,
-            md5: imageMd5
+            md5: imageId
           };
+          log(`📋 [DEBUG] 准备存储数据: ${JSON.stringify(scoreData, null, 2)}`);
 
           // 使用D1插入或更新记录
           const query = `
@@ -305,7 +328,7 @@ export async function onRequestPost(context) {
               created_at = CURRENT_TIMESTAMP
           `;
           
-          await d1.prepare(query)
+          const d1Result = await d1.prepare(query)
             .bind(
               scoreData.id,
               scoreData.score,
@@ -319,14 +342,16 @@ export async function onRequestPost(context) {
             .run();
             
           storedKey = scoreData.id;
-          log(`✅ [DEBUG] 数据已存储到D1 - ID: ${scoreData.id}, R2: ${r2Key}`);
+          log(`✅ [DEBUG] 数据已成功存储到D1 - ID: ${scoreData.id}, 影响行数: ${d1Result.changes || 0}`);
+          log(`✅ [DEBUG] 完整存储路径 - R2: ${r2Key}, D1: ${scoreData.id}`);
         } catch (storageError) {
           log(`❌ [ERROR] 存储错误: ${storageError.message}`);
-          // 即使存储失败也继续执行
+          log(`❌ [ERROR] 错误堆栈: ${storageError.stack || '无堆栈信息'}`);
+          // 即使存储失败也继续执行，返回评分结果
         }
       } else {
-        if (!d1) log(`⚠️ [WARN] D1未绑定，跳过元数据存储`);
-        if (!r2) log(`⚠️ [WARN] R2未绑定，跳过图片存储`);
+        if (!d1) log(`⚠️ [WARN] D1未绑定，跳过元数据存储 - 请检查FACE_SCORE_DB绑定`);
+        if (!r2) log(`⚠️ [WARN] R2未绑定，跳过图片存储 - 请检查FACE_IMAGES绑定`);
       }
 
       return new Response(JSON.stringify({

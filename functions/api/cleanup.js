@@ -8,11 +8,17 @@ export async function onRequestGet(context) {
 
   try {
     const d1 = context.env.FACE_SCORE_DB;
+    const r2 = context.env.FACE_IMAGES;
+    
     if (!d1) {
       return new Response(JSON.stringify({ 
         error: "D1 database not configured", 
         logs 
       }), { status: 500, headers: { "Content-Type": "application/json" } });
+    }
+    
+    if (!r2) {
+      log(`⚠️ [WARN] R2 bucket not configured, skipping image cleanup`);
     }
 
     log(`🐾 [DEBUG] 开始执行数据清理任务...`);
@@ -25,20 +31,46 @@ export async function onRequestGet(context) {
     log(`📅 [DEBUG] 清理截止日期: ${cutoffDate.toLocaleString()}`);
     log(`📅 [DEBUG] 清理截止时间戳: ${cutoffTimestamp}`);
 
-    // 开始事务
+    // 获取要删除的记录及其MD5
+    const recordsToDelete = await d1.prepare(
+      "SELECT id, md5 FROM face_scores WHERE timestamp < ?"
+    )
+    .bind(cutoffTimestamp)
+    .all();
+    
+    const recordCount = recordsToDelete.results?.length || 0;
+    log(`📊 [DEBUG] 准备删除 ${recordCount} 条旧记录`);
+    
+    // 如果有R2绑定，先删除对应的图片
+    if (r2 && recordCount > 0) {
+      log(`📤 [DEBUG] 开始清理R2中的旧图片...`);
+      
+      let deletedImages = 0;
+      let failedImages = 0;
+      
+      // 批量删除R2图片
+      for (const record of recordsToDelete.results) {
+        const md5 = record.md5;
+        const r2Key = `images/${md5}.jpg`;
+        
+        try {
+          await r2.delete(r2Key);
+          deletedImages++;
+          log(`🗑️ [DEBUG] 已删除R2图片: ${r2Key}`);
+        } catch (r2Error) {
+          failedImages++;
+          log(`❌ [ERROR] 删除R2图片失败 ${r2Key}: ${r2Error.message}`);
+          // 继续处理其他图片
+        }
+      }
+      
+      log(`📊 [DEBUG] R2图片清理完成: 成功删除 ${deletedImages} 张图片，失败 ${failedImages} 张`);
+    }
+    
+    // 开始事务删除D1记录
     await d1.exec("BEGIN TRANSACTION;");
     
     try {
-      // 获取要删除的记录数量（用于日志）
-      const countResult = await d1.prepare(
-        "SELECT COUNT(*) as count FROM face_scores WHERE timestamp < ?"
-      )
-      .bind(cutoffTimestamp)
-      .first();
-      
-      const recordCount = countResult?.count || 0;
-      log(`📊 [DEBUG] 准备删除 ${recordCount} 条旧记录`);
-      
       // 执行删除操作
       const deleteResult = await d1.prepare(
         "DELETE FROM face_scores WHERE timestamp < ?"
