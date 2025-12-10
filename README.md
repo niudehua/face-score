@@ -30,11 +30,14 @@
 ```
 face-score/
 ├── functions/
-│   └── api/
-│       ├── score.js       # 主要 API 逻辑（D1 数据存储）
-│       ├── image.js       # 图片获取 API
-│       ├── cleanup.js     # 数据清理任务（自动删除6个月前数据）
-│       └── verify.js      # 数据验证和统计 API
+│   ├── api/
+│   │   ├── score.js       # 主要 API 逻辑（D1 数据存储）
+│   │   ├── image.js       # 图片获取 API
+│   │   ├── cleanup.js     # 数据清理任务（自动删除6个月前数据）
+│   │   └── verify.js      # 数据验证和统计 API
+│   └── lib/
+│       ├── db.js          # D1 数据库操作模块
+│       └── storage.js     # R2 存储操作模块
 ├── public/
 │   └── index.html        # 静态页面（如有）
 ├── .dev.vars             # 本地开发环境变量

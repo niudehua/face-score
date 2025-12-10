@@ -1,3 +1,7 @@
+// 导入模块
+import { calculateImageId, uploadImage, getImageUrl, compressImage } from '../lib/storage.js';
+import { insertOrUpdateScore } from '../lib/db.js';
+
 export async function onRequestPost(context) {
   const { FACEPP_KEY, FACEPP_SECRET } = context.env;
   const logs = [];
@@ -22,65 +26,6 @@ export async function onRequestPost(context) {
 
     // 返回完整的SHA-256哈希值
     return hashHex;
-  }
-
-  // 计算图片的唯一标识符（使用SHA-256的前32位）
-  async function calculateImageId(imageBase64) {
-    // 先将base64转换为二进制数据，再计算哈希
-    const binaryString = atob(imageBase64);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    
-    // 计算二进制数据的SHA-256哈希
-    const hashBuffer = await crypto.subtle.digest('SHA-256', bytes);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    
-    // 返回前32个字符作为图片ID
-    return hashHex.substring(0, 32);
-  }
-
-  // 上传图片到 R2
-  async function uploadImageToR2(r2Bucket, imageBase64, md5) {
-    try {
-      // 将 Base64 转换为二进制数据
-      const binaryString = atob(imageBase64);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-
-      // 上传到 R2，使用 MD5 作为文件名
-      const key = `images/${md5}.jpg`;
-      await r2Bucket.put(key, bytes, {
-        httpMetadata: {
-          contentType: 'image/jpeg',
-        },
-      });
-
-      return key;
-    } catch (error) {
-      throw new Error(`R2上传失败: ${error.message}`);
-    }
-  }
-
-  // 压缩图片（在Cloudflare Workers环境中模拟压缩）
-  function compressImage(imageBase64, maxWidth = 300, maxHeight = 300) {
-    // 在Serverless环境中，我们简化压缩逻辑
-    // 1. 检查图片大小，如果已经很小则不压缩
-    const imageSize = new Blob([atob(imageBase64)]).size;
-    if (imageSize < 50 * 1024) { // 如果小于50KB，认为不需要压缩
-      return imageBase64;
-    }
-
-    // 2. 对于较大的图片，我们可以通过降低Base64编码的质量来模拟压缩
-    // 这里简单地保留原始图片但添加注释，表示在客户端应该进行实际压缩
-    log(`[DEBUG] 图片大小: ${(imageSize / 1024).toFixed(2)}KB，建议在客户端进行压缩`);
-
-    // 在实际应用中，理想的做法是在客户端使用Canvas进行图片压缩后再上传
-    return imageBase64;
   }
 
   log(`🐾 [DEBUG] FACEPP_KEY: ${FACEPP_KEY ? "已设置" : "未设置"}`);
@@ -254,33 +199,6 @@ export async function onRequestPost(context) {
         comment = `哇，颜值评分${score.toFixed(1)}分，太厉害了！`;
       }
 
-      // 初始化 D1 数据库（如果不存在则创建表）
-      async function initDatabase(d1) {
-        try {
-          await d1.exec(`
-            CREATE TABLE IF NOT EXISTS face_scores (
-              id TEXT PRIMARY KEY,
-              score REAL NOT NULL,
-              comment TEXT NOT NULL,
-              gender TEXT NOT NULL,
-              age INTEGER NOT NULL,
-              timestamp TEXT NOT NULL,
-              image_url TEXT NOT NULL,
-              md5 TEXT UNIQUE NOT NULL,
-              created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            );
-            
-            CREATE INDEX IF NOT EXISTS idx_face_scores_md5 ON face_scores(md5);
-            CREATE INDEX IF NOT EXISTS idx_face_scores_timestamp ON face_scores(timestamp);
-            CREATE INDEX IF NOT EXISTS idx_face_scores_created_at ON face_scores(created_at);
-          `);
-          log(`✅ [DEBUG] D1数据库初始化完成`);
-        } catch (err) {
-          log(`❌ [ERROR] D1数据库初始化失败: ${err.message}`);
-          throw err;
-        }
-      }
-
       // 存储数据到 R2 和 D1
       let storedKey = null;
       let imageUrl = null;
@@ -296,8 +214,8 @@ export async function onRequestPost(context) {
           log(`✅ [DEBUG] 图片ID生成: ${imageId}`);
 
           // 上传图片到 R2
-          const r2Key = await uploadImageToR2(r2, imageBase64, imageId);
-          imageUrl = `/api/image?md5=${imageId}`;  // 使用API路径
+          const r2Key = await uploadImage(r2, imageBase64, imageId);
+          imageUrl = getImageUrl(imageId);  // 使用API路径
           log(`✅ [DEBUG] 图片已成功上传到R2: ${r2Key}`);
 
           if (debug) {
@@ -324,67 +242,7 @@ export async function onRequestPost(context) {
           if (d1) {
             log(`✅ [DEBUG] D1已绑定，准备存储元数据`);
             try {
-              // 检查face_scores表是否存在
-              const tableCheck = await d1.prepare(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='face_scores'"
-              ).first();
-              
-              if (!tableCheck) {
-                log(`📋 [DEBUG] face_scores表不存在，准备创建`);
-                
-                // 分步创建表和索引，避免使用d1.exec()
-                // 创建表
-                await d1.prepare(`
-                  CREATE TABLE face_scores (
-                    id TEXT PRIMARY KEY,
-                    score REAL NOT NULL,
-                    comment TEXT NOT NULL,
-                    gender TEXT NOT NULL,
-                    age INTEGER NOT NULL,
-                    timestamp TEXT NOT NULL,
-                    image_url TEXT NOT NULL,
-                    md5 TEXT UNIQUE NOT NULL,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                  )
-                `).run();
-                log(`✅ [DEBUG] face_scores表创建成功`);
-                
-                // 创建索引
-                await d1.prepare("CREATE INDEX idx_face_scores_md5 ON face_scores(md5)").run();
-                await d1.prepare("CREATE INDEX idx_face_scores_timestamp ON face_scores(timestamp)").run();
-                await d1.prepare("CREATE INDEX idx_face_scores_created_at ON face_scores(created_at)").run();
-                log(`✅ [DEBUG] face_scores索引创建成功`);
-              } else {
-                log(`✅ [DEBUG] face_scores表已存在，跳过创建`);
-              }
-              
-              // 执行插入/更新操作
-              const query = `
-                INSERT INTO face_scores (id, score, comment, gender, age, timestamp, image_url, md5)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(md5) DO UPDATE SET
-                  score = excluded.score,
-                  comment = excluded.comment,
-                  gender = excluded.gender,
-                  age = excluded.age,
-                  timestamp = excluded.timestamp,
-                  image_url = excluded.image_url,
-                  created_at = CURRENT_TIMESTAMP
-              `;
-              
-              const d1Result = await d1.prepare(query)
-                .bind(
-                  scoreData.id,
-                  scoreData.score,
-                  scoreData.comment,
-                  scoreData.gender,
-                  scoreData.age,
-                  scoreData.timestamp,
-                  scoreData.image_url,
-                  scoreData.md5
-                )
-                .run();
-                
+              const d1Result = await insertOrUpdateScore(d1, scoreData);
               storedKey = scoreData.id;
               log(`✅ [DEBUG] 数据已成功存储到D1 - ID: ${scoreData.id}, 影响行数: ${d1Result.changes || 0}`);
               log(`✅ [DEBUG] 完整存储路径 - R2: ${r2Key}, D1: ${scoreData.id}`);

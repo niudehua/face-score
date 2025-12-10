@@ -1,3 +1,6 @@
+// 导入模块
+import { getImage } from '../lib/storage.js';
+
 export async function onRequestGet(context) {
     const url = new URL(context.request.url);
     const md5 = url.searchParams.get('md5');
@@ -12,8 +15,7 @@ export async function onRequestGet(context) {
     }
 
     try {
-        const key = `images/${md5}.jpg`;
-        const object = await r2.get(key);
+        const object = await getImage(r2, md5);
 
         if (!object) {
             return new Response('Image not found', { status: 404 });
