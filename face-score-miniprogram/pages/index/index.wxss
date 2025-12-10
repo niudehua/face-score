@@ -1,0 +1,316 @@
+/* 页面特定样式 */
+
+/* 装饰性猫咪图标 */
+.cat-decoration {
+  position: absolute;
+  width: 60rpx;
+  height: 60rpx;
+  opacity: 0.15;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.cat-top-left {
+  top: -20rpx;
+  left: -20rpx;
+  transform: rotate(-15deg);
+}
+
+.cat-top-right {
+  top: -20rpx;
+  right: -20rpx;
+  transform: rotate(15deg);
+}
+
+.cat-bottom-left {
+  bottom: -20rpx;
+  left: -20rpx;
+  transform: rotate(15deg);
+}
+
+.cat-bottom-right {
+  bottom: -20rpx;
+  right: -20rpx;
+  transform: rotate(-15deg);
+}
+
+/* 操作按钮容器 */
+.buttons-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  margin-top: 20rpx;
+  width: 100%;
+}
+
+/* 次要按钮样式 */
+.secondary-button {
+  background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);
+  color: #666;
+  box-shadow: 0 4rpx 15rpx rgba(0, 0, 0, 0.1);
+}
+
+.secondary-button:active {
+  background: linear-gradient(135deg, #e0e0e0 0%, #d0d0d0 100%);
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.15);
+}
+
+/* 功能按钮容器 */
+.utility-buttons {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 16rpx;
+  width: 100%;
+}
+
+.utility-buttons button {
+  flex: 1;
+  padding: 20rpx 24rpx;
+  font-size: 26rpx;
+  margin-bottom: 0;
+}
+
+/* 预览区域容器 */
+.preview-container {
+  position: relative;
+  margin: 20rpx 0;
+  border-radius: 16rpx;
+  overflow: hidden;
+  background: rgba(245, 245, 245, 0.5);
+  padding: 10rpx;
+  box-shadow: inset 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+}
+
+/* 清空图片按钮 */
+.clear-preview-btn {
+  position: absolute;
+  top: 20rpx;
+  right: 20rpx;
+  width: 50rpx;
+  height: 50rpx;
+  background: rgba(232, 93, 117, 0.9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 24rpx;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 15rpx rgba(232, 93, 117, 0.4);
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.clear-preview-btn:active {
+  transform: scale(0.9);
+  background: rgba(209, 68, 90, 0.9);
+}
+
+/* 结果卡片样式 */
+.result-card {
+  background: linear-gradient(135deg, #fff 0%, #fafafa 100%);
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-top: 20rpx;
+  box-shadow: 0 6rpx 25rpx rgba(0, 0, 0, 0.1);
+  border: 1rpx solid rgba(232, 93, 117, 0.1);
+  animation: resultSlideIn 0.5s ease-out;
+}
+
+@keyframes resultSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(30rpx) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 评分数字样式 */
+.score-number {
+  font-size: 60rpx;
+  font-weight: 800;
+  color: #e85d75;
+  text-shadow: 0 2rpx 8rpx rgba(232, 93, 117, 0.3);
+  margin: 10rpx 0;
+  animation: scorePulse 0.8s ease-out;
+}
+
+@keyframes scorePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* 结果标题样式 */
+.result-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #444;
+  margin-bottom: 10rpx;
+}
+
+/* 结果内容样式 */
+.result-content {
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: #666;
+  margin-top: 16rpx;
+  white-space: pre-wrap;
+  text-align: left;
+}
+
+/* 加载状态样式 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40rpx;
+  gap: 20rpx;
+}
+
+.loading-spinner {
+  width: 60rpx;
+  height: 60rpx;
+  border: 6rpx solid rgba(232, 93, 117, 0.2);
+  border-top: 6rpx solid #e85d75;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #666;
+  font-weight: 500;
+}
+
+/* 分享和保存按钮容器 */
+.action-buttons {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 24rpx;
+}
+
+.action-button {
+  flex: 1;
+  background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);
+  color: #666;
+  font-size: 28rpx;
+  padding: 22rpx;
+  border-radius: 30rpx;
+  box-shadow: 0 4rpx 15rpx rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.action-button:active {
+  transform: scale(0.96);
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.15);
+}
+
+.action-button.primary {
+  background: linear-gradient(135deg, #e85d75 0%, #d1445a 100%);
+  color: white;
+  box-shadow: 0 6rpx 20rpx rgba(232, 93, 117, 0.3);
+}
+
+/* 提示信息样式 */
+.toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 20rpx 40rpx;
+  border-radius: 50rpx;
+  font-size: 28rpx;
+  z-index: 1000;
+  animation: toastFadeIn 0.3s ease-out;
+  box-shadow: 0 8rpx 30rpx rgba(0, 0, 0, 0.3);
+}
+
+@keyframes toastFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* 空状态样式 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60rpx 20rpx;
+  color: #999;
+  text-align: center;
+}
+
+.empty-state-icon {
+  width: 120rpx;
+  height: 120rpx;
+  opacity: 0.3;
+  margin-bottom: 20rpx;
+}
+
+.empty-state-text {
+  font-size: 26rpx;
+  line-height: 1.5;
+}
+
+/* 响应式设计 */
+@media (min-width: 750rpx) {
+  .container {
+    max-width: 600rpx;
+    padding: 60rpx 50rpx;
+  }
+  
+  h1 {
+    font-size: 52rpx;
+  }
+  
+  p {
+    font-size: 30rpx;
+  }
+  
+  button {
+    font-size: 32rpx;
+    padding: 30rpx 48rpx;
+  }
+}
+
+/* 深色模式支持（如果需要） */
+@media (prefers-color-scheme: dark) {
+  .container {
+    background: rgba(30, 30, 30, 0.95);
+    border: 1rpx solid rgba(232, 93, 117, 0.2);
+  }
+  
+  h1 {
+    color: #f07aaa;
+  }
+  
+  p {
+    color: #ccc;
+  }
+  
+  #result {
+    background: linear-gradient(135deg, #2a2a2a 0%, #333 100%);
+    color: #eee;
+  }
+}

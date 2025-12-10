@@ -1,0 +1,193 @@
+/* app.wxss - 全局样式 */
+/* 动画定义 */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20rpx); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* 全局样式重置 */
+view, text, button, image, input, textarea, swiper, swiper-item {
+  box-sizing: border-box;
+}
+
+page {
+  font-family: "PingFang SC", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  background: linear-gradient(135deg, #fef5ef 0%, #ffeaea 30%, #f8e4f8 70%, #e8f4ff 100%);
+  background-size: 200% 200%;
+  color: #444;
+  min-height: 100vh;
+  padding: 20rpx;
+  animation: gradientShift 8s ease infinite;
+}
+
+/* 渐变背景动画 */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.container {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10rpx);
+  padding: 40rpx 30rpx;
+  border-radius: 24rpx;
+  box-shadow: 
+    0 10rpx 30rpx rgba(232, 93, 117, 0.15),
+    0 2rpx 8rpx rgba(0, 0, 0, 0.08);
+  text-align: center;
+  max-width: 600rpx;
+  margin: 40rpx auto;
+  animation: fadeIn 0.6s ease-out;
+  border: 1rpx solid rgba(232, 93, 117, 0.1);
+}
+
+/* 标题样式 */
+h1 {
+  color: #e85d75;
+  margin-top: 0;
+  font-size: 44rpx;
+  margin-bottom: 16rpx;
+  font-weight: 700;
+  text-shadow: 0 2rpx 4rpx rgba(232, 93, 117, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+}
+
+/* 副标题样式 */
+p {
+  margin: 0 0 30rpx;
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+/* 按钮基础样式 */
+button {
+  background: linear-gradient(135deg, #e85d75 0%, #d1445a 100%);
+  color: white;
+  border: none;
+  padding: 26rpx 48rpx;
+  border-radius: 40rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  margin-bottom: 20rpx;
+  box-shadow: 0 6rpx 20rpx rgba(232, 93, 117, 0.3);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+button:active::before {
+  width: 300rpx;
+  height: 300rpx;
+}
+
+button:active {
+  transform: scale(0.96);
+  box-shadow: 0 4rpx 15rpx rgba(232, 93, 117, 0.25);
+}
+
+button:disabled {
+  background: linear-gradient(135deg, #ccc 0%, #aaa 100%);
+  box-shadow: none;
+  transform: none;
+  opacity: 0.7;
+}
+
+/* 预览图片样式 */
+#preview {
+  max-width: 100%;
+  max-height: 300rpx;
+  margin: 24rpx auto;
+  border-radius: 16rpx;
+  box-shadow: 
+    0 6rpx 20rpx rgba(232, 93, 117, 0.15),
+    0 2rpx 8rpx rgba(0, 0, 0, 0.08);
+  object-fit: cover;
+  display: none;
+  border: 4rpx solid rgba(232, 93, 117, 0.1);
+  transition: all 0.3s ease;
+}
+
+#preview:hover {
+  transform: scale(1.02);
+  box-shadow: 
+    0 8rpx 25rpx rgba(232, 93, 117, 0.2),
+    0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+}
+
+#preview.show {
+  display: block;
+  animation: scaleIn 0.4s ease-out;
+}
+
+/* 结果显示样式 */
+#result {
+  margin-top: 24rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  min-height: 60rpx;
+  color: #555;
+  word-break: break-word;
+  white-space: pre-wrap;
+  text-align: left;
+  padding: 28rpx;
+  background: linear-gradient(135deg, #fef5f5 0%, #fff0f5 100%);
+  border-radius: 18rpx;
+  box-shadow: 0 4rpx 16rpx rgba(232, 93, 117, 0.1);
+  border: 1rpx solid rgba(232, 93, 117, 0.15);
+  line-height: 1.6;
+  animation: scaleIn 0.5s ease-out;
+}
+
+/* 装饰元素 */
+.decorative-cat {
+  position: absolute;
+  width: 80rpx;
+  height: 80rpx;
+  opacity: 0.1;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* 辅助类 */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.mt-20 { margin-top: 20rpx; }
+.mb-20 { margin-bottom: 20rpx; }
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.gap-10 { gap: 10rpx; }
+.gap-20 { gap: 20rpx; }

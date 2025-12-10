@@ -47,7 +47,27 @@ export async function onRequestPost(context) {
   }
 
   // 2. Turnstile 验证
-  if (TURNSTILE_SECRET_KEY) {
+  let isMiniProgram = false;
+  
+  // 检查请求是否来自小程序
+  try {
+    const body = await context.request.clone().json();
+    // 检查请求体中的标识
+    if (body.app_type === 'miniprogram') {
+      isMiniProgram = true;
+      log(`🐱 [DEBUG] 检测到小程序请求，跳过 Turnstile 验证`);
+    }
+  } catch (err) {
+    // 忽略 JSON 解析错误
+  }
+  
+  // 检查请求头中的标识
+  if (!isMiniProgram && context.request.headers.get('X-App-Type') === 'miniprogram') {
+    isMiniProgram = true;
+    log(`🐱 [DEBUG] 检测到小程序请求头，跳过 Turnstile 验证`);
+  }
+  
+  if (TURNSTILE_SECRET_KEY && !isMiniProgram) {
     const turnstileToken = await extractTurnstileToken(context.request);
     const isVerified = await verifyTurnstile(turnstileToken, TURNSTILE_SECRET_KEY);
     
@@ -63,6 +83,8 @@ export async function onRequestPost(context) {
     }
     
     log(`✅ [DEBUG] Turnstile 验证成功`);
+  } else if (isMiniProgram) {
+    log(`🐱 [DEBUG] 小程序请求，跳过 Turnstile 验证`);
   } else {
     log(`⚠️ [WARN] Turnstile 密钥未配置，跳过验证`);
   }

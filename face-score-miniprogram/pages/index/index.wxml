@@ -1,0 +1,51 @@
+<view class="container">
+  <!-- 装饰性猫咪图标 -->
+  <view class="cat-decoration cat-top-left">🐱</view>
+  <view class="cat-decoration cat-top-right">🐱</view>
+  <view class="cat-decoration cat-bottom-left">🐱</view>
+  <view class="cat-decoration cat-bottom-right">🐱</view>
+
+  <!-- 标题区域 -->
+  <h1>颜值打分机 🚀</h1>
+  <p>上传一张照片，让 AI 猫猫帮你评分吧～</p>
+
+  <!-- 预览区域 -->
+  <view class="preview-container" wx:if="{{previewShow}}">
+    <image id="preview" class="show" src="{{previewUrl}}" mode="aspectFit"></image>
+    <button class="clear-preview-btn" bindtap="clearPreview">×</button>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:else>
+    <view class="empty-state-icon">📷</view>
+    <view class="empty-state-text">还没有选择照片呢~</view>
+  </view>
+
+  <!-- 操作按钮区域 -->
+  <view class="buttons-container">
+    <button bindtap="chooseImage" class="{{previewShow ? 'secondary-button' : ''}}">
+      {{previewShow ? '重新选择' : '选择照片'}}
+    </button>
+    <button bindtap="submitScore" disabled="{{submitting}}" class="primary-button">
+      {{submitting ? '评分中...' : '开始评分'}}
+    </button>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading-container" wx:if="{{submitting}}">
+    <view class="loading-spinner"></view>
+    <view class="loading-text">评分中，猫猫正在认真分析中喵...</view>
+  </view>
+
+  <!-- 结果显示区域 -->
+  <view wx:if="{{result && !submitting}}" class="result-card">
+    <view class="result-title">评分结果</view>
+    <view class="result-content" id="result">{{result}}</view>
+    
+    <!-- 操作按钮 -->
+    <view class="action-buttons">
+      <button class="action-button" bindtap="shareResult">分享结果</button>
+      <button class="action-button primary" bindtap="saveResult">保存图片</button>
+    </view>
+  </view>
+</view>
