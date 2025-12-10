@@ -10,3 +10,8 @@ type = "ai"
 [[kv_namespaces]]
 binding = "FACE_SCORE_DB"
 id = "f081ceb00df741d29d5a82500c2adaed"  # 生产环境的KV命名空间ID
+
+[[r2_buckets]]
+binding = "FACE_IMAGES"
+bucket_name = "face-score-images"
+preview_bucket_name = "face-score-images-preview"
