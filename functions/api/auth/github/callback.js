@@ -26,6 +26,12 @@ export async function onRequestGet(context) {
   }
   
   try {
+    // 检查环境变量
+    console.log('[DEBUG] 检查环境变量:');
+    console.log(`[DEBUG] GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID ? '已设置' : '未设置'}`);
+    console.log(`[DEBUG] GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET ? '已设置' : '未设置'}`);
+    console.log(`[DEBUG] GITHUB_ALLOWED_USERS: ${GITHUB_ALLOWED_USERS || '未设置'}`);
+    
     // 1. 交换授权码获取访问令牌
     console.log('[DEBUG] 交换授权码获取访问令牌');
     const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
@@ -41,9 +47,12 @@ export async function onRequestGet(context) {
       })
     });
     
+    console.log(`[DEBUG] 令牌响应状态: ${tokenResponse.status}`);
     const tokenData = await tokenResponse.json();
+    console.log(`[DEBUG] 令牌响应数据: ${JSON.stringify(tokenData)}`);
+    
     if (!tokenData.access_token) {
-      throw new Error('Failed to get access token');
+      throw new Error(`Failed to get access token: ${JSON.stringify(tokenData)}`);
     }
     
     // 2. 使用访问令牌获取用户信息
@@ -54,12 +63,22 @@ export async function onRequestGet(context) {
       }
     });
     
+    console.log(`[DEBUG] 用户信息响应状态: ${userResponse.status}`);
     const userData = await userResponse.json();
+    console.log(`[DEBUG] 用户信息: ${JSON.stringify(userData)}`);
+    
     const username = userData.login;
+    if (!username) {
+      throw new Error(`Failed to get username from GitHub: ${JSON.stringify(userData)}`);
+    }
     
     // 3. 关键：检查用户是否在允许列表中
     const allowedUsers = (GITHUB_ALLOWED_USERS || '').split(',').map(u => u.trim());
-    if (!allowedUsers.includes(username)) {
+    console.log(`[DEBUG] 允许的用户列表: ${allowedUsers.join(', ')}`);
+    console.log(`[DEBUG] 当前用户: ${username}`);
+    
+    if (allowedUsers.length > 0 && !allowedUsers.includes(username)) {
+      console.log('[DEBUG] 用户不在允许列表中');
       return new Response(JSON.stringify({ 
         success: false, 
         message: '您的GitHub账号未被授权访问' 
@@ -83,6 +102,7 @@ export async function onRequestGet(context) {
     
     // 5. 存储到KV，设置过期时间为7天
     const expirationTtl = 7 * 24 * 60 * 60; // 7天
+    console.log('[DEBUG] 存储会话到KV');
     await SESSION_KV.put(sessionId, JSON.stringify(sessionData), { expirationTtl });
     
     // 6. 设置Cookie
@@ -99,9 +119,11 @@ export async function onRequestGet(context) {
     });
   } catch (error) {
     console.error('GitHub登录失败:', error);
+    console.error('GitHub登录失败详情:', error.stack);
     return new Response(JSON.stringify({ 
       success: false, 
-      message: 'GitHub登录失败，请稍后重试' 
+      message: 'GitHub登录失败，请稍后重试',
+      error: error.message
     }), {
       status: 500,
       headers: {

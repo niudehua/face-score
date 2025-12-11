@@ -197,15 +197,17 @@
               logoutBtn.style.display = 'block';
               imagesBtn.style.display = 'block';
             } else {
-              // 未登录，显示登录按钮，隐藏登出和图片按钮
-              loginBtn.style.display = 'block';
+              // 未登录，隐藏所有按钮（登录按钮通过点击标题5次显示）
+              loginBtn.style.display = 'none';
               logoutBtn.style.display = 'none';
               imagesBtn.style.display = 'none';
             }
           } catch (error) {
             console.error('检查登录状态失败:', error);
-            // 出错时默认显示登录按钮
-            document.getElementById('loginBtn').style.display = 'block';
+            // 出错时隐藏所有按钮
+            document.getElementById('loginBtn').style.display = 'none';
+            document.getElementById('logoutBtn').style.display = 'none';
+            document.getElementById('imagesBtn').style.display = 'none';
           }
         }
         
