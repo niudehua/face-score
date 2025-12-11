@@ -58,12 +58,12 @@ function initEventListeners() {
   limitSelect.addEventListener('change', (e) => {
     loadImages(1); // 重置到第一页
   });
-  
+
   // 批量操作事件
   batchDeleteBtn.addEventListener('click', enterDeleteMode);
   confirmSelectionBtn.addEventListener('click', handleConfirmSelection);
   cancelDeleteBtn.addEventListener('click', exitDeleteMode);
-  
+
   // 登录登出事件
   logoutBtn.addEventListener('click', handleLogout);
 }
@@ -81,7 +81,7 @@ async function verifyLogin() {
       method: 'GET',
       credentials: 'include'
     });
-    
+
     if (response.ok) {
       const data = await response.json();
       if (data.success) {
@@ -90,7 +90,7 @@ async function verifyLogin() {
         return true;
       }
     }
-    
+
     // 未登录或登录失败，跳转到GitHub登录页面
     window.location.href = '/api/auth/github';
     return false;
@@ -108,7 +108,7 @@ async function handleLogout() {
       method: 'DELETE',
       credentials: 'include'
     });
-    
+
     // 登出成功，跳转到首页
     window.location.href = '/';
   } catch (error) {
@@ -121,7 +121,7 @@ async function handleLogout() {
 function adjustImageSize() {
   const imageGrid = document.getElementById('image-grid');
   let columns = 4; // 默认4列
-  
+
   // 根据limit调整列数
   if (limit === 20) {
     columns = 5;
@@ -130,7 +130,7 @@ function adjustImageSize() {
   } else if (limit === 100) {
     columns = 8;
   }
-  
+
   // 设置grid-template-columns
   imageGrid.style.gridTemplateColumns = `repeat(auto-fill, minmax(${Math.floor(100 / columns)}%, 1fr))`;
 }
@@ -139,17 +139,17 @@ function adjustImageSize() {
 async function loadImages(page = 1) {
   currentPage = page;
   selectedImages.clear(); // 清空选择
-  
+
   // 显示加载状态
   imageGrid.innerHTML = '';
   loading.style.display = 'block';
   empty.style.display = 'none';
   pagination.innerHTML = '';
-  
+
   try {
     // 构建请求URL
     let url = `/api/images?page=${page}&limit=${limit}&sort_by=${sortBy}&order=${sortOrder}`;
-    
+
     // 添加时间筛选
     if (dateFrom) {
       url += `&date_from=${dateFrom}T00:00:00.000Z`;
@@ -157,22 +157,22 @@ async function loadImages(page = 1) {
     if (dateTo) {
       url += `&date_to=${dateTo}T23:59:59.999Z`;
     }
-    
+
     // 发送请求
     const response = await fetch(url, {
       credentials: 'include'
     });
     const data = await response.json();
-    
+
     // 处理响应
     if (data.data && Array.isArray(data.data)) {
       const images = data.data;
       totalPages = data.pagination.total_pages;
       totalCount = data.pagination.total;
-      
+
       // 显示总条数
       totalCountDisplay.textContent = `共 ${totalCount} 条记录`;
-      
+
       if (images.length === 0) {
         // 显示空状态
         loading.style.display = 'none';
@@ -180,13 +180,13 @@ async function loadImages(page = 1) {
       } else {
         // 调整图片大小
         adjustImageSize();
-        
+
         // 渲染图片网格
         renderImageGrid(images);
-        
+
         // 渲染分页
         renderPagination();
-        
+
         // 隐藏加载状态
         loading.style.display = 'none';
       }
@@ -212,22 +212,21 @@ async function loadImages(page = 1) {
 function renderImageGrid(images) {
   images.forEach(image => {
     const imageItem = document.createElement('div');
-    imageItem.className = 'image-item';
+    imageItem.className = 'image-card';
     imageItem.dataset.id = image.id;
-    
+
     // 渲染HTML
     imageItem.innerHTML = `
       <div style="position: relative;">
         <img src="${image.image_url}" alt="颜值图片">
+        <div class="score-badge">${image.score.toFixed(1)}</div>
       </div>
       <div class="image-info">
-        <h3>颜值: ${image.score.toFixed(1)}</h3>
-        <p>性别: ${image.gender}</p>
-        <p>年龄: ${image.age}</p>
-        <p>${formatTime(image.timestamp)}</p>
+        <p style="margin:0;font-weight:600;font-size:0.9rem;">${formatTime(image.timestamp)}</p>
+        <p style="margin:0.25rem 0 0;font-size:0.85rem;color:var(--text-secondary);">${image.gender} · ${image.age}岁</p>
       </div>
     `;
-    
+
     // 添加图片项点击事件
     imageItem.addEventListener('click', () => {
       // 如果是删除模式，切换选中状态
@@ -235,13 +234,13 @@ function renderImageGrid(images) {
         // 更新selectedImages集合
         const id = imageItem.dataset.id;
         const isSelected = selectedImages.has(id);
-        
+
         if (isSelected) {
           selectedImages.delete(id);
         } else {
           selectedImages.add(id);
         }
-        
+
         // 更新卡片样式
         updateImageItemStyle(imageItem, !isSelected);
       } else {
@@ -250,7 +249,7 @@ function renderImageGrid(images) {
         document.body.appendChild(modal);
       }
     });
-    
+
     imageGrid.appendChild(imageItem);
   });
 }
@@ -285,7 +284,7 @@ function createImageModal(imageUrl, imageData) {
     align-items: center;
     z-index: 1000;
   `;
-  
+
   modal.innerHTML = `
     <div style="background: white; padding: 20px; border-radius: 12px; max-width: 90%; max-height: 90%; overflow: auto;">
       <img src="${imageUrl}" style="max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 20px;">
@@ -307,20 +306,20 @@ function createImageModal(imageUrl, imageData) {
       ">关闭</button>
     </div>
   `;
-  
+
   // 添加关闭事件
   const closeBtn = modal.querySelector('#close-modal');
   closeBtn.addEventListener('click', () => {
     document.body.removeChild(modal);
   });
-  
+
   // 点击模态框背景关闭
   modal.addEventListener('click', (e) => {
     if (e.target === modal) {
       document.body.removeChild(modal);
     }
   });
-  
+
   return modal;
 }
 
@@ -329,7 +328,7 @@ function renderPagination() {
   if (totalPages <= 1) {
     return;
   }
-  
+
   // 上一页按钮
   const prevBtn = document.createElement('button');
   prevBtn.textContent = '上一页';
@@ -340,11 +339,11 @@ function renderPagination() {
     }
   });
   pagination.appendChild(prevBtn);
-  
+
   // 页码按钮
   const startPage = Math.max(1, currentPage - 2);
   const endPage = Math.min(totalPages, currentPage + 2);
-  
+
   for (let i = startPage; i <= endPage; i++) {
     const pageBtn = document.createElement('button');
     pageBtn.textContent = i;
@@ -354,7 +353,7 @@ function renderPagination() {
     });
     pagination.appendChild(pageBtn);
   }
-  
+
   // 下一页按钮
   const nextBtn = document.createElement('button');
   nextBtn.textContent = '下一页';
@@ -381,13 +380,13 @@ function resetFilter() {
   sortBySelect.value = 'timestamp';
   orderSelect.value = 'desc';
   limitSelect.value = '10';
-  
+
   dateFrom = '';
   dateTo = '';
   sortBy = 'timestamp';
   sortOrder = 'desc';
   limit = 10;
-  
+
   loadImages(1);
 }
 
@@ -415,7 +414,7 @@ function showToast(message, duration = 2000) {
     text-align: center;
   `;
   toast.textContent = message;
-  
+
   // 添加动画样式
   const style = document.createElement('style');
   style.textContent = `
@@ -427,10 +426,10 @@ function showToast(message, duration = 2000) {
     }
   `;
   document.head.appendChild(style);
-  
+
   // 添加到页面
   document.body.appendChild(toast);
-  
+
   // 自动移除
   setTimeout(() => {
     document.body.removeChild(toast);
@@ -458,7 +457,7 @@ function showConfirmDialog(title, message, confirmText = '确认', cancelText = 
       align-items: center;
       animation: fadeIn 0.3s ease;
     `;
-    
+
     // 创建对话框
     const dialog = document.createElement('div');
     dialog.style.cssText = `
@@ -470,7 +469,7 @@ function showConfirmDialog(title, message, confirmText = '确认', cancelText = 
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
       animation: slideIn 0.3s ease;
     `;
-    
+
     // 标题
     const dialogTitle = document.createElement('h3');
     dialogTitle.style.cssText = `
@@ -481,7 +480,7 @@ function showConfirmDialog(title, message, confirmText = '确认', cancelText = 
     `;
     dialogTitle.textContent = title;
     dialog.appendChild(dialogTitle);
-    
+
     // 内容
     const dialogContent = document.createElement('p');
     dialogContent.style.cssText = `
@@ -492,7 +491,7 @@ function showConfirmDialog(title, message, confirmText = '确认', cancelText = 
     `;
     dialogContent.textContent = message;
     dialog.appendChild(dialogContent);
-    
+
     // 按钮容器
     const buttonsContainer = document.createElement('div');
     buttonsContainer.style.cssText = `
@@ -501,7 +500,7 @@ function showConfirmDialog(title, message, confirmText = '确认', cancelText = 
       gap: 12px;
     `;
     dialog.appendChild(buttonsContainer);
-    
+
     // 取消按钮
     const cancelBtn = document.createElement('button');
     cancelBtn.textContent = cancelText;
@@ -520,7 +519,7 @@ function showConfirmDialog(title, message, confirmText = '确认', cancelText = 
       resolve(false);
     });
     buttonsContainer.appendChild(cancelBtn);
-    
+
     // 确认按钮
     const confirmBtn = document.createElement('button');
     confirmBtn.textContent = confirmText;
@@ -539,7 +538,7 @@ function showConfirmDialog(title, message, confirmText = '确认', cancelText = 
       resolve(true);
     });
     buttonsContainer.appendChild(confirmBtn);
-    
+
     // 添加悬停效果
     cancelBtn.addEventListener('mouseenter', () => {
       cancelBtn.style.background = '#e0e0e0';
@@ -547,14 +546,14 @@ function showConfirmDialog(title, message, confirmText = '确认', cancelText = 
     cancelBtn.addEventListener('mouseleave', () => {
       cancelBtn.style.background = '#f0f0f0';
     });
-    
+
     confirmBtn.addEventListener('mouseenter', () => {
       confirmBtn.style.background = '#c0392b';
     });
     confirmBtn.addEventListener('mouseleave', () => {
       confirmBtn.style.background = '#e74c3c';
     });
-    
+
     // 添加动画样式
     const style = document.createElement('style');
     style.textContent = `
@@ -568,11 +567,11 @@ function showConfirmDialog(title, message, confirmText = '确认', cancelText = 
       }
     `;
     document.head.appendChild(style);
-    
+
     // 添加到页面
     overlay.appendChild(dialog);
     document.body.appendChild(overlay);
-    
+
     // 点击遮罩层关闭
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) {
@@ -580,7 +579,7 @@ function showConfirmDialog(title, message, confirmText = '确认', cancelText = 
         resolve(false);
       }
     });
-    
+
     // 按ESC键关闭
     const handleEsc = (e) => {
       if (e.key === 'Escape') {
@@ -603,7 +602,7 @@ function enterDeleteMode() {
   // 清空之前的选择
   selectedImages.clear();
   // 更新所有卡片样式
-  document.querySelectorAll('.image-item').forEach(item => {
+  document.querySelectorAll('.image-card').forEach(item => {
     updateImageItemStyle(item, false);
   });
   // 显示操作提示
@@ -620,7 +619,7 @@ function exitDeleteMode() {
   // 清空选择
   selectedImages.clear();
   // 更新所有卡片样式
-  document.querySelectorAll('.image-item').forEach(item => {
+  document.querySelectorAll('.image-card').forEach(item => {
     updateImageItemStyle(item, false);
   });
 }
@@ -631,11 +630,11 @@ async function handleConfirmSelection() {
     showToast('请选择要删除的图片', 2000);
     return;
   }
-  
+
   // 输出选中的ID，便于调试
   console.log('准备删除的图片ID:', Array.from(selectedImages));
   console.log('选中的图片数量:', selectedImages.size);
-  
+
   // 第一次确认：确认选择的图片数量
   const firstConfirm = await showConfirmDialog(
     '确认选择',
@@ -643,11 +642,11 @@ async function handleConfirmSelection() {
     '继续删除',
     '取消选择'
   );
-  
+
   if (!firstConfirm) {
     return;
   }
-  
+
   // 第二次确认：最终确认删除
   const secondConfirm = await showConfirmDialog(
     '最终确认',
@@ -655,11 +654,11 @@ async function handleConfirmSelection() {
     '确认删除',
     '取消删除'
   );
-  
+
   if (!secondConfirm) {
     return;
   }
-  
+
   // 执行删除操作
   try {
     const response = await fetch('/api/images', {
@@ -670,9 +669,9 @@ async function handleConfirmSelection() {
       credentials: 'include',
       body: JSON.stringify({ ids: Array.from(selectedImages) })
     });
-    
+
     const data = await response.json();
-    
+
     if (response.ok && data.success) {
       showToast(`成功删除 ${data.deletedFromD1} 张图片`, 2000);
       exitDeleteMode();
@@ -699,7 +698,7 @@ async function init() {
   if (!isLoggedIn) {
     return;
   }
-  
+
   initEventListeners();
   loadImages();
 }

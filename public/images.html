@@ -1,284 +1,122 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" href="/favicon.png" type="image/png">
-    <title>图片列表 - 颜值打分机 😻</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="/images.css" />
-    <style>
-      /* 全局样式 */
-      body {
-        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-        background: linear-gradient(135deg, #fef5ef, #ffeaea);
-        color: #444;
-        min-height: 100vh;
-        margin: 0;
-        padding: 20px;
-      }
-      
-      .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        background: white;
-        padding: 30px;
-        border-radius: 16px;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-      }
-      
-      h1 {
-        color: #e85d75;
-        margin-top: 0;
-        font-size: 2em;
-        text-align: center;
-        margin-bottom: 30px;
-      }
-      
-      /* 筛选和排序样式 */
-      .filter-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 20px;
-        margin-bottom: 30px;
-        padding: 20px;
-        background: #f9f9f9;
-        border-radius: 12px;
-      }
-      
-      .filter-group {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      
-      label {
-        font-weight: 600;
-        color: #666;
-      }
-      
-      input, select, button {
-        padding: 10px 15px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        font-size: 14px;
-      }
-      
-      button {
-        background: #e85d75;
-        color: white;
-        border: none;
-        cursor: pointer;
-        transition: background 0.3s ease;
-      }
-      
-      button:hover {
-        background: #d1445a;
-      }
-      
-      button.secondary {
-        background: #f0f0f0;
-        color: #666;
-      }
-      
-      button.secondary:hover {
-        background: #e0e0e0;
-      }
-      
-      /* 图片网格样式 */
-      .image-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        gap: 20px;
-        margin-bottom: 30px;
-      }
-      
-      .image-item {
-        background: #f9f9f9;
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-        transition: box-shadow 0.3s ease;
-      }
-      
-      .image-item:hover {
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-      }
-      
-      .image-item img {
-        width: 100%;
-        height: 200px;
-        object-fit: cover;
-      }
-      
-      .image-info {
-        padding: 15px;
-      }
-      
-      .image-info h3 {
-        margin: 0 0 10px 0;
-        color: #e85d75;
-        font-size: 18px;
-      }
-      
-      .image-info p {
-        margin: 5px 0;
-        color: #666;
-        font-size: 14px;
-      }
-      
-      /* 分页样式 */
-      .pagination {
-        display: flex;
-        justify-content: center;
-        gap: 10px;
-        margin-top: 30px;
-      }
-      
-      .pagination button {
-        min-width: 40px;
-      }
-      
-      .pagination button.active {
-        background: #d1445a;
-      }
-      
-      /* 加载状态 */
-      .loading {
-        text-align: center;
-        padding: 50px;
-        color: #666;
-      }
-      
-      .loading::after {
-        content: "";
-        display: inline-block;
-        width: 20px;
-        height: 20px;
-        border: 2px solid #f3f3f3;
-        border-top: 2px solid #e85d75;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin-left: 10px;
-      }
-      
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-      
-      /* 空状态 */
-      .empty {
-        text-align: center;
-        padding: 100px 20px;
-        color: #999;
-      }
-      
-      .empty-icon {
-        font-size: 60px;
-        margin-bottom: 20px;
-      }
-      
-      /* 返回首页链接 */
-      .back-link {
-        text-align: center;
-        margin-top: 30px;
-      }
-      
-      .back-link a {
-        color: #e85d75;
-        text-decoration: none;
-        font-weight: 600;
-      }
-      
-      .back-link a:hover {
-        text-decoration: underline;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h1>图片列表 - 颜值打分机 😻</h1>
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <span id="username-display" style="color: #666;"></span>
-          <button id="logout-btn" class="secondary">登出</button>
-        </div>
-      </div>
-      
-      <!-- 固定在顶部的筛选和操作栏 -->
-      <div style="position: sticky; top: 0; background: white; z-index: 100; padding: 15px 0; border-bottom: 1px solid #eee; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-        <!-- 筛选和排序 -->
-        <div class="filter-container">
-          <div class="filter-group">
-            <label for="date-from">开始日期:</label>
-            <input type="date" id="date-from" />
-          </div>
-          
-          <div class="filter-group">
-            <label for="date-to">结束日期:</label>
-            <input type="date" id="date-to" />
-          </div>
-          
-          <div class="filter-group">
-            <label for="sort-by">排序方式:</label>
-            <select id="sort-by">
-              <option value="timestamp">按时间</option>
-              <option value="score">按颜值</option>
-            </select>
-          </div>
-          
-          <div class="filter-group">
-            <label for="order">排序方向:</label>
-            <select id="order">
-              <option value="desc">降序</option>
-              <option value="asc">升序</option>
-            </select>
-          </div>
-          
-          <div class="filter-group">
-            <label for="limit">每页数量:</label>
-            <input type="number" id="limit" min="1" max="100" value="10" style="width: 80px;">
-          </div>
-          
-          <div class="filter-group">
-            <button id="apply-filter">应用筛选</button>
-            <button id="reset-filter" class="secondary">重置</button>
-          </div>
-        </div>
-        
-        <!-- 批量操作栏 -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0 0 0;">
-          <div style="display: flex; align-items: center; gap: 15px;">
-            
-            <button id="batch-delete" style="background: #e74c3c;">批量删除</button>
-            <button id="confirm-selection" style="background: #3498db; display: none;">确认选择</button>
-            <button id="cancel-delete" style="background: #95a5a6; display: none;" class="secondary">取消</button>
-          </div>
-          <div id="total-count" style="color: #666; font-weight: 600;"></div>
-        </div>
-      </div>
-      
-      <!-- 图片网格 -->
-      <div id="image-grid" class="image-grid"></div>
-      
-      <!-- 加载状态 -->
-      <div id="loading" class="loading" style="display: none;">加载中...</div>
-      
-      <!-- 空状态 -->
-      <div id="empty" class="empty" style="display: none;">
-        <div class="empty-icon">📷</div>
-        <h2>还没有图片记录哦~</h2>
-      </div>
-      
-      <!-- 分页 -->
-      <div id="pagination" class="pagination"></div>
-      
-      <!-- 返回首页 -->
-      <div class="back-link">
-        <a href="/">返回首页</a>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" href="/favicon.png" type="image/png">
+  <title>图片列表 - 颜值打分机 😻</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+  <div class="container image-grid-container">
+    <div class="header-row">
+      <h1>图片列表 📸</h1>
+      <div style="display: flex; align-items: center; gap: 15px;">
+        <span id="username-display" style="color: var(--text-secondary); font-weight: 500;"></span>
+        <button id="logout-btn" class="secondary-btn"
+          style="margin:0; padding: 8px 16px; width: auto; font-size: 0.9rem;">退出登录</button>
       </div>
     </div>
-    
-    <script src="/images.js"></script>
-  </body>
+
+    <!-- 固定在顶部的筛选和操作栏 -->
+    <div class="filter-bar">
+      <!-- 筛选和排序 -->
+      <div class="filter-controls">
+        <div class="filter-group">
+          <label for="date-from">日期范围:</label>
+          <input type="date" id="date-from" />
+          <span style="color:var(--text-secondary)">-</span>
+          <input type="date" id="date-to" />
+        </div>
+
+        <div class="filter-group">
+          <label for="sort-by">排序:</label>
+          <select id="sort-by">
+            <option value="timestamp">时间</option>
+            <option value="score">颜值</option>
+          </select>
+          <select id="order">
+            <option value="desc">降序</option>
+            <option value="asc">升序</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="limit">每页:</label>
+          <input type="number" id="limit" min="1" max="100" value="10" style="width: 60px;">
+        </div>
+
+        <div class="filter-group" style="margin-left: auto;">
+          <button id="apply-filter" style="width: auto; padding: 8px 16px; font-size: 0.9rem;">筛选</button>
+          <button id="reset-filter" class="secondary-btn"
+            style="width: auto; padding: 8px 16px; margin: 0; font-size: 0.9rem;">重置</button>
+        </div>
+      </div>
+
+      <!-- 批量操作栏 -->
+      <div class="batch-actions">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <button id="batch-delete" class="danger-btn"
+            style="width: auto; padding: 8px 16px; font-size: 0.9rem;">批量删除</button>
+          <button id="confirm-selection"
+            style="background: var(--primary-color); display: none; width: auto; padding: 8px 16px; font-size: 0.9rem;">确认删除</button>
+          <button id="cancel-delete" class="secondary-btn"
+            style="display: none; width: auto; padding: 8px 16px; margin: 0; font-size: 0.9rem;">取消</button>
+        </div>
+        <div id="total-count" style="color: var(--text-secondary); font-weight: 500; font-size: 0.9rem;"></div>
+      </div>
+    </div>
+
+    <!-- 图片网格 -->
+    <div id="image-grid" class="image-grid"></div>
+
+    <!-- 加载状态 -->
+    <div id="loading" style="text-align: center; padding: 40px; display: none;">
+      <div
+        style="display: inline-block; width: 30px; height: 30px; border: 3px solid #f3f3f3; border-top: 3px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite;">
+      </div>
+      <p style="color: var(--text-secondary); margin-top: 10px;">加载中...</p>
+    </div>
+
+    <!-- 空状态 -->
+    <div id="empty" style="text-align: center; padding: 60px 20px; color: var(--text-secondary); display: none;">
+      <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">📷</div>
+      <p>暂无图片记录</p>
+    </div>
+
+    <!-- 分页 -->
+    <div id="pagination" class="pagination"></div>
+
+    <!-- 返回首页 -->
+    <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #f3f4f6;">
+      <a href="/" style="color: var(--primary-color); text-decoration: none; font-weight: 600; font-size: 0.9rem;">←
+        返回首页打分</a>
+    </div>
+  </div>
+
+  <script src="/images.js"></script>
+  <script>
+    // Simple spin animation injection if not present (though style.css handles most)
+    // style.css doesn't have @keyframes spin if I didn't add it.
+    // I should add it to style.css or here.
+    // Wait, inline styles above use 'animation: spin'.
+  </script>
+  <style>
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</body>
+
 </html>

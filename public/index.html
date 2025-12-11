@@ -1,339 +1,260 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" href="/favicon.png" type="image/png">
-    <title>颜值打分机 😻</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>
-    <style>
-      body {
-        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-        background: linear-gradient(135deg, #fef5ef, #ffeaea);
-        color: #444;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-        margin: 0;
-        padding: 20px;
-      }
-      .container {
-        background: white;
-        padding: 30px 20px;
-        border-radius: 16px;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-        text-align: center;
-        max-width: 400px;
-        width: 100%;
-      }
-      h1 {
-        color: #e85d75;
-        margin-top: 0;
-        font-size: 1.8em;
-      }
-      p {
-        margin: 10px 0 20px;
-        font-size: 0.95em;
-        color: #666;
-      }
-      input[type="file"] {
-        margin: 15px 0;
-        display: block;
-        width: 100%;
-      }
-      button {
-        background: #e85d75;
-        color: white;
-        border: none;
-        padding: 12px 24px;
-        border-radius: 30px;
-        font-size: 16px;
-        cursor: pointer;
-        width: 100%;
-        transition: background 0.3s ease;
-        margin-bottom: 10px;
-      }
-      button:hover {
-        background: #d1445a;
-      }
-      .secondary-btn {
-        background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);
-        color: #666;
-        margin-top: 20px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        transition: all 0.3s ease;
-      }
-      .secondary-btn:hover {
-        background: linear-gradient(135deg, #e0e0e0 0%, #d0d0d0 100%);
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-      }
-      .turnstile-container {
-        margin: 15px 0;
-        display: flex;
-        justify-content: center;
-      }
-      #preview {
-        display: none;
-        max-width: 100%;
-        max-height: 220px;
-        margin: 18px auto 10px;
-        border-radius: 12px;
-        box-shadow: 0 4px 16px rgba(232,93,117,0.10);
-        object-fit: cover;
-        transition: box-shadow 0.3s;
-      }
-      #preview.show {
-        display: block;
-      }
-      #result {
-        margin-top: 20px;
-        font-size: 16px;
-        font-weight: 600;
-        min-height: 48px;
-        color: #555;
-        word-break: break-word;
-        white-space: pre-wrap;
-      }
 
-      @media (max-width: 500px) {
-        .container {
-          padding: 20px 15px;
-        }
-        h1 {
-          font-size: 1.5em;
-        }
-        button {
-          font-size: 15px;
-          padding: 10px 20px;
-        }
-        p {
-          font-size: 0.9em;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h1>颜值打分机 🚀</h1>
-      <p>上传一张照片，让 AI 猫猫帮你评分吧～</p>
-      <label for="fileInput">选择照片：</label>
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" href="/favicon.png" type="image/png">
+  <title>颜值打分机 😻</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>
+</head>
+
+<body>
+  <div class="container">
+    <h1>颜值打分机 ✨</h1>
+    <p>上传一张照片，让 AI 猫猫帮你评分吧～</p>
+
+    <div class="file-upload-wrapper">
       <input type="file" id="fileInput" accept="image/*" />
-      <div class="turnstile-container">
-        <div class="cf-turnstile" id="turnstile-widget" data-theme="light"></div>
-      </div>
-      <button id="submitBtn">开始评分</button>
-      <img id="preview" />
-      <div id="result"></div>
-      <button id="imagesBtn" class="secondary-btn" style="display: none;">浏览所有颜值照片</button>
-      <button id="loginBtn" class="secondary-btn" onclick="window.location.href='/api/auth/github'" style="display: none;">GitHub登录</button>
-      <button id="logoutBtn" class="secondary-btn" onclick="handleLogout()" style="display: none;">登出</button>
+      <label for="fileInput" class="file-upload-label" id="uploadLabel">
+        <div class="upload-placeholder">
+          <svg class="file-upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+            </path>
+          </svg>
+          <span class="file-upload-text">点击选择照片</span>
+        </div>
+        <img id="preview" class="upload-preview" alt="Preview" />
+      </label>
     </div>
 
-    <script>
-      // 文件选择后立即预览
-      document.getElementById("fileInput").onchange = function () {
-        const fileInput = this;
-        if (!fileInput.files.length) {
-          document.getElementById("preview").classList.remove("show");
-          return;
-        }
-        const file = fileInput.files[0];
-        const reader = new FileReader();
-        reader.onload = function () {
-          const previewImg = document.getElementById("preview");
-          previewImg.src = reader.result;
-          previewImg.classList.add("show");
-        };
-        reader.readAsDataURL(file);
-      };
+    <div class="turnstile-container">
+      <div class="cf-turnstile" id="turnstile-widget" data-theme="light"></div>
+    </div>
 
-      // 动态初始化 Turnstile 组件
-      async function initTurnstile() {
+    <button id="submitBtn">开始评分</button>
+
+    <div id="result"></div>
+
+    <button id="imagesBtn" class="secondary-btn" style="display: none;">浏览所有颜值照片</button>
+    <button id="loginBtn" class="secondary-btn" onclick="window.location.href='/api/auth/github'"
+      style="display: none;">GitHub 登录</button>
+    <button id="logoutBtn" class="secondary-btn" onclick="handleLogout()" style="display: none;">退出登录</button>
+  </div>
+
+  <script>
+    // 文件选择后立即预览
+    document.getElementById("fileInput").onchange = function () {
+      const fileInput = this;
+      const previewImg = document.getElementById("preview");
+      const uploadLabel = document.getElementById("uploadLabel");
+
+      if (!fileInput.files.length) {
+        previewImg.classList.remove("show");
+        uploadLabel.classList.remove("has-image");
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+      reader.onload = function () {
+        previewImg.src = reader.result;
+        previewImg.classList.add("show");
+        uploadLabel.classList.add("has-image");
+      };
+      reader.readAsDataURL(file);
+    };
+
+    // 动态初始化 Turnstile 组件
+    async function initTurnstile() {
+      try {
+        const res = await fetch('/api/turnstile');
+        const data = await res.json();
+
+        if (data.site_key) {
+          // 使用获取到的站点密钥初始化 Turnstile 组件
+          turnstile.render('#turnstile-widget', {
+            sitekey: data.site_key,
+            theme: 'light'
+          });
+        } else {
+          console.warn('Turnstile site key not configured');
+        }
+      } catch (error) {
+        console.error('Failed to initialize Turnstile:', error);
+      }
+    }
+
+    // 页面加载完成后初始化 Turnstile 和事件监听
+    document.addEventListener('DOMContentLoaded', () => {
+      initTurnstile();
+
+      // 添加查看所有图片按钮的点击事件
+      const imagesBtn = document.getElementById('imagesBtn');
+      if (imagesBtn) {
+        imagesBtn.addEventListener('click', () => {
+          window.location.href = '/images';
+        });
+      }
+
+      // 检查登录状态并显示相应按钮
+      async function checkLoginStatus() {
         try {
-          const res = await fetch('/api/turnstile');
-          const data = await res.json();
-          
-          if (data.site_key) {
-            // 使用获取到的站点密钥初始化 Turnstile 组件
-            turnstile.render('#turnstile-widget', {
-              sitekey: data.site_key,
-              theme: 'light'
-            });
+          const response = await fetch('/api/auth', { credentials: 'include' });
+          const data = await response.json();
+
+          const loginBtn = document.getElementById('loginBtn');
+          const logoutBtn = document.getElementById('logoutBtn');
+          const imagesBtn = document.getElementById('imagesBtn');
+
+          if (data.success) {
+            // 已登录，显示登出和图片按钮，隐藏登录按钮
+            loginBtn.style.display = 'none';
+            logoutBtn.style.display = 'block';
+            imagesBtn.style.display = 'block';
           } else {
-            console.warn('Turnstile site key not configured');
+            // 未登录，隐藏所有按钮（登录按钮通过点击标题5次显示）
+            loginBtn.style.display = 'none';
+            logoutBtn.style.display = 'none';
+            imagesBtn.style.display = 'none';
           }
         } catch (error) {
-          console.error('Failed to initialize Turnstile:', error);
+          console.error('检查登录状态失败:', error);
+          // 出错时隐藏所有按钮
+          document.getElementById('loginBtn').style.display = 'none';
+          document.getElementById('logoutBtn').style.display = 'none';
+          document.getElementById('imagesBtn').style.display = 'none';
         }
       }
 
-      // 页面加载完成后初始化 Turnstile 和事件监听
-      document.addEventListener('DOMContentLoaded', () => {
-        initTurnstile();
-        
-        // 添加查看所有图片按钮的点击事件
-        const imagesBtn = document.getElementById('imagesBtn');
-        if (imagesBtn) {
-          imagesBtn.addEventListener('click', () => {
-            window.location.href = '/images';
-          });
-        }
-        
-        // 检查登录状态并显示相应按钮
-        async function checkLoginStatus() {
+      // 页面加载时检查登录状态
+      checkLoginStatus();
+    });
+
+    // 登出函数
+    async function handleLogout() {
+      try {
+        await fetch('/api/auth', {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+        // 登出成功，刷新页面
+        window.location.reload();
+      } catch (error) {
+        console.error('登出失败:', error);
+        alert('登出失败，请稍后重试');
+      }
+    }
+
+    // 标题点击计数器
+    let clickCount = 0;
+    const titleElement = document.querySelector('h1');
+
+    // 点击事件处理
+    if (titleElement) {
+      titleElement.addEventListener('click', async () => {
+        clickCount++;
+
+        // 点击5次触发后门
+        if (clickCount === 5) {
+          // 检查登录状态
           try {
             const response = await fetch('/api/auth', { credentials: 'include' });
             const data = await response.json();
-            
-            const loginBtn = document.getElementById('loginBtn');
-            const logoutBtn = document.getElementById('logoutBtn');
-            const imagesBtn = document.getElementById('imagesBtn');
-            
+
             if (data.success) {
-              // 已登录，显示登出和图片按钮，隐藏登录按钮
-              loginBtn.style.display = 'none';
-              logoutBtn.style.display = 'block';
-              imagesBtn.style.display = 'block';
+              // 已登录，直接进入图片列表
+              window.location.href = '/images';
             } else {
-              // 未登录，隐藏所有按钮（登录按钮通过点击标题5次显示）
-              loginBtn.style.display = 'none';
-              logoutBtn.style.display = 'none';
-              imagesBtn.style.display = 'none';
+              // 未登录，跳转到GitHub登录
+              window.location.href = '/api/auth/github';
             }
           } catch (error) {
             console.error('检查登录状态失败:', error);
-            // 出错时隐藏所有按钮
-            document.getElementById('loginBtn').style.display = 'none';
-            document.getElementById('logoutBtn').style.display = 'none';
-            document.getElementById('imagesBtn').style.display = 'none';
+            // 出错时直接跳转到登录
+            window.location.href = '/api/auth/github';
           }
-        }
-        
-        // 页面加载时检查登录状态
-        checkLoginStatus();
-      });
 
-      // 登出函数
-      async function handleLogout() {
+          // 重置计数器
+          clickCount = 0;
+        }
+      });
+    }
+
+    document.getElementById("submitBtn").onclick = async function () {
+      const fileInput = document.getElementById("fileInput");
+      if (!fileInput.files.length) {
+        alert("喵～先选张照片才能评分哦！");
+        return;
+      }
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+      reader.onload = async function () {
+        const base64 = reader.result.split(",")[1];
+        const resultDiv = document.getElementById("result");
+        resultDiv.innerText = "评分中，猫猫正在认真分析中喵...";
+
         try {
-          await fetch('/api/auth', {
-            method: 'DELETE',
-            credentials: 'include'
+          // 获取 Turnstile 响应令牌
+          const token = turnstile.getResponse();
+          if (!token) {
+            resultDiv.innerText = "验证失败，请完成验证码喵～";
+            return;
+          }
+
+          const res = await fetch("/api/score", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              image: base64,
+              turnstile_response: token
+            }),
           });
-          // 登出成功，刷新页面
-          window.location.reload();
-        } catch (error) {
-          console.error('登出失败:', error);
-          alert('登出失败，请稍后重试');
-        }
-      }
-      
-      // 标题点击计数器
-      let clickCount = 0;
-      const titleElement = document.querySelector('h1');
-      
-      // 点击事件处理
-      if (titleElement) {
-        titleElement.addEventListener('click', async () => {
-          clickCount++;
-          
-          // 点击5次触发后门
-          if (clickCount === 5) {
-            // 检查登录状态
-            try {
-              const response = await fetch('/api/auth', { credentials: 'include' });
-              const data = await response.json();
-              
-              if (data.success) {
-                // 已登录，直接进入图片列表
-                window.location.href = '/images';
-              } else {
-                // 未登录，跳转到GitHub登录
-                window.location.href = '/api/auth/github';
-              }
-            } catch (error) {
-              console.error('检查登录状态失败:', error);
-              // 出错时直接跳转到登录
-              window.location.href = '/api/auth/github';
-            }
-            
-            // 重置计数器
-            clickCount = 0;
-          }
-        });
-      }
-      
-      document.getElementById("submitBtn").onclick = async function () {
-        const fileInput = document.getElementById("fileInput");
-        if (!fileInput.files.length) {
-          alert("喵～先选张照片才能评分哦！");
-          return;
-        }
-        const file = fileInput.files[0];
-        const reader = new FileReader();
-        reader.onload = async function () {
-          const base64 = reader.result.split(",")[1];
-          const resultDiv = document.getElementById("result");
-          resultDiv.innerText = "评分中，猫猫正在认真分析中喵...";
-      
-          try {
-            // 获取 Turnstile 响应令牌
-            const token = turnstile.getResponse();
-            if (!token) {
-              resultDiv.innerText = "验证失败，请完成验证码喵～";
-              return;
-            }
-            
-            const res = await fetch("/api/score", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ 
-                image: base64, 
-                turnstile_response: token 
-              }),
-            });
-            if (!res.ok) throw new Error("接口请求失败喵～");
-            const data = await res.json();
-      
-            if (data.score !== undefined && data.score !== null) {
-              const score = Number(data.score.toFixed(1));
-              let msg = `颜值分数：${score} / 100 🐾\n\n`;
-      
-              // 💬 如果后端返回了 AI 生成的点评，就优先显示
-              if (data.comment) {
-                msg += `猫猫点评：${data.comment}\n\n`;
-              } else {
-                // 后端没返回 AI 文案，就走本地逻辑兜底
-                if (score < 40) {
-                  msg += "🐱 喵呜，内在美才是最最重要的！抱抱～";
-                } else if (score < 50) {
-                  msg += "💫 你有那种治愈系的可爱气质，慢慢展现更迷人喵～";
-                } else if (score < 60) {
-                  msg += "✨ 中等颜值，但有特别的小闪光点，越看越舒服～";
-                } else if (score < 70) {
-                  msg += "😻 哇，已经很有吸引力啦，有点明星气场呢！";
-                } else if (score < 80) {
-                  msg += "🌟 超棒！你走在街上绝对是回头率超高的小猫猫！";
-                } else {
-                  msg += "🔥 绝绝子！你的颜值突破天际，猫猫都要尖叫啦！";
-                }
-              }
-      
-              resultDiv.innerText = msg;
+          if (!res.ok) throw new Error("接口请求失败喵～");
+          const data = await res.json();
+
+          if (data.score !== undefined && data.score !== null) {
+            const score = Number(data.score.toFixed(1));
+            let msg = `颜值分数：${score} / 100 🐾\n\n`;
+
+            // 💬 如果后端返回了 AI 生成的点评，就优先显示
+            if (data.comment) {
+              msg += `猫猫点评：${data.comment}\n\n`;
             } else {
-              resultDiv.innerText = "检测失败，喵呜～换张更清晰的照片试试吧？";
+              // 后端没返回 AI 文案，就走本地逻辑兜底
+              if (score < 40) {
+                msg += "🐱 喵呜，内在美才是最最重要的！抱抱～";
+              } else if (score < 50) {
+                msg += "💫 你有那种治愈系的可爱气质，慢慢展现更迷人喵～";
+              } else if (score < 60) {
+                msg += "✨ 中等颜值，但有特别的小闪光点，越看越舒服～";
+              } else if (score < 70) {
+                msg += "😻 哇，已经很有吸引力啦，有点明星气场呢！";
+              } else if (score < 80) {
+                msg += "🌟 超棒！你走在街上绝对是回头率超高的小猫猫！";
+              } else {
+                msg += "🔥 绝绝子！你的颜值突破天际，猫猫都要尖叫啦！";
+              }
             }
-          } catch (e) {
-            resultDiv.innerText = "出错了喵～请稍后再试一下！";
-            console.error("评分请求错误:", e);
+
+            resultDiv.innerText = msg;
+          } else {
+            resultDiv.innerText = "检测失败，喵呜～换张更清晰的照片试试吧？";
           }
-        };
-        reader.readAsDataURL(file);
+        } catch (e) {
+          resultDiv.innerText = "出错了喵～请稍后再试一下！";
+          console.error("评分请求错误:", e);
+        }
       };
-      </script>
-      
-      
-  </body>
+      reader.readAsDataURL(file);
+    };
+  </script>
+</body>
+
 </html>
