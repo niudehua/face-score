@@ -40,37 +40,70 @@ export async function onRequestGet(context) {
     formData.append('client_id', GITHUB_CLIENT_ID);
     formData.append('client_secret', GITHUB_CLIENT_SECRET);
     formData.append('code', code);
+    const formDataString = formData.toString();
     
-    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json'
-      },
-      body: formData.toString()
-    });
+    console.log(`[DEBUG] 请求URL: https://github.com/login/oauth/access_token`);
+    console.log(`[DEBUG] 请求方法: POST`);
+    console.log(`[DEBUG] 请求体: ${formDataString}`);
+    console.log(`[DEBUG] 请求体长度: ${formDataString.length}`);
     
-    console.log(`[DEBUG] 令牌响应状态: ${tokenResponse.status}`);
-    
-    // 检查响应内容类型
-    const contentType = tokenResponse.headers.get('content-type');
-    console.log(`[DEBUG] 令牌响应内容类型: ${contentType}`);
-    
-    // 读取响应文本，以便查看实际返回的内容
-    const tokenResponseText = await tokenResponse.text();
-    console.log(`[DEBUG] 令牌响应文本: ${tokenResponseText}`);
-    
-    // 尝试解析为JSON
-    let tokenData;
     try {
-      tokenData = JSON.parse(tokenResponseText);
-      console.log(`[DEBUG] 令牌响应数据: ${JSON.stringify(tokenData)}`);
-    } catch (parseError) {
-      throw new Error(`Failed to parse token response as JSON: ${tokenResponseText}, error: ${parseError.message}`);
-    }
-    
-    if (!tokenData.access_token) {
-      throw new Error(`Failed to get access token: ${JSON.stringify(tokenData)}`);
+      const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        },
+        body: formDataString
+      });
+      
+      console.log(`[DEBUG] 令牌响应状态: ${tokenResponse.status}`);
+      
+      // 检查响应内容类型
+      const contentType = tokenResponse.headers.get('content-type');
+      console.log(`[DEBUG] 令牌响应内容类型: ${contentType}`);
+      
+      // 获取所有响应头
+      const headers = {};
+      for (const [key, value] of tokenResponse.headers) {
+        headers[key] = value;
+      }
+      console.log(`[DEBUG] 所有响应头: ${JSON.stringify(headers)}`);
+      
+      // 读取响应文本，以便查看实际返回的内容
+      const tokenResponseText = await tokenResponse.text();
+      console.log(`[DEBUG] 令牌响应文本长度: ${tokenResponseText.length}`);
+      console.log(`[DEBUG] 令牌响应文本: "${tokenResponseText}"`);
+      
+      // 清理响应文本，去除可能的BOM和空白字符
+      const cleanedText = tokenResponseText.trim();
+      console.log(`[DEBUG] 清理后的响应文本: "${cleanedText}"`);
+      
+      // 尝试解析为JSON
+      let tokenData;
+      try {
+        tokenData = JSON.parse(cleanedText);
+        console.log(`[DEBUG] 令牌响应数据: ${JSON.stringify(tokenData)}`);
+      } catch (parseError) {
+        // 如果JSON解析失败，尝试检查是否是HTML响应
+        if (cleanedText.startsWith('<')) {
+          throw new Error(`GitHub returned HTML instead of JSON: ${cleanedText.substring(0, 100)}...`);
+        }
+        throw new Error(`Failed to parse token response as JSON: "${cleanedText}", error: ${parseError.message}`);
+      }
+      
+      if (!tokenData.access_token) {
+        throw new Error(`Failed to get access token: ${JSON.stringify(tokenData)}`);
+      }
+    } catch (fetchError) {
+      console.error(`[DEBUG] fetch错误: ${fetchError.message}`);
+      console.error(`[DEBUG] fetch错误堆栈: ${fetchError.stack}`);
+      // 尝试使用更简单的HTTP客户端实现
+      console.log('[DEBUG] 尝试使用更简单的HTTP客户端实现');
+      
+      // 注意：在Cloudflare Workers环境中，我们不能使用其他HTTP客户端，所以这里只是为了调试
+      throw new Error(`Network error when calling GitHub API: ${fetchError.message}`);
     }
     
     // 2. 使用访问令牌获取用户信息
