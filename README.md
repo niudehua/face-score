@@ -56,6 +56,10 @@ face-score/
 
 本项目依赖以下环境变量和资源绑定：
 
+### 环境变量配置
+
+本项目依赖以下环境变量和资源绑定：
+
 ### 环境变量
 - `FACEPP_KEY`：Face++ API Key
 - `FACEPP_SECRET`：Face++ API Secret
@@ -63,6 +67,7 @@ face-score/
 - `TURNSTILE_SECRET_KEY`：Cloudflare Turnstile 服务器端密钥（可选，用于后端验证）
 - `ADMIN_USERNAME`：管理员用户名（用于管理页面登录）
 - `ADMIN_PASSWORD`：管理员密码（用于管理页面登录）
+- `AI_MODEL_ID`：Cloudflare AI 模型 ID（可选，默认：@cf/meta/llama-3-8b-instruct）
 
 ### Cloudflare 资源绑定
 - `AI`：Cloudflare AI 绑定（自动提供，无需手动设置）

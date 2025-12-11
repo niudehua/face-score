@@ -40,6 +40,10 @@ export async function onRequestPost(context) {
     limit: 10, // 每分钟10次请求
     windowSeconds: 60
   });
+  
+  // 获取AI模型ID，支持通过环境变量配置
+  const AI_MODEL_ID = context.env.AI_MODEL_ID || "@cf/meta/llama-3-8b-instruct";
+  log(`🤖 [DEBUG] 使用的AI模型: ${AI_MODEL_ID}`);
 
   if (rateLimitResult.limited) {
     log(`❌ [ERROR] 请求被限流: ${rateLimitResult.response.status}`);
@@ -238,7 +242,7 @@ export async function onRequestPost(context) {
       try {
         const ai = context.env.AI;
         if (ai && typeof ai.run === "function") {
-          const aiRes = await ai.run("@cf/meta/llama-3-8b-instruct", {
+          const aiRes = await ai.run(AI_MODEL_ID, {
             messages: [{ role: "user", content: prompt }],
           });
           
