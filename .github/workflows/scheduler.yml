@@ -1,8 +1,8 @@
 name: Scheduled Tasks
 on:
   schedule:
-    # 每周日凌晨 2 点运行
-    - cron: '0 2 * * 0'
+    # 每天下午18点运行
+    - cron: '0 18 * * *'
   workflow_dispatch: # 允许手动触发
 
 jobs:
