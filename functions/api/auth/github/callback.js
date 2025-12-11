@@ -176,7 +176,8 @@ export async function onRequestGet(context) {
     console.log('[DEBUG] 使用访问令牌获取用户信息');
     const userResponse = await fetch('https://api.github.com/user', {
       headers: {
-        'Authorization': `Bearer ${tokenData.access_token}`
+        'Authorization': `Bearer ${tokenData.access_token}`,
+        'User-Agent': 'Face-Score-App'
       }
     });
 
