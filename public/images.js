@@ -92,11 +92,11 @@ async function verifyLogin() {
     }
     
     // 未登录或登录失败，跳转到登录页面
-    window.location.href = '/login.html';
+    window.location.href = '/login';
     return false;
   } catch (error) {
     console.error('验证登录失败:', error);
-    window.location.href = '/login.html';
+    window.location.href = '/login';
     return false;
   }
 }
@@ -110,7 +110,7 @@ async function handleLogout() {
     });
     
     // 登出成功，跳转到登录页面
-    window.location.href = '/login.html';
+    window.location.href = '/login';
   } catch (error) {
     console.error('登出失败:', error);
     alert('登出失败，请稍后重试');
@@ -194,7 +194,7 @@ async function loadImages(page = 1) {
       loading.style.display = 'none';
       if (data.error === '未登录' || data.error === '会话已过期') {
         // 未登录或会话过期，跳转到登录页面
-        window.location.href = '/login.html';
+        window.location.href = '/login';
       } else {
         alert(data.error);
       }
