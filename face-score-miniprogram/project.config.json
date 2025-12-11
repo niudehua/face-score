@@ -24,5 +24,6 @@
     "include": []
   },
   "appid": "wx6bbbcfc7fd1981e2",
-  "editorSetting": {}
+  "editorSetting": {},
+  "description": "注意：此文件中的appid仅用于微信开发者工具开发，实际部署时会使用GitHub Secrets中的WECHAT_APPID值"
 }

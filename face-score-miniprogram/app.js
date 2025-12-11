@@ -1,11 +1,16 @@
 // app.js
+// 引入配置文件
+const config = require('./config/index');
+
 App({
   onLaunch() {
     // 小程序初始化时执行
     console.log('颜值打分机小程序启动');
+    console.log('当前环境配置:', config);
   },
   globalData: {
     // 全局数据
-    apiUrl: 'https://face-score.niudehua.cn/api/score' // 实际部署的API地址
+    config: config, // 完整配置
+    apiUrl: config.apiUrl // 从配置文件获取API地址
   }
 })

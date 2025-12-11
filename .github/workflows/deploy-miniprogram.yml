@@ -1,0 +1,72 @@
+name: 部署微信小程序
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'face-score-miniprogram/**'  # 只有修改小程序目录才触发
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 检出代码
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      # 2. 设置Node.js环境
+      - name: 设置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      # 3. 安装miniprogram-ci
+      - name: 安装微信小程序CI工具
+        run: npm install -g miniprogram-ci
+
+      # 4. 进入小程序目录
+      - name: 进入小程序目录
+        working-directory: ./face-score-miniprogram
+        run: pwd
+
+      # 5. 配置私钥
+      - name: 配置私钥
+        working-directory: ./face-score-miniprogram
+        run: |
+          echo "${{ secrets.WECHAT_PRIVATE_KEY }}" | base64 -d > private.key
+          ls -la private.key
+
+      # 6. 配置环境变量
+      - name: 配置环境变量
+        working-directory: ./face-score-miniprogram
+        run: |
+          echo "NODE_ENV=production" >> .env
+          echo "APPID=${{ secrets.WECHAT_APPID }}" >> .env
+          echo "API_URL=${{ secrets.API_URL }}" >> .env
+          cat .env
+
+      # 7. 上传小程序代码
+      - name: 上传小程序代码
+        working-directory: ./face-score-miniprogram
+        run: |
+          miniprogram-ci upload \
+            --appid ${{ secrets.WECHAT_APPID }} \
+            --privateKeyPath private.key \
+            --projectPath . \
+            --version "${{ github.sha }}" \
+            --desc "自动部署 - ${{ github.event.head_commit.message }}" \
+            --robot 1 \
+            --setting.es6 true \
+            --setting.minify true
+
+      # 8. 清理临时文件
+      - name: 清理私钥
+        if: always()
+        working-directory: ./face-score-miniprogram
+        run: rm -f private.key
+
+      # 9. 输出部署结果
+      - name: 部署完成
+        run: echo "小程序部署成功！"
