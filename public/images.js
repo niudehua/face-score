@@ -117,23 +117,6 @@ async function handleLogout() {
   }
 }
 
-// 动态调整图片大小
-function adjustImageSize() {
-  const imageGrid = document.getElementById('image-grid');
-  let columns = 4; // 默认4列
-
-  // 根据limit调整列数
-  if (limit === 20) {
-    columns = 5;
-  } else if (limit === 50) {
-    columns = 6;
-  } else if (limit === 100) {
-    columns = 8;
-  }
-
-  // 设置grid-template-columns
-  imageGrid.style.gridTemplateColumns = `repeat(auto-fill, minmax(${Math.floor(100 / columns)}%, 1fr))`;
-}
 
 // 加载图片列表
 async function loadImages(page = 1) {
@@ -178,9 +161,6 @@ async function loadImages(page = 1) {
         loading.style.display = 'none';
         empty.style.display = 'block';
       } else {
-        // 调整图片大小
-        adjustImageSize();
-
         // 渲染图片网格
         renderImageGrid(images);
 
@@ -217,7 +197,7 @@ function renderImageGrid(images) {
 
     // 渲染HTML
     imageItem.innerHTML = `
-      <div style="position: relative;">
+      <div class="image-wrapper">
         <img src="${image.image_url}" alt="颜值图片">
         <div class="score-badge">${image.score.toFixed(1)}</div>
       </div>
