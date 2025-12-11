@@ -42,8 +42,18 @@ function initEventListeners() {
     sortOrder = e.target.value;
     loadImages();
   });
+  limitSelect.addEventListener('input', (e) => {
+    // 验证输入值在1-100之间
+    let value = parseInt(e.target.value);
+    if (isNaN(value) || value < 1) {
+      value = 1;
+    } else if (value > 100) {
+      value = 100;
+    }
+    e.target.value = value;
+    limit = value;
+  });
   limitSelect.addEventListener('change', (e) => {
-    limit = parseInt(e.target.value);
     loadImages(1); // 重置到第一页
   });
   
@@ -219,6 +229,12 @@ function renderImageGrid(images) {
       
       // 更新全选状态
       updateSelectAllStatus();
+    });
+    
+    // 防止复选框区域点击触发图片预览
+    const checkboxContainer = imageItem.querySelector('.image-checkbox').parentElement;
+    checkboxContainer.addEventListener('click', (e) => {
+      e.stopPropagation();
     });
     
     // 添加图片点击事件（预览）

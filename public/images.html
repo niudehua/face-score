@@ -206,60 +206,58 @@
         </div>
       </div>
       
-      <!-- 筛选和排序 -->
-      <div class="filter-container">
-        <div class="filter-group">
-          <label for="date-from">开始日期:</label>
-          <input type="date" id="date-from" />
-        </div>
-        
-        <div class="filter-group">
-          <label for="date-to">结束日期:</label>
-          <input type="date" id="date-to" />
-        </div>
-        
-        <div class="filter-group">
-          <label for="sort-by">排序方式:</label>
-          <select id="sort-by">
-            <option value="timestamp">按时间</option>
-            <option value="score">按颜值</option>
-          </select>
-        </div>
-        
-        <div class="filter-group">
-          <label for="order">排序方向:</label>
-          <select id="order">
-            <option value="desc">降序</option>
-            <option value="asc">升序</option>
-          </select>
-        </div>
-        
-        <div class="filter-group">
-          <label for="limit">每页数量:</label>
-          <select id="limit">
-            <option value="10">10</option>
-            <option value="20">20</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-          </select>
-        </div>
-        
-        <div class="filter-group">
-          <button id="apply-filter">应用筛选</button>
-          <button id="reset-filter" class="secondary">重置</button>
-        </div>
-      </div>
-      
-      <!-- 批量操作栏 -->
-      <div style="display: flex; justify-content: space-between; align-items: center; margin: 20px 0;">
-        <div style="display: flex; align-items: center; gap: 15px;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <input type="checkbox" id="select-all" />
-            <label for="select-all">全选</label>
+      <!-- 固定在顶部的筛选和操作栏 -->
+      <div style="position: sticky; top: 0; background: white; z-index: 100; padding: 15px 0; border-bottom: 1px solid #eee; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <!-- 筛选和排序 -->
+        <div class="filter-container">
+          <div class="filter-group">
+            <label for="date-from">开始日期:</label>
+            <input type="date" id="date-from" />
           </div>
-          <button id="batch-delete" style="background: #e74c3c;">批量删除</button>
+          
+          <div class="filter-group">
+            <label for="date-to">结束日期:</label>
+            <input type="date" id="date-to" />
+          </div>
+          
+          <div class="filter-group">
+            <label for="sort-by">排序方式:</label>
+            <select id="sort-by">
+              <option value="timestamp">按时间</option>
+              <option value="score">按颜值</option>
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label for="order">排序方向:</label>
+            <select id="order">
+              <option value="desc">降序</option>
+              <option value="asc">升序</option>
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label for="limit">每页数量:</label>
+            <input type="number" id="limit" min="1" max="100" value="10" style="width: 80px;">
+          </div>
+          
+          <div class="filter-group">
+            <button id="apply-filter">应用筛选</button>
+            <button id="reset-filter" class="secondary">重置</button>
+          </div>
         </div>
-        <div id="total-count" style="color: #666; font-weight: 600;"></div>
+        
+        <!-- 批量操作栏 -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0 0 0;">
+          <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" id="select-all" />
+              <label for="select-all">全选</label>
+            </div>
+            <button id="batch-delete" style="background: #e74c3c;">批量删除</button>
+          </div>
+          <div id="total-count" style="color: #666; font-weight: 600;"></div>
+        </div>
       </div>
       
       <!-- 图片网格 -->
