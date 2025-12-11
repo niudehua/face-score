@@ -10,6 +10,7 @@ let sortOrder = 'desc';
 let dateFrom = '';
 let dateTo = '';
 let selectedImages = new Set();
+let deleteMode = false;
 
 // DOM元素
 const imageGrid = document.getElementById('image-grid');
@@ -25,6 +26,8 @@ const applyFilterBtn = document.getElementById('apply-filter');
 const resetFilterBtn = document.getElementById('reset-filter');
 const selectAllCheckbox = document.getElementById('select-all');
 const batchDeleteBtn = document.getElementById('batch-delete');
+const confirmSelectionBtn = document.getElementById('confirm-selection');
+const cancelDeleteBtn = document.getElementById('cancel-delete');
 const totalCountDisplay = document.getElementById('total-count');
 const usernameDisplay = document.getElementById('username-display');
 const logoutBtn = document.getElementById('logout-btn');
@@ -59,7 +62,22 @@ function initEventListeners() {
   
   // 批量操作事件
   selectAllCheckbox.addEventListener('change', handleSelectAll);
-  batchDeleteBtn.addEventListener('click', handleBatchDelete);
+  batchDeleteBtn.addEventListener('click', enterDeleteMode);
+  confirmSelectionBtn.addEventListener('click', handleConfirmSelection);
+  cancelDeleteBtn.addEventListener('click', exitDeleteMode);
+  
+  // 事件委托：监听图片复选框点击
+  imageGrid.addEventListener('change', (e) => {
+    if (e.target.classList.contains('image-checkbox')) {
+      const id = e.target.dataset.id;
+      if (e.target.checked) {
+        selectedImages.add(id);
+      } else {
+        selectedImages.delete(id);
+      }
+      updateSelectAllStatus();
+    }
+  });
   
   // 登录登出事件
   logoutBtn.addEventListener('click', handleLogout);
@@ -386,17 +404,59 @@ function updateSelectAllStatus() {
   selectAllCheckbox.indeterminate = checked > 0 && checked < total;
 }
 
-// 处理批量删除
-async function handleBatchDelete() {
+// 进入删除模式
+function enterDeleteMode() {
+  deleteMode = true;
+  // 显示确认选择和取消按钮，隐藏批量删除按钮
+  batchDeleteBtn.style.display = 'none';
+  confirmSelectionBtn.style.display = 'inline-block';
+  cancelDeleteBtn.style.display = 'inline-block';
+  // 清空之前的选择
+  selectedImages.clear();
+  selectAllCheckbox.checked = false;
+  // 更新所有复选框状态
+  document.querySelectorAll('.image-checkbox').forEach(checkbox => {
+    checkbox.checked = false;
+  });
+  // 显示操作提示
+  alert('已进入删除模式，请选择要删除的图片');
+}
+
+// 退出删除模式
+function exitDeleteMode() {
+  deleteMode = false;
+  // 恢复批量删除按钮，隐藏确认和取消按钮
+  batchDeleteBtn.style.display = 'inline-block';
+  confirmSelectionBtn.style.display = 'none';
+  cancelDeleteBtn.style.display = 'none';
+  // 清空选择
+  selectedImages.clear();
+  selectAllCheckbox.checked = false;
+  selectAllCheckbox.indeterminate = false;
+  // 更新所有复选框状态
+  document.querySelectorAll('.image-checkbox').forEach(checkbox => {
+    checkbox.checked = false;
+  });
+}
+
+// 确认选择的图片
+async function handleConfirmSelection() {
   if (selectedImages.size === 0) {
     alert('请选择要删除的图片');
     return;
   }
   
-  if (!confirm(`确定要删除选中的 ${selectedImages.size} 张图片吗？`)) {
+  // 第一次确认：确认选择的图片数量
+  if (!confirm(`您已选择 ${selectedImages.size} 张图片，确定要继续吗？`)) {
     return;
   }
   
+  // 第二次确认：最终确认删除
+  if (!confirm(`确定要删除选中的 ${selectedImages.size} 张图片吗？删除后不可恢复！`)) {
+    return;
+  }
+  
+  // 执行删除操作
   try {
     const response = await fetch('/api/images', {
       method: 'DELETE',
@@ -411,6 +471,7 @@ async function handleBatchDelete() {
     
     if (response.ok && data.success) {
       alert(`成功删除 ${data.deletedFromD1} 张图片`);
+      exitDeleteMode();
       loadImages(); // 重新加载当前页
     } else {
       alert(data.error || '批量删除失败');
@@ -419,6 +480,12 @@ async function handleBatchDelete() {
     console.error('批量删除失败:', error);
     alert('批量删除失败，请稍后重试');
   }
+}
+
+// 处理批量删除（保留原函数名，防止调用错误）
+async function handleBatchDelete() {
+  // 兼容旧调用，直接进入删除模式
+  enterDeleteMode();
 }
 
 // 初始化
