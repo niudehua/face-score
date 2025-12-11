@@ -11,11 +11,16 @@ let dateFrom = '';
 let dateTo = '';
 let selectedImages = new Set();
 let deleteMode = false;
+let isLoading = false;
+let hasMore = true;
 
 // DOM元素
 const imageGrid = document.getElementById('image-grid');
 const loading = document.getElementById('loading');
 const empty = document.getElementById('empty');
+const loadMoreTrigger = document.getElementById('load-more-trigger');
+const loadMoreStatus = document.getElementById('load-more-status');
+const noMoreData = document.getElementById('no-more-data');
 
 const dateFromInput = document.getElementById('date-from');
 const dateToInput = document.getElementById('date-to');
@@ -106,6 +111,8 @@ async function handleLogout() {
 
 
 // 加载图片列表
+
+
 async function loadImages(page = 1, isAppend = false) {
   // 如果正在加载或没有更多数据（且不是重新加载），则忽略
   if (isLoading) return;
