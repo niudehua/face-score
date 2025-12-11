@@ -212,31 +212,6 @@ function renderImageGrid(images) {
     const imageItem = document.createElement('div');
     imageItem.className = 'image-item';
     
-    // 创建复选框元素
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.className = 'image-checkbox';
-    checkbox.dataset.id = image.id;
-    
-    // 添加复选框点击事件
-    checkbox.addEventListener('change', (e) => {
-      e.stopPropagation(); // 防止触发图片点击事件
-      if (checkbox.checked) {
-        selectedImages.add(image.id);
-      } else {
-        selectedImages.delete(image.id);
-      }
-      
-      // 更新全选状态
-      updateSelectAllStatus();
-    });
-    
-    // 防止复选框区域点击触发图片预览
-    const checkboxContainer = imageItem.querySelector('.image-checkbox').parentElement;
-    checkboxContainer.addEventListener('click', (e) => {
-      e.stopPropagation();
-    });
-    
     // 添加图片点击事件（预览）
     imageItem.addEventListener('click', () => {
       // 点击图片可以预览
@@ -244,6 +219,7 @@ function renderImageGrid(images) {
       document.body.appendChild(modal);
     });
     
+    // 渲染HTML
     imageItem.innerHTML = `
       <div style="position: relative;">
         <img src="${image.image_url}" alt="颜值图片">

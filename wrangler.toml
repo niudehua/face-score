@@ -16,20 +16,20 @@ build_output_dir = "public"
 # 注意：本地开发时不需要实际的 KV 命名空间 ID，wrangler 会模拟 KV 存储
 [[kv_namespaces]]
 binding = "RATE_LIMIT_KV"
-id = "your-kv-namespace-id"  # 本地开发时可以使用任意字符串
-preview_id = "your-kv-namespace-id"  # 本地开发时可以使用任意字符串
+id = "face-score"  # 本地开发时可以使用任意字符串
+preview_id = "face-score"  # 本地开发时可以使用任意字符串
 
 # KV 命名空间绑定（用于登录会话管理）
 [[kv_namespaces]]
 binding = "SESSION_KV"
-id = "your-session-kv-namespace-id"  # 本地开发时可以使用任意字符串
-preview_id = "your-session-kv-namespace-id"  # 本地开发时可以使用任意字符串
+id = "session-kv"  # 本地开发时可以使用任意字符串
+preview_id = "session-kv"  # 本地开发时可以使用任意字符串
 
 # D1 数据库绑定
 [[d1_databases]]
 binding = "FACE_SCORE_DB"
-database_name = "face-score-db"
-database_id = "your-database-id"  # 本地开发时可以使用任意字符串
+database_name = "face_score_db"
+database_id = "face_score_db"  # 本地开发时可以使用任意字符串
 
 # R2 存储桶绑定
 [[r2_buckets]]
