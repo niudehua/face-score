@@ -236,8 +236,15 @@ button:active {
 }
 
 /* Images Page Styles */
+/* Images Page Styles */
 .image-grid-container {
     max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+    background: var(--card-bg);
+    padding: 30px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
 }
 
 .header-row {
@@ -255,14 +262,13 @@ button:active {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
     z-index: 100;
-    padding: 1.5rem;
+    padding: 1.5rem 0;
+    /* Vertical padding only, horizontal aligns with container */
     border-bottom: 1px solid #f3f4f6;
-    margin: -40px -40px 2rem -40px;
-    /* Negative margin to stretch to container edges */
+    margin-bottom: 2rem;
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
 .filter-controls {

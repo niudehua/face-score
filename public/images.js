@@ -301,7 +301,7 @@ function createImageModal(imageUrl, imageData) {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.85); /* Slightly darker for focus */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -309,9 +309,54 @@ function createImageModal(imageUrl, imageData) {
   `;
 
   modal.innerHTML = `
-    <div style="background: white; padding: 24px; border-radius: 16px; max-width: 90%; width: 500px; max-height: 90vh; overflow-y: auto; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
-      <img src="${imageUrl}" style="max-width: 100%; max-height: 60vh; border-radius: 12px; margin-bottom: 20px; object-fit: contain; box-shadow: var(--shadow-md);">
-      <div style="margin-bottom: 24px; text-align: left;">
+    <div class="modal-content" style="
+      background: white; 
+      padding: 0; 
+      border-radius: 20px; 
+      max-width: 90%; 
+      width: 420px; /* Aligned with main container */
+      max-height: 90vh; 
+      overflow-y: auto; 
+      text-align: center; 
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); 
+      position: relative;
+    ">
+      <!-- Close Button -->
+      <button id="close-modal-x" style="
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: rgba(0, 0, 0, 0.1);
+        color: #333;
+        border: none;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        transition: all 0.2s;
+        z-index: 10;
+        padding: 0; /* Override default button padding */
+      ">✕</button>
+
+      <!-- Image Area -->
+      <div style="background: #f9fafb; padding: 20px 20px 0 20px;">
+         <img id="modal-image" src="${imageUrl}" style="
+           max-width: 100%; 
+           max-height: 55vh; 
+           border-radius: 12px; 
+           object-fit: contain; 
+           box-shadow: var(--shadow-md);
+           cursor: zoom-out; /* Hint that clicking closes/zooms out */
+         ">
+         <div style="height: 20px;"></div> <!-- Spacer -->
+      </div>
+
+      <!-- Info Area -->
+      <div style="padding: 24px; text-align: left;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
            <h2 style="margin: 0; color: var(--text-main); font-size: 1.5rem;">颜值: ${imageData.score.toFixed(1)}</h2>
            <span style="background: #fff1f2; color: var(--primary-color); padding: 4px 12px; border-radius: 999px; font-size: 0.875rem; font-weight: 600;">${formatTime(imageData.timestamp)}</span>
@@ -324,32 +369,29 @@ function createImageModal(imageUrl, imageData) {
            <p style="margin: 0; color: var(--text-secondary); line-height: 1.6;">${imageData.comment || '暂无点评'}</p>
         </div>
       </div>
-      <button id="close-modal" style="
-        background: var(--primary-color);
-        color: white;
-        border: none;
-        padding: 12px 32px;
-        border-radius: 999px;
-        cursor: pointer;
-        font-size: 1rem;
-        font-weight: 600;
-        width: 100%;
-        transition: all 0.2s;
-        box-shadow: var(--shadow-sm);
-      ">关闭</button>
     </div>
   `;
 
-  // 添加关闭事件
-  const closeBtn = modal.querySelector('#close-modal');
-  closeBtn.addEventListener('click', () => {
+  const closeModal = () => {
     document.body.removeChild(modal);
+  };
+
+  // Close on X button click
+  modal.querySelector('#close-modal-x').addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevent modal background click event
+    closeModal();
   });
 
-  // 点击模态框背景关闭
+  // Close on Image click
+  modal.querySelector('#modal-image').addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeModal();
+  });
+
+  // Close on background click
   modal.addEventListener('click', (e) => {
     if (e.target === modal) {
-      document.body.removeChild(modal);
+      closeModal();
     }
   });
 
