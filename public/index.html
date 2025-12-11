@@ -180,6 +180,37 @@
             window.location.href = '/images';
           });
         }
+        
+        // 检查登录状态并显示相应按钮
+        async function checkLoginStatus() {
+          try {
+            const response = await fetch('/api/auth', { credentials: 'include' });
+            const data = await response.json();
+            
+            const loginBtn = document.getElementById('loginBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const imagesBtn = document.getElementById('imagesBtn');
+            
+            if (data.success) {
+              // 已登录，显示登出和图片按钮，隐藏登录按钮
+              loginBtn.style.display = 'none';
+              logoutBtn.style.display = 'block';
+              imagesBtn.style.display = 'block';
+            } else {
+              // 未登录，显示登录按钮，隐藏登出和图片按钮
+              loginBtn.style.display = 'block';
+              logoutBtn.style.display = 'none';
+              imagesBtn.style.display = 'none';
+            }
+          } catch (error) {
+            console.error('检查登录状态失败:', error);
+            // 出错时默认显示登录按钮
+            document.getElementById('loginBtn').style.display = 'block';
+          }
+        }
+        
+        // 页面加载时检查登录状态
+        checkLoginStatus();
       });
 
       // 登出函数
