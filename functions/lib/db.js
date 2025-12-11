@@ -402,39 +402,25 @@ async function deleteImages(d1, ids) {
     }
     
     let totalDeleted = 0;
-    const batchSize = 20; // 每批处理20个ID，避免IN子句参数限制
+    const batchSize = 20;
     
-    // 开始事务
-    await d1.exec("BEGIN TRANSACTION;");
-    
-    try {
-      // 分批处理
-      for (let i = 0; i < ids.length; i += batchSize) {
-        const batchIds = ids.slice(i, i + batchSize);
-        
-        // 构建IN子句的参数占位符
-        const placeholders = batchIds.map(() => '?').join(',');
-        
-        // 执行删除操作
-        const result = await d1.prepare(
-          `DELETE FROM face_scores WHERE id IN (${placeholders})`
-        )
-        .bind(...batchIds)
-        .run();
-        
-        totalDeleted += result.changes || 0;
-      }
+    // 移除事务，直接执行批量删除
+    for (let i = 0; i < ids.length; i += batchSize) {
+      const batchIds = ids.slice(i, i + batchSize);
+      const placeholders = batchIds.map(() => '?').join(',');
       
-      // 提交事务
-      await d1.exec("COMMIT;");
+      const result = await d1.prepare(
+        `DELETE FROM face_scores WHERE id IN (${placeholders})`
+      )
+      .bind(...batchIds)
+      .run();
       
-      return { success: true, deleted: totalDeleted };
-    } catch (transactionError) {
-      // 回滚事务
-      await d1.exec("ROLLBACK;");
-      throw transactionError;
+      totalDeleted += result.changes || 0;
     }
+    
+    return { success: true, deleted: totalDeleted };
   } catch (err) {
+    console.error('D1批量删除照片失败:', err);
     throw new Error(`D1批量删除照片失败: ${err.message}`);
   }
 }
