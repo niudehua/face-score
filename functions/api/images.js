@@ -234,6 +234,7 @@ export async function onRequestDelete(context) {
     }
     
     log(`🐾 [DEBUG] 批量删除请求，ID数量: ${ids.length}`);
+    log(`🐾 [DEBUG] 收到的ID列表: ${JSON.stringify(ids)}`);
     
     // 4. 检查数据库连接
     if (!FACE_SCORE_DB) {
@@ -256,14 +257,18 @@ export async function onRequestDelete(context) {
     const imagesToDelete = await getImagesByIds(FACE_SCORE_DB, ids);
     const md5List = imagesToDelete.map(image => image.md5);
     
+    log(`🐾 [DEBUG] getImagesByIds返回结果: ${JSON.stringify(imagesToDelete)}`);
+    log(`🐾 [DEBUG] 提取的MD5列表: ${JSON.stringify(md5List)}`);
     log(`🐾 [DEBUG] 要删除的图片信息获取成功，MD5数量: ${md5List.length}`);
     
     // 5. 从R2删除图片
     let r2Deleted = 0;
-    if (R2_BUCKET) {
+    if (R2_BUCKET && md5List.length > 0) {
       log(`🐾 [DEBUG] 开始从R2删除图片`);
       r2Deleted = await deleteImagesFromR2(R2_BUCKET, md5List);
       log(`✅ [DEBUG] 从R2删除成功，数量: ${r2Deleted}`);
+    } else if (R2_BUCKET) {
+      log(`⚠️ [DEBUG] 未找到对应的图片信息，跳过R2删除`);
     } else {
       log(`⚠️ [DEBUG] 未绑定R2_BUCKET，跳过R2删除`);
     }
@@ -271,6 +276,7 @@ export async function onRequestDelete(context) {
     // 6. 从D1删除记录
     log(`🐾 [DEBUG] 开始从D1删除记录`);
     const d1Result = await deleteImages(FACE_SCORE_DB, ids);
+    log(`🐾 [DEBUG] deleteImages返回结果: ${JSON.stringify(d1Result)}`);
     log(`✅ [DEBUG] 从D1删除成功，数量: ${d1Result.deleted}`);
     
     // 7. 返回响应

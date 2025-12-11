@@ -632,6 +632,10 @@ async function handleConfirmSelection() {
     return;
   }
   
+  // 输出选中的ID，便于调试
+  console.log('准备删除的图片ID:', Array.from(selectedImages));
+  console.log('选中的图片数量:', selectedImages.size);
+  
   // 第一次确认：确认选择的图片数量
   const firstConfirm = await showConfirmDialog(
     '确认选择',
