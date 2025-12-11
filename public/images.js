@@ -4,7 +4,7 @@
 let currentPage = 1;
 let totalPages = 1;
 let totalCount = 0;
-let limit = 10;
+let limit = 20;
 let sortBy = 'timestamp';
 let sortOrder = 'desc';
 let dateFrom = '';
@@ -16,12 +16,12 @@ let deleteMode = false;
 const imageGrid = document.getElementById('image-grid');
 const loading = document.getElementById('loading');
 const empty = document.getElementById('empty');
-const pagination = document.getElementById('pagination');
+
 const dateFromInput = document.getElementById('date-from');
 const dateToInput = document.getElementById('date-to');
 const sortBySelect = document.getElementById('sort-by');
 const orderSelect = document.getElementById('order');
-const limitSelect = document.getElementById('limit');
+
 const applyFilterBtn = document.getElementById('apply-filter');
 const resetFilterBtn = document.getElementById('reset-filter');
 const batchDeleteBtn = document.getElementById('batch-delete');
@@ -44,20 +44,7 @@ function initEventListeners() {
     sortOrder = e.target.value;
     loadImages();
   });
-  limitSelect.addEventListener('input', (e) => {
-    // 验证输入值在1-100之间
-    let value = parseInt(e.target.value);
-    if (isNaN(value) || value < 1) {
-      value = 1;
-    } else if (value > 100) {
-      value = 100;
-    }
-    e.target.value = value;
-    limit = value;
-  });
-  limitSelect.addEventListener('change', (e) => {
-    loadImages(1); // 重置到第一页
-  });
+
 
   // 批量操作事件
   batchDeleteBtn.addEventListener('click', enterDeleteMode);
@@ -119,15 +106,30 @@ async function handleLogout() {
 
 
 // 加载图片列表
-async function loadImages(page = 1) {
-  currentPage = page;
-  selectedImages.clear(); // 清空选择
+async function loadImages(page = 1, isAppend = false) {
+  // 如果正在加载或没有更多数据（且不是重新加载），则忽略
+  if (isLoading) return;
+  if (!hasMore && isAppend) return;
 
-  // 显示加载状态
-  imageGrid.innerHTML = '';
-  loading.style.display = 'block';
-  empty.style.display = 'none';
-  pagination.innerHTML = '';
+  isLoading = true;
+
+  if (!isAppend) {
+    // 如果是重新加载（第一页），清空列表和状态
+    currentPage = 1;
+    hasMore = true;
+    imageGrid.innerHTML = '';
+    selectedImages.clear();
+    loading.style.display = 'block';
+    empty.style.display = 'none';
+    noMoreData.style.display = 'none';
+    loadMoreStatus.style.display = 'none';
+    // 隐藏sentinel以防初次加载太少触发
+    loadMoreTrigger.style.display = 'none';
+  } else {
+    // 如果是加载更多
+    loadMoreStatus.style.display = 'block';
+    loadMoreTrigger.style.display = 'block';
+  }
 
   try {
     // 构建请求URL
@@ -150,41 +152,75 @@ async function loadImages(page = 1) {
     // 处理响应
     if (data.data && Array.isArray(data.data)) {
       const images = data.data;
-      totalPages = data.pagination.total_pages;
       totalCount = data.pagination.total;
 
-      // 显示总条数
+      // 更新总数显示
       totalCountDisplay.textContent = `共 ${totalCount} 条记录`;
 
       if (images.length === 0) {
-        // 显示空状态
-        loading.style.display = 'none';
-        empty.style.display = 'block';
+        if (!isAppend) {
+          loading.style.display = 'none';
+          empty.style.display = 'block';
+          loadMoreTrigger.style.display = 'none';
+        } else {
+          hasMore = false;
+          loadMoreStatus.style.display = 'none';
+          noMoreData.style.display = 'block';
+        }
       } else {
         // 渲染图片网格
         renderImageGrid(images);
 
-        // 渲染分页
-        renderPagination();
+        // 更新当前页码
+        currentPage = page;
 
-        // 隐藏加载状态
+        // 检查是否还有更多数据
+        if (images.length < limit) {
+          hasMore = false;
+          noMoreData.style.display = 'block';
+          loadMoreTrigger.style.display = 'none'; // 停止观察
+        } else {
+          hasMore = true;
+          loadMoreTrigger.style.display = 'block'; // 确保sentinel可见
+        }
+
         loading.style.display = 'none';
+        loadMoreStatus.style.display = 'none';
       }
     } else if (data.error) {
       loading.style.display = 'none';
+      loadMoreStatus.style.display = 'none';
       if (data.error === '未登录' || data.error === '会话已过期') {
-        // 未登录或会话过期，跳转到GitHub登录页面
         window.location.href = '/api/auth/github';
       } else {
         alert(data.error);
       }
-    } else {
-      throw new Error('Invalid response format');
     }
   } catch (error) {
     console.error('加载图片失败:', error);
     loading.style.display = 'none';
-    empty.style.display = 'block';
+    loadMoreStatus.style.display = 'none';
+    if (!isAppend) empty.style.display = 'block';
+  } finally {
+    isLoading = false;
+  }
+}
+
+// 初始化无限滚动观察器
+function initInfiniteScroll() {
+  const observer = new IntersectionObserver((entries) => {
+    // 如果sentinel可见，且有更多数据，且不在加载中
+    if (entries[0].isIntersecting && hasMore && !isLoading) {
+      loadImages(currentPage + 1, true);
+    }
+  }, {
+    root: null,
+    rootMargin: '100px', // 提前加载
+    threshold: 0.1
+  });
+
+  if (loadMoreTrigger) {
+    observer.observe(loadMoreTrigger);
   }
 }
 
@@ -266,23 +302,33 @@ function createImageModal(imageUrl, imageData) {
   `;
 
   modal.innerHTML = `
-    <div style="background: white; padding: 20px; border-radius: 12px; max-width: 90%; max-height: 90%; overflow: auto;">
-      <img src="${imageUrl}" style="max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 20px;">
-      <div style="margin-bottom: 20px;">
-        <h2>颜值: ${imageData.score.toFixed(1)}</h2>
-        <p>性别: ${imageData.gender}</p>
-        <p>年龄: ${imageData.age}</p>
-        <p>时间: ${formatTime(imageData.timestamp)}</p>
-        <p>点评: ${imageData.comment}</p>
+    <div style="background: white; padding: 24px; border-radius: 16px; max-width: 90%; width: 500px; max-height: 90vh; overflow-y: auto; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
+      <img src="${imageUrl}" style="max-width: 100%; max-height: 60vh; border-radius: 12px; margin-bottom: 20px; object-fit: contain; box-shadow: var(--shadow-md);">
+      <div style="margin-bottom: 24px; text-align: left;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+           <h2 style="margin: 0; color: var(--text-main); font-size: 1.5rem;">颜值: ${imageData.score.toFixed(1)}</h2>
+           <span style="background: #fff1f2; color: var(--primary-color); padding: 4px 12px; border-radius: 999px; font-size: 0.875rem; font-weight: 600;">${formatTime(imageData.timestamp)}</span>
+        </div>
+        <div style="display: flex; gap: 12px; margin-bottom: 16px; color: var(--text-secondary); font-size: 0.95rem;">
+          <span style="background: #f3f4f6; padding: 4px 12px; border-radius: 6px;">${imageData.gender}</span>
+          <span style="background: #f3f4f6; padding: 4px 12px; border-radius: 6px;">${imageData.age}岁</span>
+        </div>
+        <div style="background: #f9fafb; padding: 16px; border-radius: 12px; border: 1px solid #f3f4f6;">
+           <p style="margin: 0; color: var(--text-secondary); line-height: 1.6;">${imageData.comment || '暂无点评'}</p>
+        </div>
       </div>
       <button id="close-modal" style="
-        background: #e85d75;
+        background: var(--primary-color);
         color: white;
         border: none;
-        padding: 10px 20px;
-        border-radius: 8px;
+        padding: 12px 32px;
+        border-radius: 999px;
         cursor: pointer;
-        font-size: 16px;
+        font-size: 1rem;
+        font-weight: 600;
+        width: 100%;
+        transition: all 0.2s;
+        box-shadow: var(--shadow-sm);
       ">关闭</button>
     </div>
   `;
@@ -303,48 +349,7 @@ function createImageModal(imageUrl, imageData) {
   return modal;
 }
 
-// 渲染分页
-function renderPagination() {
-  if (totalPages <= 1) {
-    return;
-  }
 
-  // 上一页按钮
-  const prevBtn = document.createElement('button');
-  prevBtn.textContent = '上一页';
-  prevBtn.disabled = currentPage === 1;
-  prevBtn.addEventListener('click', () => {
-    if (currentPage > 1) {
-      loadImages(currentPage - 1);
-    }
-  });
-  pagination.appendChild(prevBtn);
-
-  // 页码按钮
-  const startPage = Math.max(1, currentPage - 2);
-  const endPage = Math.min(totalPages, currentPage + 2);
-
-  for (let i = startPage; i <= endPage; i++) {
-    const pageBtn = document.createElement('button');
-    pageBtn.textContent = i;
-    pageBtn.className = i === currentPage ? 'active' : '';
-    pageBtn.addEventListener('click', () => {
-      loadImages(i);
-    });
-    pagination.appendChild(pageBtn);
-  }
-
-  // 下一页按钮
-  const nextBtn = document.createElement('button');
-  nextBtn.textContent = '下一页';
-  nextBtn.disabled = currentPage === totalPages;
-  nextBtn.addEventListener('click', () => {
-    if (currentPage < totalPages) {
-      loadImages(currentPage + 1);
-    }
-  });
-  pagination.appendChild(nextBtn);
-}
 
 // 应用筛选
 function applyFilter() {
@@ -359,17 +364,16 @@ function resetFilter() {
   dateToInput.value = '';
   sortBySelect.value = 'timestamp';
   orderSelect.value = 'desc';
-  limitSelect.value = '10';
+
 
   dateFrom = '';
   dateTo = '';
   sortBy = 'timestamp';
   sortOrder = 'desc';
-  limit = 10;
+  limit = 20;
 
   loadImages(1);
 }
-
 
 
 // 显示悬浮提示
@@ -680,6 +684,7 @@ async function init() {
   }
 
   initEventListeners();
+  initInfiniteScroll();
   loadImages();
 }
 

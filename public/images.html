@@ -46,10 +46,6 @@
           </select>
         </div>
 
-        <div class="filter-group">
-          <label for="limit">每页:</label>
-          <input type="number" id="limit" min="1" max="100" value="10" style="width: 60px;">
-        </div>
 
         <div class="filter-group" style="margin-left: auto;">
           <button id="apply-filter" style="width: auto; padding: 8px 16px; font-size: 0.9rem;">筛选</button>
@@ -89,8 +85,18 @@
       <p>暂无图片记录</p>
     </div>
 
-    <!-- 分页 -->
-    <div id="pagination" class="pagination"></div>
+    <!-- 加载更多提示 -->
+    <div id="load-more-trigger" style="height: 20px; width: 100%;"></div>
+    <div id="load-more-status" style="text-align: center; padding: 20px; color: var(--text-secondary); display: none;">
+      <div
+        style="display: inline-block; width: 24px; height: 24px; border: 2px solid #f3f3f3; border-top: 2px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; vertical-align: middle; margin-right: 8px;">
+      </div>
+      <span>正在加载更多...</span>
+    </div>
+    <div id="no-more-data"
+      style="text-align: center; padding: 30px; color: var(--text-secondary); font-size: 0.9rem; display: none;">
+      ✨ 已经到底啦，喵～
+    </div>
 
     <!-- 返回首页 -->
     <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #f3f4f6;">
