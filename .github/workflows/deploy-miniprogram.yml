@@ -51,11 +51,15 @@ jobs:
       - name: 上传小程序代码
         working-directory: ./face-score-miniprogram
         run: |
+          # 使用GitHub Actions运行次数作为版本号，格式：1.0.${run_number}
+          VERSION="1.0.${{ github.run_number }}"
+          echo "使用版本号: $VERSION"
+          
           miniprogram-ci upload \
             --appid ${{ secrets.WECHAT_APPID }} \
             --privateKeyPath private.key \
             --projectPath . \
-            --version "${{ github.sha }}" \
+            --version "$VERSION" \
             --desc "自动部署 - ${{ github.event.head_commit.message }}" \
             --robot 1 \
             --setting.es6 true \
