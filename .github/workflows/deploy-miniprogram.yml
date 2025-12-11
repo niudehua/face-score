@@ -55,15 +55,17 @@ jobs:
           VERSION="1.0.${{ github.run_number }}"
           echo "使用版本号: $VERSION"
           
+          # 按照官方文档使用正确的命令行参数
           miniprogram-ci upload \
             --appid ${{ secrets.WECHAT_APPID }} \
-            --privateKeyPath private.key \
-            --projectPath . \
-            --version "$VERSION" \
-            --desc "自动部署 - ${{ github.event.head_commit.message }}" \
+            --pkp ./private.key \
+            --pp . \
+            --uv "$VERSION" \
+            --ud "自动部署 - ${{ github.event.head_commit.message }}" \
             --robot 1 \
-            --setting.es6 true \
-            --setting.minify true
+            --enable-es6 true \
+            --enable-minify true \
+            --verbose
 
       # 8. 清理临时文件
       - name: 清理私钥
