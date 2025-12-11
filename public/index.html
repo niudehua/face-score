@@ -126,7 +126,9 @@
       <button id="submitBtn">开始评分</button>
       <img id="preview" />
       <div id="result"></div>
-      <button id="imagesBtn" class="secondary-btn">浏览所有颜值照片</button>
+      <button id="imagesBtn" class="secondary-btn" style="display: none;">浏览所有颜值照片</button>
+      <button id="loginBtn" class="secondary-btn" onclick="window.location.href='/api/auth/github'" style="display: none;">GitHub登录</button>
+      <button id="logoutBtn" class="secondary-btn" onclick="handleLogout()" style="display: none;">登出</button>
     </div>
 
     <script>
@@ -180,6 +182,56 @@
         }
       });
 
+      // 登出函数
+      async function handleLogout() {
+        try {
+          await fetch('/api/auth', {
+            method: 'DELETE',
+            credentials: 'include'
+          });
+          // 登出成功，刷新页面
+          window.location.reload();
+        } catch (error) {
+          console.error('登出失败:', error);
+          alert('登出失败，请稍后重试');
+        }
+      }
+      
+      // 标题点击计数器
+      let clickCount = 0;
+      const titleElement = document.querySelector('h1');
+      
+      // 点击事件处理
+      if (titleElement) {
+        titleElement.addEventListener('click', async () => {
+          clickCount++;
+          
+          // 点击5次触发后门
+          if (clickCount === 5) {
+            // 检查登录状态
+            try {
+              const response = await fetch('/api/auth', { credentials: 'include' });
+              const data = await response.json();
+              
+              if (data.success) {
+                // 已登录，直接进入图片列表
+                window.location.href = '/images';
+              } else {
+                // 未登录，跳转到GitHub登录
+                window.location.href = '/api/auth/github';
+              }
+            } catch (error) {
+              console.error('检查登录状态失败:', error);
+              // 出错时直接跳转到登录
+              window.location.href = '/api/auth/github';
+            }
+            
+            // 重置计数器
+            clickCount = 0;
+          }
+        });
+      }
+      
       document.getElementById("submitBtn").onclick = async function () {
         const fileInput = document.getElementById("fileInput");
         if (!fileInput.files.length) {
