@@ -212,10 +212,14 @@ export async function onRequestDelete(context) {
 
   try {
     // 3. 解析请求体
+    log(`🐾 [DEBUG] 开始解析请求体`);
     const body = await context.request.json();
     const { ids } = body;
     
+    log(`🐾 [DEBUG] 请求体解析成功: ${JSON.stringify(body)}`);
+    
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      log(`⚠️ [WARN] 未提供有效的图片ID列表`);
       return new Response(JSON.stringify({
         error: '请提供要删除的图片ID列表'
       }), {
@@ -231,7 +235,24 @@ export async function onRequestDelete(context) {
     
     log(`🐾 [DEBUG] 批量删除请求，ID数量: ${ids.length}`);
     
+    // 4. 检查数据库连接
+    if (!FACE_SCORE_DB) {
+      log(`❌ [ERROR] FACE_SCORE_DB 未配置`);
+      return new Response(JSON.stringify({
+        error: '数据库连接失败'
+      }), {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        },
+      });
+    }
+    
     // 4. 获取要删除的图片信息
+    log(`🐾 [DEBUG] 开始获取要删除的图片信息`);
     const imagesToDelete = await getImagesByIds(FACE_SCORE_DB, ids);
     const md5List = imagesToDelete.map(image => image.md5);
     
@@ -240,6 +261,7 @@ export async function onRequestDelete(context) {
     // 5. 从R2删除图片
     let r2Deleted = 0;
     if (R2_BUCKET) {
+      log(`🐾 [DEBUG] 开始从R2删除图片`);
       r2Deleted = await deleteImagesFromR2(R2_BUCKET, md5List);
       log(`✅ [DEBUG] 从R2删除成功，数量: ${r2Deleted}`);
     } else {
@@ -247,17 +269,22 @@ export async function onRequestDelete(context) {
     }
     
     // 6. 从D1删除记录
+    log(`🐾 [DEBUG] 开始从D1删除记录`);
     const d1Result = await deleteImages(FACE_SCORE_DB, ids);
     log(`✅ [DEBUG] 从D1删除成功，数量: ${d1Result.deleted}`);
     
     // 7. 返回响应
-    let response = new Response(JSON.stringify({
+    const responseData = {
       success: true,
       message: '批量删除成功',
       deletedFromD1: d1Result.deleted,
       deletedFromR2: r2Deleted,
       totalRequested: ids.length
-    }), {
+    };
+    
+    log(`✅ [DEBUG] 删除操作完成，返回数据: ${JSON.stringify(responseData)}`);
+    
+    let response = new Response(JSON.stringify(responseData), {
       headers: {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
@@ -272,10 +299,24 @@ export async function onRequestDelete(context) {
     
   } catch (err) {
     log(`❌ [ERROR] 批量删除失败: ${err.message}`);
+    log(`❌ [ERROR] 错误堆栈: ${err.stack}`);
+    
+    // 处理不同类型的错误
+    let errorMessage = '批量删除失败，请稍后重试';
+    let statusCode = 500;
+    
+    if (err.message.includes('fetch')) {
+      errorMessage = '网络请求失败，请稍后重试';
+    } else if (err.message.includes('JSON')) {
+      errorMessage = '请求体格式错误，请检查JSON格式';
+      statusCode = 400;
+    }
+    
     return new Response(JSON.stringify({ 
-      error: `批量删除失败: ${err.message}` 
+      error: errorMessage,
+      detail: err.message
     }), {
-      status: 500,
+      status: statusCode,
       headers: {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",

@@ -24,7 +24,6 @@ const orderSelect = document.getElementById('order');
 const limitSelect = document.getElementById('limit');
 const applyFilterBtn = document.getElementById('apply-filter');
 const resetFilterBtn = document.getElementById('reset-filter');
-const selectAllCheckbox = document.getElementById('select-all');
 const batchDeleteBtn = document.getElementById('batch-delete');
 const confirmSelectionBtn = document.getElementById('confirm-selection');
 const cancelDeleteBtn = document.getElementById('cancel-delete');
@@ -61,23 +60,9 @@ function initEventListeners() {
   });
   
   // 批量操作事件
-  selectAllCheckbox.addEventListener('change', handleSelectAll);
   batchDeleteBtn.addEventListener('click', enterDeleteMode);
   confirmSelectionBtn.addEventListener('click', handleConfirmSelection);
   cancelDeleteBtn.addEventListener('click', exitDeleteMode);
-  
-  // 事件委托：监听图片复选框点击
-  imageGrid.addEventListener('change', (e) => {
-    if (e.target.classList.contains('image-checkbox')) {
-      const id = e.target.dataset.id;
-      if (e.target.checked) {
-        selectedImages.add(id);
-      } else {
-        selectedImages.delete(id);
-      }
-      updateSelectAllStatus();
-    }
-  });
   
   // 登录登出事件
   logoutBtn.addEventListener('click', handleLogout);
@@ -154,7 +139,6 @@ function adjustImageSize() {
 async function loadImages(page = 1) {
   currentPage = page;
   selectedImages.clear(); // 清空选择
-  selectAllCheckbox.checked = false; // 取消全选
   
   // 显示加载状态
   imageGrid.innerHTML = '';
@@ -235,9 +219,6 @@ function renderImageGrid(images) {
     imageItem.innerHTML = `
       <div style="position: relative;">
         <img src="${image.image_url}" alt="颜值图片">
-        <div style="position: absolute; top: 10px; left: 10px; z-index: 10;">
-          <input type="checkbox" class="image-checkbox" data-id="${image.id}" style="width: 20px; height: 20px; cursor: pointer;">
-        </div>
       </div>
       <div class="image-info">
         <h3>颜值: ${image.score.toFixed(1)}</h3>
@@ -247,51 +228,27 @@ function renderImageGrid(images) {
       </div>
     `;
     
-    // 获取复选框元素
-    const checkbox = imageItem.querySelector('.image-checkbox');
-    
     // 添加图片项点击事件
-    imageItem.addEventListener('click', (e) => {
-      // 如果点击的是复选框或其容器，直接处理，不触发预览
-      if (e.target === checkbox || e.target.contains(checkbox)) {
-        return;
-      }
-      
+    imageItem.addEventListener('click', () => {
       // 如果是删除模式，切换选中状态
       if (deleteMode) {
-        // 切换复选框状态
-        checkbox.checked = !checkbox.checked;
-        
         // 更新selectedImages集合
         const id = imageItem.dataset.id;
-        if (checkbox.checked) {
-          selectedImages.add(id);
-        } else {
+        const isSelected = selectedImages.has(id);
+        
+        if (isSelected) {
           selectedImages.delete(id);
+        } else {
+          selectedImages.add(id);
         }
         
-        // 更新全选状态
-        updateSelectAllStatus();
-        
         // 更新卡片样式
-        updateImageItemStyle(imageItem, checkbox.checked);
+        updateImageItemStyle(imageItem, !isSelected);
       } else {
         // 非删除模式，显示预览
         const modal = createImageModal(image.image_url, image);
         document.body.appendChild(modal);
       }
-    });
-    
-    // 添加复选框变化事件
-    checkbox.addEventListener('change', () => {
-      const id = checkbox.dataset.id;
-      if (checkbox.checked) {
-        selectedImages.add(id);
-      } else {
-        selectedImages.delete(id);
-      }
-      updateSelectAllStatus();
-      updateImageItemStyle(imageItem, checkbox.checked);
     });
     
     imageGrid.appendChild(imageItem);
@@ -301,13 +258,15 @@ function renderImageGrid(images) {
 // 更新图片项样式
 function updateImageItemStyle(imageItem, isSelected) {
   if (isSelected) {
-    imageItem.style.opacity = '0.7';
+    imageItem.style.opacity = '0.6';
     imageItem.style.border = '2px solid #e74c3c';
-    imageItem.style.backgroundColor = '#fdf2f2';
+    imageItem.style.backgroundColor = '#f5f5f5';
+    imageItem.style.filter = 'grayscale(100%)';
   } else {
     imageItem.style.opacity = '1';
     imageItem.style.border = '';
     imageItem.style.backgroundColor = '';
+    imageItem.style.filter = 'grayscale(0%)';
   }
 }
 
@@ -432,35 +391,7 @@ function resetFilter() {
   loadImages(1);
 }
 
-// 处理全选
-function handleSelectAll() {
-  const isChecked = selectAllCheckbox.checked;
-  const checkboxes = document.querySelectorAll('.image-checkbox');
-  
-  checkboxes.forEach(checkbox => {
-    checkbox.checked = isChecked;
-    const id = checkbox.dataset.id;
-    const imageItem = checkbox.closest('.image-item');
-    
-    if (isChecked) {
-      selectedImages.add(id);
-    } else {
-      selectedImages.delete(id);
-    }
-    
-    updateImageItemStyle(imageItem, isChecked);
-  });
-}
 
-// 更新全选状态
-function updateSelectAllStatus() {
-  const checkboxes = document.querySelectorAll('.image-checkbox');
-  const total = checkboxes.length;
-  const checked = selectedImages.size;
-  
-  selectAllCheckbox.checked = total > 0 && checked === total;
-  selectAllCheckbox.indeterminate = checked > 0 && checked < total;
-}
 
 // 显示悬浮提示
 function showToast(message, duration = 2000) {
@@ -468,28 +399,31 @@ function showToast(message, duration = 2000) {
   const toast = document.createElement('div');
   toast.style.cssText = `
     position: fixed;
-    top: 50%;
+    top: 20px;
     left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.8);
+    transform: translateX(-50%);
+    background: #e85d75;
     color: white;
-    padding: 15px 25px;
-    border-radius: 8px;
+    padding: 16px 28px;
+    border-radius: 50px;
     font-size: 16px;
+    font-weight: 500;
     z-index: 10000;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    animation: fadeInOut 2s ease;
+    box-shadow: 0 8px 24px rgba(232, 93, 117, 0.35);
+    animation: slideDownFade 2s ease;
+    min-width: 250px;
+    text-align: center;
   `;
   toast.textContent = message;
   
   // 添加动画样式
   const style = document.createElement('style');
   style.textContent = `
-    @keyframes fadeInOut {
-      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-      20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-      80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-      100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+    @keyframes slideDownFade {
+      0% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+      15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+      85% { opacity: 1; transform: translateX(-50%) translateY(0); }
+      100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
     }
   `;
   document.head.appendChild(style);
@@ -668,11 +602,8 @@ function enterDeleteMode() {
   cancelDeleteBtn.style.display = 'inline-block';
   // 清空之前的选择
   selectedImages.clear();
-  selectAllCheckbox.checked = false;
-  // 更新所有复选框状态和样式
+  // 更新所有卡片样式
   document.querySelectorAll('.image-item').forEach(item => {
-    const checkbox = item.querySelector('.image-checkbox');
-    checkbox.checked = false;
     updateImageItemStyle(item, false);
   });
   // 显示操作提示
@@ -688,12 +619,8 @@ function exitDeleteMode() {
   cancelDeleteBtn.style.display = 'none';
   // 清空选择
   selectedImages.clear();
-  selectAllCheckbox.checked = false;
-  selectAllCheckbox.indeterminate = false;
-  // 更新所有复选框状态和样式
+  // 更新所有卡片样式
   document.querySelectorAll('.image-item').forEach(item => {
-    const checkbox = item.querySelector('.image-checkbox');
-    checkbox.checked = false;
     updateImageItemStyle(item, false);
   });
 }

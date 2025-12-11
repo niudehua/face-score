@@ -97,12 +97,11 @@
         border-radius: 12px;
         overflow: hidden;
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        transition: box-shadow 0.3s ease;
       }
       
       .image-item:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
       }
       
       .image-item img {
@@ -250,10 +249,7 @@
         <!-- 批量操作栏 -->
         <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0 0 0;">
           <div style="display: flex; align-items: center; gap: 15px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <input type="checkbox" id="select-all" />
-              <label for="select-all">全选</label>
-            </div>
+            
             <button id="batch-delete" style="background: #e74c3c;">批量删除</button>
             <button id="confirm-selection" style="background: #3498db; display: none;">确认选择</button>
             <button id="cancel-delete" style="background: #95a5a6; display: none;" class="secondary">取消</button>
