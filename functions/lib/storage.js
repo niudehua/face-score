@@ -132,10 +132,21 @@ async function deleteImagesFromR2(r2Bucket, md5List) {
     for (const md5 of md5List) {
       try {
         const key = `images/${md5}.jpg`;
-        await r2Bucket.delete(key);
-        deletedCount++;
+        console.log(`R2删除图片: ${key}`);
+        
+        // 先检查图片是否存在
+        const existingImage = await r2Bucket.head(key);
+        if (existingImage) {
+          console.log(`R2图片存在，准备删除: ${key}`);
+          await r2Bucket.delete(key);
+          console.log(`R2图片删除成功: ${key}`);
+          deletedCount++;
+        } else {
+          console.log(`R2图片不存在，跳过删除: ${key}`);
+        }
       } catch (error) {
         console.error(`R2删除单个图片失败 (${md5}): ${error.message}`);
+        console.error(`R2删除失败详情:`, error);
         // 继续删除其他图片，不中断整个批量操作
       }
     }

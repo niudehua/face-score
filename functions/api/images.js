@@ -171,7 +171,7 @@ export async function onRequestGet(context) {
 
 // 批量删除图片API
 export async function onRequestDelete(context) {
-  const { FACE_SCORE_DB, SESSION_KV, R2_BUCKET } = context.env;
+  const { FACE_SCORE_DB, FACE_IMAGES } = context.env;
   const logs = [];
 
   function log(msg) {
@@ -263,14 +263,14 @@ export async function onRequestDelete(context) {
     
     // 5. 从R2删除图片
     let r2Deleted = 0;
-    if (R2_BUCKET && md5List.length > 0) {
+    if (FACE_IMAGES && md5List.length > 0) {
       log(`🐾 [DEBUG] 开始从R2删除图片`);
-      r2Deleted = await deleteImagesFromR2(R2_BUCKET, md5List);
+      r2Deleted = await deleteImagesFromR2(FACE_IMAGES, md5List);
       log(`✅ [DEBUG] 从R2删除成功，数量: ${r2Deleted}`);
-    } else if (R2_BUCKET) {
+    } else if (FACE_IMAGES) {
       log(`⚠️ [DEBUG] 未找到对应的图片信息，跳过R2删除`);
     } else {
-      log(`⚠️ [DEBUG] 未绑定R2_BUCKET，跳过R2删除`);
+      log(`⚠️ [DEBUG] 未绑定FACE_IMAGES，跳过R2删除`);
     }
     
     // 6. 从D1删除记录

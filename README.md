@@ -67,7 +67,7 @@ face-score/
 ### Cloudflare 资源绑定
 - `AI`：Cloudflare AI 绑定（自动提供，无需手动设置）
 - `FACE_SCORE_DB`：Cloudflare D1 数据库绑定（用于存储评分记录）
-- `R2_BUCKET`：Cloudflare R2 存储桶绑定（用于存储人脸图片）
+- `FACE_IMAGES`：Cloudflare R2 存储桶绑定（用于存储人脸图片）
 - `RATE_LIMIT_KV`：Cloudflare KV 命名空间绑定（可选，用于请求限流）
 - `SESSION_KV`：Cloudflare KV 命名空间绑定（用于登录会话管理）
 
