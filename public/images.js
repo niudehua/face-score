@@ -229,13 +229,7 @@ function renderImageGrid(images) {
   images.forEach(image => {
     const imageItem = document.createElement('div');
     imageItem.className = 'image-item';
-    
-    // 添加图片点击事件（预览）
-    imageItem.addEventListener('click', () => {
-      // 点击图片可以预览
-      const modal = createImageModal(image.image_url, image);
-      document.body.appendChild(modal);
-    });
+    imageItem.dataset.id = image.id;
     
     // 渲染HTML
     imageItem.innerHTML = `
@@ -253,8 +247,68 @@ function renderImageGrid(images) {
       </div>
     `;
     
+    // 获取复选框元素
+    const checkbox = imageItem.querySelector('.image-checkbox');
+    
+    // 添加图片项点击事件
+    imageItem.addEventListener('click', (e) => {
+      // 如果点击的是复选框或其容器，直接处理，不触发预览
+      if (e.target === checkbox || e.target.contains(checkbox)) {
+        return;
+      }
+      
+      // 如果是删除模式，切换选中状态
+      if (deleteMode) {
+        // 切换复选框状态
+        checkbox.checked = !checkbox.checked;
+        
+        // 更新selectedImages集合
+        const id = imageItem.dataset.id;
+        if (checkbox.checked) {
+          selectedImages.add(id);
+        } else {
+          selectedImages.delete(id);
+        }
+        
+        // 更新全选状态
+        updateSelectAllStatus();
+        
+        // 更新卡片样式
+        updateImageItemStyle(imageItem, checkbox.checked);
+      } else {
+        // 非删除模式，显示预览
+        const modal = createImageModal(image.image_url, image);
+        document.body.appendChild(modal);
+      }
+    });
+    
+    // 添加复选框变化事件
+    checkbox.addEventListener('change', () => {
+      const id = checkbox.dataset.id;
+      if (checkbox.checked) {
+        selectedImages.add(id);
+      } else {
+        selectedImages.delete(id);
+      }
+      updateSelectAllStatus();
+      updateImageItemStyle(imageItem, checkbox.checked);
+    });
+    
     imageGrid.appendChild(imageItem);
   });
+}
+
+// 更新图片项样式
+function updateImageItemStyle(imageItem, isSelected) {
+  if (isSelected) {
+    imageItem.style.opacity = '0.7';
+    imageItem.style.border = '2px solid #e74c3c';
+    imageItem.style.backgroundColor = '#fdf2f2';
+  } else {
+    imageItem.style.opacity = '1';
+    imageItem.style.border = '';
+    imageItem.style.backgroundColor = '';
+  }
 }
 
 // 创建图片预览模态框
@@ -386,11 +440,15 @@ function handleSelectAll() {
   checkboxes.forEach(checkbox => {
     checkbox.checked = isChecked;
     const id = checkbox.dataset.id;
+    const imageItem = checkbox.closest('.image-item');
+    
     if (isChecked) {
       selectedImages.add(id);
     } else {
       selectedImages.delete(id);
     }
+    
+    updateImageItemStyle(imageItem, isChecked);
   });
 }
 
@@ -404,6 +462,203 @@ function updateSelectAllStatus() {
   selectAllCheckbox.indeterminate = checked > 0 && checked < total;
 }
 
+// 显示悬浮提示
+function showToast(message, duration = 2000) {
+  // 创建toast元素
+  const toast = document.createElement('div');
+  toast.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 8px;
+    font-size: 16px;
+    z-index: 10000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    animation: fadeInOut 2s ease;
+  `;
+  toast.textContent = message;
+  
+  // 添加动画样式
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes fadeInOut {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+      20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+      80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+    }
+  `;
+  document.head.appendChild(style);
+  
+  // 添加到页面
+  document.body.appendChild(toast);
+  
+  // 自动移除
+  setTimeout(() => {
+    document.body.removeChild(toast);
+    if (document.head.contains(style)) {
+      document.head.removeChild(style);
+    }
+  }, duration);
+}
+
+// 显示自定义确认对话框
+function showConfirmDialog(title, message, confirmText = '确认', cancelText = '取消') {
+  return new Promise((resolve) => {
+    // 创建遮罩层
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 10000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      animation: fadeIn 0.3s ease;
+    `;
+    
+    // 创建对话框
+    const dialog = document.createElement('div');
+    dialog.style.cssText = `
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      max-width: 450px;
+      width: 90%;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      animation: slideIn 0.3s ease;
+    `;
+    
+    // 标题
+    const dialogTitle = document.createElement('h3');
+    dialogTitle.style.cssText = `
+      margin: 0 0 15px 0;
+      color: #e85d75;
+      font-size: 20px;
+      font-weight: 600;
+    `;
+    dialogTitle.textContent = title;
+    dialog.appendChild(dialogTitle);
+    
+    // 内容
+    const dialogContent = document.createElement('p');
+    dialogContent.style.cssText = `
+      margin: 0 0 25px 0;
+      color: #666;
+      font-size: 16px;
+      line-height: 1.5;
+    `;
+    dialogContent.textContent = message;
+    dialog.appendChild(dialogContent);
+    
+    // 按钮容器
+    const buttonsContainer = document.createElement('div');
+    buttonsContainer.style.cssText = `
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    `;
+    dialog.appendChild(buttonsContainer);
+    
+    // 取消按钮
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = cancelText;
+    cancelBtn.style.cssText = `
+      padding: 10px 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #f0f0f0;
+      color: #666;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    `;
+    cancelBtn.addEventListener('click', () => {
+      document.body.removeChild(overlay);
+      resolve(false);
+    });
+    buttonsContainer.appendChild(cancelBtn);
+    
+    // 确认按钮
+    const confirmBtn = document.createElement('button');
+    confirmBtn.textContent = confirmText;
+    confirmBtn.style.cssText = `
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background: #e74c3c;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    `;
+    confirmBtn.addEventListener('click', () => {
+      document.body.removeChild(overlay);
+      resolve(true);
+    });
+    buttonsContainer.appendChild(confirmBtn);
+    
+    // 添加悬停效果
+    cancelBtn.addEventListener('mouseenter', () => {
+      cancelBtn.style.background = '#e0e0e0';
+    });
+    cancelBtn.addEventListener('mouseleave', () => {
+      cancelBtn.style.background = '#f0f0f0';
+    });
+    
+    confirmBtn.addEventListener('mouseenter', () => {
+      confirmBtn.style.background = '#c0392b';
+    });
+    confirmBtn.addEventListener('mouseleave', () => {
+      confirmBtn.style.background = '#e74c3c';
+    });
+    
+    // 添加动画样式
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes slideIn {
+        from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // 添加到页面
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    
+    // 点击遮罩层关闭
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        document.body.removeChild(overlay);
+        resolve(false);
+      }
+    });
+    
+    // 按ESC键关闭
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
+        document.body.removeChild(overlay);
+        resolve(false);
+        document.removeEventListener('keydown', handleEsc);
+      }
+    };
+    document.addEventListener('keydown', handleEsc);
+  });
+}
+
 // 进入删除模式
 function enterDeleteMode() {
   deleteMode = true;
@@ -414,12 +669,14 @@ function enterDeleteMode() {
   // 清空之前的选择
   selectedImages.clear();
   selectAllCheckbox.checked = false;
-  // 更新所有复选框状态
-  document.querySelectorAll('.image-checkbox').forEach(checkbox => {
+  // 更新所有复选框状态和样式
+  document.querySelectorAll('.image-item').forEach(item => {
+    const checkbox = item.querySelector('.image-checkbox');
     checkbox.checked = false;
+    updateImageItemStyle(item, false);
   });
   // 显示操作提示
-  alert('已进入删除模式，请选择要删除的图片');
+  showToast('已进入删除模式，请选择要删除的图片', 2000);
 }
 
 // 退出删除模式
@@ -433,26 +690,42 @@ function exitDeleteMode() {
   selectedImages.clear();
   selectAllCheckbox.checked = false;
   selectAllCheckbox.indeterminate = false;
-  // 更新所有复选框状态
-  document.querySelectorAll('.image-checkbox').forEach(checkbox => {
+  // 更新所有复选框状态和样式
+  document.querySelectorAll('.image-item').forEach(item => {
+    const checkbox = item.querySelector('.image-checkbox');
     checkbox.checked = false;
+    updateImageItemStyle(item, false);
   });
 }
 
 // 确认选择的图片
 async function handleConfirmSelection() {
   if (selectedImages.size === 0) {
-    alert('请选择要删除的图片');
+    showToast('请选择要删除的图片', 2000);
     return;
   }
   
   // 第一次确认：确认选择的图片数量
-  if (!confirm(`您已选择 ${selectedImages.size} 张图片，确定要继续吗？`)) {
+  const firstConfirm = await showConfirmDialog(
+    '确认选择',
+    `您已选择 ${selectedImages.size} 张图片，确定要继续吗？`,
+    '继续删除',
+    '取消选择'
+  );
+  
+  if (!firstConfirm) {
     return;
   }
   
   // 第二次确认：最终确认删除
-  if (!confirm(`确定要删除选中的 ${selectedImages.size} 张图片吗？删除后不可恢复！`)) {
+  const secondConfirm = await showConfirmDialog(
+    '最终确认',
+    `确定要删除选中的 ${selectedImages.size} 张图片吗？删除后不可恢复！`,
+    '确认删除',
+    '取消删除'
+  );
+  
+  if (!secondConfirm) {
     return;
   }
   
@@ -470,15 +743,15 @@ async function handleConfirmSelection() {
     const data = await response.json();
     
     if (response.ok && data.success) {
-      alert(`成功删除 ${data.deletedFromD1} 张图片`);
+      showToast(`成功删除 ${data.deletedFromD1} 张图片`, 2000);
       exitDeleteMode();
       loadImages(); // 重新加载当前页
     } else {
-      alert(data.error || '批量删除失败');
+      showToast(data.error || '批量删除失败', 2000);
     }
   } catch (error) {
     console.error('批量删除失败:', error);
-    alert('批量删除失败，请稍后重试');
+    showToast('批量删除失败，请稍后重试', 2000);
   }
 }
 

@@ -401,24 +401,34 @@ async function deleteImages(d1, ids) {
       return { success: true, deleted: 0 };
     }
     
+    let totalDeleted = 0;
+    const batchSize = 20; // 每批处理20个ID，避免IN子句参数限制
+    
     // 开始事务
     await d1.exec("BEGIN TRANSACTION;");
     
     try {
-      // 构建IN子句的参数占位符
-      const placeholders = ids.map(() => '?').join(',');
-      
-      // 执行删除操作
-      const result = await d1.prepare(
-        `DELETE FROM face_scores WHERE id IN (${placeholders})`
-      )
-      .bind(...ids)
-      .run();
+      // 分批处理
+      for (let i = 0; i < ids.length; i += batchSize) {
+        const batchIds = ids.slice(i, i + batchSize);
+        
+        // 构建IN子句的参数占位符
+        const placeholders = batchIds.map(() => '?').join(',');
+        
+        // 执行删除操作
+        const result = await d1.prepare(
+          `DELETE FROM face_scores WHERE id IN (${placeholders})`
+        )
+        .bind(...batchIds)
+        .run();
+        
+        totalDeleted += result.changes || 0;
+      }
       
       // 提交事务
       await d1.exec("COMMIT;");
       
-      return { success: true, deleted: result.changes || 0 };
+      return { success: true, deleted: totalDeleted };
     } catch (transactionError) {
       // 回滚事务
       await d1.exec("ROLLBACK;");
@@ -441,17 +451,27 @@ async function getImagesByIds(d1, ids) {
       return [];
     }
     
-    // 构建IN子句的参数占位符
-    const placeholders = ids.map(() => '?').join(',');
+    let allResults = [];
+    const batchSize = 20; // 每批处理20个ID，避免IN子句参数限制
     
-    // 执行查询
-    const result = await d1.prepare(
-      `SELECT id, md5, image_url FROM face_scores WHERE id IN (${placeholders})`
-    )
-    .bind(...ids)
-    .all();
+    // 分批处理
+    for (let i = 0; i < ids.length; i += batchSize) {
+      const batchIds = ids.slice(i, i + batchSize);
+      
+      // 构建IN子句的参数占位符
+      const placeholders = batchIds.map(() => '?').join(',');
+      
+      // 执行查询
+      const result = await d1.prepare(
+        `SELECT id, md5, image_url FROM face_scores WHERE id IN (${placeholders})`
+      )
+      .bind(...batchIds)
+      .all();
+      
+      allResults = allResults.concat(result.results || []);
+    }
     
-    return result.results || [];
+    return allResults;
   } catch (err) {
     throw new Error(`D1根据ID获取照片失败: ${err.message}`);
   }
