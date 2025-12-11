@@ -34,22 +34,40 @@ export async function onRequestGet(context) {
     
     // 1. 交换授权码获取访问令牌
     console.log('[DEBUG] 交换授权码获取访问令牌');
+    
+    // 注意：GitHub OAuth令牌交换端点需要使用表单格式发送请求
+    const formData = new URLSearchParams();
+    formData.append('client_id', GITHUB_CLIENT_ID);
+    formData.append('client_secret', GITHUB_CLIENT_SECRET);
+    formData.append('code', code);
+    
     const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
         'Accept': 'application/json'
       },
-      body: JSON.stringify({
-        client_id: GITHUB_CLIENT_ID,
-        client_secret: GITHUB_CLIENT_SECRET,
-        code
-      })
+      body: formData.toString()
     });
     
     console.log(`[DEBUG] 令牌响应状态: ${tokenResponse.status}`);
-    const tokenData = await tokenResponse.json();
-    console.log(`[DEBUG] 令牌响应数据: ${JSON.stringify(tokenData)}`);
+    
+    // 检查响应内容类型
+    const contentType = tokenResponse.headers.get('content-type');
+    console.log(`[DEBUG] 令牌响应内容类型: ${contentType}`);
+    
+    // 读取响应文本，以便查看实际返回的内容
+    const tokenResponseText = await tokenResponse.text();
+    console.log(`[DEBUG] 令牌响应文本: ${tokenResponseText}`);
+    
+    // 尝试解析为JSON
+    let tokenData;
+    try {
+      tokenData = JSON.parse(tokenResponseText);
+      console.log(`[DEBUG] 令牌响应数据: ${JSON.stringify(tokenData)}`);
+    } catch (parseError) {
+      throw new Error(`Failed to parse token response as JSON: ${tokenResponseText}, error: ${parseError.message}`);
+    }
     
     if (!tokenData.access_token) {
       throw new Error(`Failed to get access token: ${JSON.stringify(tokenData)}`);
