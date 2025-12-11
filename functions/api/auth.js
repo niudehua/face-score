@@ -130,17 +130,27 @@ export async function onRequestGet(context) {
   const { request, env } = context;
   const url = new URL(request.url);
   
+  console.log(`[DEBUG] 请求URL: ${request.url}`);
+  console.log(`[DEBUG] URL路径: ${url.pathname}`);
+  console.log(`[DEBUG] 请求方法: ${request.method}`);
+  
+  // 直接使用 request.url 的路径进行匹配，更可靠
+  const pathname = new URL(request.url).pathname;
+  
   // 处理GitHub授权回调
-  if (url.pathname === '/api/auth/github/callback') {
+  if (pathname.endsWith('/api/auth/github/callback')) {
+    console.log('[DEBUG] 匹配到GitHub回调路径');
     return handleGithubCallback(context);
   }
   
   // 生成GitHub授权URL
-  if (url.pathname === '/api/auth/github') {
+  if (pathname.endsWith('/api/auth/github')) {
+    console.log('[DEBUG] 匹配到GitHub授权路径');
     return redirectToGithubAuth(context);
   }
   
   // 原有会话验证逻辑
+  console.log('[DEBUG] 匹配到原有会话验证路径');
   return verifySession(context);
 }
 
