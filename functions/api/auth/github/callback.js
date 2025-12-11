@@ -47,6 +47,7 @@ export async function onRequestGet(context) {
     console.log(`[DEBUG] 请求体: ${formDataString}`);
     console.log(`[DEBUG] 请求体长度: ${formDataString.length}`);
     
+    let tokenData;
     try {
       const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
         method: 'POST',
@@ -81,7 +82,6 @@ export async function onRequestGet(context) {
       console.log(`[DEBUG] 清理后的响应文本: "${cleanedText}"`);
       
       // 尝试解析为JSON
-      let tokenData;
       try {
         tokenData = JSON.parse(cleanedText);
         console.log(`[DEBUG] 令牌响应数据: ${JSON.stringify(tokenData)}`);
