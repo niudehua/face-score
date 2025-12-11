@@ -114,10 +114,43 @@ function compressImage(imageBase64, maxWidth = 300, maxHeight = 300) {
   return imageBase64;
 }
 
+/**
+ * 批量从R2删除图片
+ * @param {R2Bucket} r2Bucket - R2存储桶实例
+ * @param {Array<string>} md5List - 图片的唯一标识符列表
+ * @returns {Promise<number>} - 成功删除的图片数量
+ */
+async function deleteImagesFromR2(r2Bucket, md5List) {
+  try {
+    if (!md5List || md5List.length === 0) {
+      return 0;
+    }
+    
+    let deletedCount = 0;
+    
+    // 批量删除图片
+    for (const md5 of md5List) {
+      try {
+        const key = `images/${md5}.jpg`;
+        await r2Bucket.delete(key);
+        deletedCount++;
+      } catch (error) {
+        console.error(`R2删除单个图片失败 (${md5}): ${error.message}`);
+        // 继续删除其他图片，不中断整个批量操作
+      }
+    }
+    
+    return deletedCount;
+  } catch (error) {
+    throw new Error(`R2批量删除失败: ${error.message}`);
+  }
+}
+
 export {
   calculateImageId,
   uploadImage,
   deleteImage,
+  deleteImagesFromR2,
   getImage,
   getImageUrl,
   compressImage

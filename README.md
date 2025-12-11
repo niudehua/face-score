@@ -33,17 +33,23 @@ face-score/
 │   ├── api/
 │   │   ├── score.js       # 主要 API 逻辑（D1 数据存储）
 │   │   ├── image.js       # 图片获取 API
+│   │   ├── images.js      # 照片列表和批量删除 API
+│   │   ├── auth.js        # 登录鉴权 API
 │   │   ├── cleanup.js     # 数据清理任务（自动删除6个月前数据）
 │   │   └── verify.js      # 数据验证和统计 API
 │   └── lib/
 │       ├── db.js          # D1 数据库操作模块
-│       └── storage.js     # R2 存储操作模块
+│       ├── storage.js     # R2 存储操作模块
+│       └── rate-limit.js  # 请求限流模块
 ├── public/
-│   └── index.html        # 静态页面（如有）
+│   ├── index.html        # 首页
+│   ├── login.html        # 登录页面
+│   ├── images.html       # 照片列表管理页面
+│   └── images.js         # 照片列表管理页面 JS
 ├── .dev.vars             # 本地开发环境变量
 ├── .gitignore            # Git 忽略文件
 ├── README.md             # 项目说明
-└── ...
+└── wrangler.toml         # Wrangler 配置文件
 ```
 
 ## 🔑 环境变量配置
@@ -55,12 +61,15 @@ face-score/
 - `FACEPP_SECRET`：Face++ API Secret
 - `TURNSTILE_SITE_KEY`：Cloudflare Turnstile 客户端站点密钥（可选，用于前端验证）
 - `TURNSTILE_SECRET_KEY`：Cloudflare Turnstile 服务器端密钥（可选，用于后端验证）
+- `ADMIN_USERNAME`：管理员用户名（用于管理页面登录）
+- `ADMIN_PASSWORD`：管理员密码（用于管理页面登录）
 
 ### Cloudflare 资源绑定
 - `AI`：Cloudflare AI 绑定（自动提供，无需手动设置）
 - `FACE_SCORE_DB`：Cloudflare D1 数据库绑定（用于存储评分记录）
-- `FACE_IMAGES`：Cloudflare R2 存储桶绑定（用于存储人脸图片）
+- `R2_BUCKET`：Cloudflare R2 存储桶绑定（用于存储人脸图片）
 - `RATE_LIMIT_KV`：Cloudflare KV 命名空间绑定（可选，用于请求限流）
+- `SESSION_KV`：Cloudflare KV 命名空间绑定（用于登录会话管理）
 
 ### 如何申请 Face++ API Key 和 Secret
 
@@ -186,49 +195,6 @@ Cloudflare Pages 本地开发（如使用 `wrangler pages dev`）会自动加载
 2. 在请求头中添加 `X-Turnstile-Response` 头
 3. 在 URL 查询参数中添加 `turnstile_response` 参数
 
-#### 限流说明
-
-所有 API 端点都实施了基于 IP 的请求限流：
-
-| API 端点 | 限流规则 |
-|---------|--------|
-| `/api/score` | 每 IP 每分钟 10 次请求 |
-| `/api/image` | 每 IP 每分钟 50 次请求 |
-| `/api/cleanup` | 每 IP 每分钟 5 次请求 |
-| `/api/verify` | 每 IP 每分钟 5 次请求 |
-
-限流响应头：
-- `X-RateLimit-Limit`：每分钟允许的最大请求数
-- `X-RateLimit-Remaining`：当前窗口剩余的请求数
-- `X-RateLimit-Reset`：当前窗口重置剩余时间（秒）
-- `Retry-After`：请求被限流时，建议重试时间（秒）
-
-#### 返回
-| 字段    | 类型   | 说明                 |
-| ------- | ------ | -------------------- |
-| score   | number | 颜值分数（0-100）    |
-| comment | string | AI 生成的颜值点评    |
-| logs    | array  | 调试日志（debug=true）|
-| error   | string | 错误信息（如有）     |
-| detail  | string | 错误详情（如有）     |
-
-**成功示例：**
-```json
-{
-  "score": 80.5,
-  "comment": "这位小哥哥颜值简直爆表！五官立体得像被精雕细琢过，笑容自带治愈属性，眼睛里好像藏着星星，绝对是人群中的焦点~",
-  "logs": ["...debug日志..."]
-}
-```
-
-**错误示例：**
-```json
-{
-  "error": "没有检测到人脸喵～",
-  "logs": ["...debug日志..."]
-}
-```
-
 ### 2. 图片获取 API
 
 #### 请求
@@ -290,6 +256,158 @@ Cloudflare Pages 本地开发（如使用 `wrangler pages dev`）会自动加载
   "logs": ["...日志信息..."]
 }
 ```
+
+### 5. 登录 API
+
+#### 请求
+- **POST** `/api/auth/login`
+- Content-Type: `application/json`
+
+#### 请求体参数
+| 字段     | 类型   | 必填 | 说明       |
+| -------- | ------ | ---- | ---------- |
+| username | string | 是   | 用户名     |
+| password | string | 是   | 密码       |
+
+**示例：**
+```json
+{
+  "username": "admin",
+  "password": "password"
+}
+```
+
+#### 返回
+| 字段    | 类型   | 说明                 |
+| ------- | ------ | -------------------- |
+| success | bool   | 登录是否成功         |
+| message | string | 登录结果消息         |
+
+### 6. 登录状态验证 API
+
+#### 请求
+- **GET** `/api/auth`
+
+#### 返回
+| 字段    | 类型   | 说明                 |
+| ------- | ------ | -------------------- |
+| success | bool   | 验证是否成功         |
+| message | string | 验证结果消息         |
+| data    | object | 用户信息             |
+
+### 7. 登出 API
+
+#### 请求
+- **DELETE** `/api/auth`
+
+#### 返回
+| 字段    | 类型   | 说明                 |
+| ------- | ------ | -------------------- |
+| success | bool   | 登出是否成功         |
+| message | string | 登出结果消息         |
+
+### 8. 照片列表 API
+
+#### 请求
+- **GET** `/api/images`
+- 需登录
+
+#### 参数
+| 字段     | 类型   | 必填 | 说明                 |
+| -------- | ------ | ---- | -------------------- |
+| page     | number | 否   | 页码，默认1          |
+| limit    | number | 否   | 每页数量，默认10，范围1-100 |
+| sort_by  | string | 否   | 排序字段，可选值：timestamp、score，默认timestamp |
+| order    | string | 否   | 排序方向，可选值：asc、desc，默认desc |
+| date_from| string | 否   | 开始时间，ISO格式    |
+| date_to  | string | 否   | 结束时间，ISO格式    |
+
+#### 返回
+| 字段       | 类型   | 说明                 |
+| ---------- | ------ | -------------------- |
+| data       | array  | 照片列表             |
+| pagination | object | 分页信息             |
+
+### 9. 批量删除照片 API
+
+#### 请求
+- **DELETE** `/api/images`
+- Content-Type: `application/json`
+- 需登录
+
+#### 请求体参数
+| 字段 | 类型   | 必填 | 说明                 |
+| ---- | ------ | ---- | -------------------- |
+| ids  | array  | 是   | 要删除的照片ID列表   |
+
+**示例：**
+```json
+{
+  "ids": ["id1", "id2", "id3"]
+}
+```
+
+#### 返回
+| 字段          | 类型   | 说明                 |
+| ------------- | ------ | -------------------- |
+| success       | bool   | 删除是否成功         |
+| message       | string | 删除结果消息         |
+| deletedFromD1 | number | 从D1数据库删除的数量 |
+| deletedFromR2 | number | 从R2存储删除的数量   |
+| totalRequested| number | 请求删除的总数量     |
+
+## 🔒 管理页面
+
+### 访问地址
+
+- **管理页面**：`/images.html`
+- 需登录后访问
+
+### 功能说明
+
+1. **照片列表展示**：
+   - 支持分页显示照片
+   - 支持按时间或颜值排序
+   - 支持按日期范围筛选
+
+2. **批量删除功能**：
+   - 支持勾选单张或多张照片
+   - 支持全选/取消全选
+   - 删除时同时删除D1数据库记录和R2存储的图片文件
+
+3. **自定义分页数量**：
+   - 支持选择每页显示10、20、50或100张照片
+   - 照片大小会根据分页数量自动调整
+   - 每页显示更多照片时，照片会自动缩小以适应布局
+
+4. **总条数显示**：
+   - 显示当前筛选条件下的总照片数量
+   - 实时更新
+
+### 登录管理
+
+- **登录页面**：`/login.html`
+- 用户名和密码从环境变量 `ADMIN_USERNAME` 和 `ADMIN_PASSWORD` 获取
+- 登录后会话有效期为7天，自动续期
+
+## 🔒 限流说明
+
+所有 API 端点都实施了基于 IP 的请求限流：
+
+| API 端点 | 限流规则 |
+|---------|--------|
+| `/api/score` | 每 IP 每分钟 10 次请求 |
+| `/api/image` | 每 IP 每分钟 50 次请求 |
+| `/api/images` | 每 IP 每分钟 50 次请求 |
+| `/api/cleanup` | 每 IP 每分钟 5 次请求 |
+| `/api/verify` | 每 IP 每分钟 5 次请求 |
+| `/api/auth` | 每 IP 每分钟 20 次请求 |
+
+限流响应头：
+- `X-RateLimit-Limit`：每分钟允许的最大请求数
+- `X-RateLimit-Remaining`：当前窗口剩余的请求数
+- `X-RateLimit-Reset`：当前窗口重置剩余时间（秒）
+- `Retry-After`：请求被限流时，建议重试时间（秒）
 
 ## 📊 核心功能说明
 

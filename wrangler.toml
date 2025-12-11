@@ -19,6 +19,26 @@ binding = "RATE_LIMIT_KV"
 id = "your-kv-namespace-id"  # 本地开发时可以使用任意字符串
 preview_id = "your-kv-namespace-id"  # 本地开发时可以使用任意字符串
 
+# KV 命名空间绑定（用于登录会话管理）
+[[kv_namespaces]]
+binding = "SESSION_KV"
+id = "your-session-kv-namespace-id"  # 本地开发时可以使用任意字符串
+preview_id = "your-session-kv-namespace-id"  # 本地开发时可以使用任意字符串
+
+# D1 数据库绑定
+[[d1_databases]]
+binding = "FACE_SCORE_DB"
+database_name = "face-score-db"
+database_id = "your-database-id"  # 本地开发时可以使用任意字符串
+
+# R2 存储桶绑定
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "face-score-images"
+
+# 兼容性日期（解决 wrangler 警告）
+compatibility_date = "2025-10-11"
+
 # 本地开发配置
 [dev]
 # 本地开发服务器端口

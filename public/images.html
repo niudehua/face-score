@@ -198,7 +198,13 @@
   </head>
   <body>
     <div class="container">
-      <h1>图片列表 - 颜值打分机 😻</h1>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1>图片列表 - 颜值打分机 😻</h1>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span id="username-display" style="color: #666;"></span>
+          <button id="logout-btn" class="secondary">登出</button>
+        </div>
+      </div>
       
       <!-- 筛选和排序 -->
       <div class="filter-container">
@@ -229,9 +235,31 @@
         </div>
         
         <div class="filter-group">
+          <label for="limit">每页数量:</label>
+          <select id="limit">
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
           <button id="apply-filter">应用筛选</button>
           <button id="reset-filter" class="secondary">重置</button>
         </div>
+      </div>
+      
+      <!-- 批量操作栏 -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin: 20px 0;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="select-all" />
+            <label for="select-all">全选</label>
+          </div>
+          <button id="batch-delete" style="background: #e74c3c;">批量删除</button>
+        </div>
+        <div id="total-count" style="color: #666; font-weight: 600;"></div>
       </div>
       
       <!-- 图片网格 -->

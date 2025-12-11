@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/favicon.png" type="image/png">
+    <title>登录 - 颜值打分机 😻</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      /* 全局样式 */
+      body {
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        background: linear-gradient(135deg, #fef5ef, #ffeaea);
+        color: #444;
+        min-height: 100vh;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      
+      .container {
+        max-width: 400px;
+        width: 100%;
+        background: white;
+        padding: 40px;
+        border-radius: 16px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      }
+      
+      h1 {
+        color: #e85d75;
+        margin-top: 0;
+        font-size: 2em;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      
+      .login-form {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      
+      label {
+        font-weight: 600;
+        color: #666;
+      }
+      
+      input, button {
+        padding: 12px 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 16px;
+      }
+      
+      button {
+        background: #e85d75;
+        color: white;
+        border: none;
+        cursor: pointer;
+        transition: background 0.3s ease;
+        font-weight: 600;
+      }
+      
+      button:hover {
+        background: #d1445a;
+      }
+      
+      .error-message {
+        color: #e74c3c;
+        background: #fdecea;
+        padding: 10px;
+        border-radius: 8px;
+        text-align: center;
+        margin-top: 10px;
+        display: none;
+      }
+      
+      .loading {
+        text-align: center;
+        color: #666;
+        display: none;
+      }
+      
+      .loading::after {
+        content: "";
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #e85d75;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-left: 10px;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>登录 - 颜值打分机 😻</h1>
+      
+      <form class="login-form" id="login-form">
+        <div class="form-group">
+          <label for="username">用户名</label>
+          <input type="text" id="username" name="username" required autofocus>
+        </div>
+        
+        <div class="form-group">
+          <label for="password">密码</label>
+          <input type="password" id="password" name="password" required>
+        </div>
+        
+        <button type="submit" id="login-btn">登录</button>
+        
+        <div class="error-message" id="error-message"></div>
+        <div class="loading" id="loading">登录中...</div>
+      </form>
+    </div>
+    
+    <script>
+      // 登录表单提交处理
+      document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const errorMessage = document.getElementById('error-message');
+        const loading = document.getElementById('loading');
+        const loginBtn = document.getElementById('login-btn');
+        
+        // 重置状态
+        errorMessage.style.display = 'none';
+        loading.style.display = 'block';
+        loginBtn.disabled = true;
+        
+        try {
+          // 发送登录请求
+          const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, password })
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok && data.success) {
+            // 登录成功，跳转到图片列表页
+            window.location.href = '/images.html';
+          } else {
+            // 登录失败，显示错误信息
+            errorMessage.textContent = data.message || '登录失败，请检查用户名和密码';
+            errorMessage.style.display = 'block';
+          }
+        } catch (error) {
+          console.error('登录失败:', error);
+          errorMessage.textContent = '登录失败，请稍后重试';
+          errorMessage.style.display = 'block';
+        } finally {
+          loading.style.display = 'none';
+          loginBtn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>

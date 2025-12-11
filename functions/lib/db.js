@@ -389,6 +389,74 @@ async function getImages(d1, options = {}) {
   }
 }
 
+/**
+ * 批量删除照片记录
+ * @param {D1Database} d1 - D1数据库实例
+ * @param {Array<string>} ids - 要删除的照片ID列表
+ * @returns {Promise<Object>} - 删除结果
+ */
+async function deleteImages(d1, ids) {
+  try {
+    if (!ids || ids.length === 0) {
+      return { success: true, deleted: 0 };
+    }
+    
+    // 开始事务
+    await d1.exec("BEGIN TRANSACTION;");
+    
+    try {
+      // 构建IN子句的参数占位符
+      const placeholders = ids.map(() => '?').join(',');
+      
+      // 执行删除操作
+      const result = await d1.prepare(
+        `DELETE FROM face_scores WHERE id IN (${placeholders})`
+      )
+      .bind(...ids)
+      .run();
+      
+      // 提交事务
+      await d1.exec("COMMIT;");
+      
+      return { success: true, deleted: result.changes || 0 };
+    } catch (transactionError) {
+      // 回滚事务
+      await d1.exec("ROLLBACK;");
+      throw transactionError;
+    }
+  } catch (err) {
+    throw new Error(`D1批量删除照片失败: ${err.message}`);
+  }
+}
+
+/**
+ * 根据ID列表获取照片信息
+ * @param {D1Database} d1 - D1数据库实例
+ * @param {Array<string>} ids - 照片ID列表
+ * @returns {Promise<Array<Object>>} - 照片信息列表
+ */
+async function getImagesByIds(d1, ids) {
+  try {
+    if (!ids || ids.length === 0) {
+      return [];
+    }
+    
+    // 构建IN子句的参数占位符
+    const placeholders = ids.map(() => '?').join(',');
+    
+    // 执行查询
+    const result = await d1.prepare(
+      `SELECT id, md5, image_url FROM face_scores WHERE id IN (${placeholders})`
+    )
+    .bind(...ids)
+    .all();
+    
+    return result.results || [];
+  } catch (err) {
+    throw new Error(`D1根据ID获取照片失败: ${err.message}`);
+  }
+}
+
 export {
   init,
   ensureTableExists,
@@ -398,5 +466,7 @@ export {
   getStats,
   getRetentionStats,
   getCleanupStatus,
-  getImages
+  getImages,
+  deleteImages,
+  getImagesByIds
 };
