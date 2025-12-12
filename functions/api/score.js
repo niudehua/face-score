@@ -89,7 +89,8 @@ export async function onRequestPost(context) {
     }
     
     if (hasTurnstileSecret && !isMiniProgram) {
-      const turnstileToken = await extractTurnstileToken(context.request);
+      // 从请求体中直接获取令牌，避免重复读取请求体
+      const turnstileToken = body.turnstile_response;
       const isVerified = await verifyTurnstile(turnstileToken, TURNSTILE_SECRET_KEY);
       
       if (!isVerified) {
