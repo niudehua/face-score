@@ -3,8 +3,8 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" href="/favicon.png" type="image/png">
-  <title>颜值打分机 😻</title>
+  <link rel="icon" type="image/png" href="/logo.png">
+  <title>AI 喵相馆 - 科学颜值打分 & AI 看相</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,8 +15,13 @@
 
 <body>
   <div class="container">
-    <h1>颜值打分机 ✨</h1>
-    <p>上传一张照片，让 AI 猫猫帮你评分吧～</p>
+    <header>
+      <div class="logo">
+        <img src="/logo.png" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;">
+      </div>
+      <h1>AI 喵相馆 🐱</h1>
+      <p>上传一张照片，AI 既能科学打分，又能玄学看相～</p>
+    </header>
 
     <div class="file-upload-wrapper">
       <input type="file" id="fileInput" accept="image/*" />
@@ -102,7 +107,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       // 初始化 Turnstile 组件
       initTurnstile();
-      
+
       // 添加查看所有图片按钮的点击事件
       const imagesBtn = document.getElementById('imagesBtn');
       if (imagesBtn) {

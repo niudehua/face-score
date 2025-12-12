@@ -6,15 +6,9 @@
   <view class="cat-decoration cat-bottom-right">🐱</view>
 
   <!-- 标题区域 -->
-  <h1>颜值打分机 🚀</h1>
+  <image class="app-logo" src="/images/logo.png" mode="aspectFit"></image>
+  <h1>AI 喵相馆 🐱</h1>
   <p>上传一张照片，让 AI 猫猫帮你评分吧～</p>
-
-  <!-- 预览区域 -->
-  <view class="preview-container" wx:if="{{previewShow}}">
-    <image id="preview" class="show" src="{{previewUrl}}" mode="aspectFit"></image>
-    <button class="clear-preview-btn" bindtap="clearPreview">×</button>
-  </view>
-
 
   <!-- 模式切换 -->
   <view class="mode-selector">
@@ -24,6 +18,12 @@
     <view class="mode-item {{mode === 'fortune' ? 'active' : ''}}" bindtap="switchMode" data-mode="fortune">
       AI 看相 🔮
     </view>
+  </view>
+
+  <!-- 预览区域 -->
+  <view class="preview-container" wx:if="{{previewShow}}">
+    <image id="preview" class="show" src="{{previewUrl}}" mode="aspectFit"></image>
+    <button class="clear-preview-btn" bindtap="clearPreview">×</button>
   </view>
 
   <!-- 空状态 -->

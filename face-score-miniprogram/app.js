@@ -5,7 +5,7 @@ const config = require('./config/index');
 App({
   onLaunch() {
     // 小程序初始化时执行
-    console.log('颜值打分机小程序启动');
+    console.log('AI 喵相馆小程序启动');
     console.log('当前环境配置:', config);
   },
   globalData: {
