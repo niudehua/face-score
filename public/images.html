@@ -4,127 +4,118 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" href="/favicon.png" type="image/png">
-  <title>图片列表 - 颜值打分机 😻</title>
+  <title>颜值档案 - 颜值打分机</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
 </head>
 
 <body>
-  <div class="image-grid-container">
-    <div class="header-row">
-      <div style="display: flex; align-items: center; gap: 15px;">
-        <h1>图片列表 📸</h1>
-        <a href="/" class="secondary-btn"
-          style="text-decoration: none; padding: 6px 16px; font-size: 0.9rem; margin: 0; display: inline-flex; align-items: center;">
-          ← 去打分
+  <div class="dashboard-container">
+    <!-- Header -->
+    <header class="dashboard-header">
+      <div class="brand-section">
+        <h1 class="brand-title">
+          <span>✨</span>
+          <span>颜值档案</span>
+        </h1>
+        <a href="/" class="btn btn-text" style="font-size: 0.9rem;">
+          ← 返回打分
         </a>
       </div>
-      <div style="display: flex; align-items: center; gap: 15px;">
-        <span id="username-display" style="color: var(--text-secondary); font-weight: 500;"></span>
-        <button id="logout-btn" class="secondary-btn"
-          style="margin:0; padding: 8px 16px; width: auto; font-size: 0.9rem;">退出登录</button>
-      </div>
-    </div>
 
-    <!-- 固定在顶部的筛选和操作栏 -->
-    <div class="filter-bar">
-      <!-- 筛选和排序 -->
-      <div class="filter-controls">
+      <div class="user-profile">
+        <span id="username-display" class="user-name"></span>
+        <button id="logout-btn" class="btn btn-secondary" style="padding: 6px 14px; font-size: 0.85rem;">
+          退出
+        </button>
+      </div>
+    </header>
+
+    <!-- Filters & Actions -->
+    <div class="action-bar filter-bar">
+
+      <!-- Left Controls: Filter -->
+      <div class="filter-controls" style="display:contents;">
         <div class="filter-group">
-          <label for="date-from">日期范围:</label>
-          <input type="date" id="date-from" />
-          <span style="color:var(--text-secondary)">-</span>
-          <input type="date" id="date-to" />
+          <div class="input-wrapper">
+            <input type="date" id="date-from" class="custom-date" placeholder="开始日期" />
+          </div>
+          <span style="color: #adb5bd;">→</span>
+          <div class="input-wrapper">
+            <input type="date" id="date-to" class="custom-date" placeholder="结束日期" />
+          </div>
         </div>
 
         <div class="filter-group">
-          <label for="sort-by">排序:</label>
-          <select id="sort-by">
-            <option value="timestamp">时间</option>
-            <option value="score">颜值</option>
-          </select>
-          <select id="order">
-            <option value="desc">降序</option>
-            <option value="asc">升序</option>
-          </select>
-        </div>
-
-
-        <div class="filter-group" style="margin-left: auto;">
-          <button id="apply-filter" style="width: auto; padding: 8px 16px; font-size: 0.9rem;">筛选</button>
-          <button id="reset-filter" class="secondary-btn"
-            style="width: auto; padding: 8px 16px; margin: 0; font-size: 0.9rem;">重置</button>
+          <div class="input-wrapper">
+            <select id="sort-by" class="custom-select">
+              <option value="timestamp">按时间</option>
+              <option value="score">按颜值</option>
+            </select>
+          </div>
+          <div class="input-wrapper">
+            <select id="order" class="custom-select">
+              <option value="desc">降序</option>
+              <option value="asc">升序</option>
+            </select>
+          </div>
+          <button id="apply-filter" class="btn btn-primary">筛选</button>
+          <button id="reset-filter" class="btn btn-text">重置</button>
         </div>
       </div>
 
-      <!-- 批量操作栏 -->
-      <div class="batch-actions">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <button id="batch-delete" class="danger-btn"
-            style="width: auto; padding: 8px 16px; font-size: 0.9rem;">批量删除</button>
-          <button id="confirm-selection"
-            style="background: var(--primary-color); display: none; width: auto; padding: 8px 16px; font-size: 0.9rem;">确认删除</button>
-          <button id="cancel-delete" class="secondary-btn"
-            style="display: none; width: auto; padding: 8px 16px; margin: 0; font-size: 0.9rem;">取消</button>
+      <!-- Right Controls: Batch Action -->
+      <div class="batch-actions filter-group" style="margin-left: auto;">
+        <span id="total-count"
+          style="margin-right: 12px; font-weight: 500; font-size: 0.9rem; color: var(--text-secondary);"></span>
+
+        <button id="batch-delete" class="btn btn-secondary" style="color: #e03131; border-color: #ffd8d8;">
+          <span style="font-size: 1.1em; line-height: 1;">🗑</span> 批量管理
+        </button>
+
+        <!-- Hidden Action Mode Buttons -->
+        <div id="selection-actions" style="display: none; height: 100%; align-items: center; gap: 8px;">
+          <button id="confirm-selection" class="btn btn-danger">确认删除</button>
+          <button id="cancel-delete" class="btn btn-secondary">取消</button>
         </div>
-        <div id="total-count" style="color: var(--text-secondary); font-weight: 500; font-size: 0.9rem;"></div>
       </div>
     </div>
 
-    <!-- 图片网格 -->
-    <div id="image-grid" class="image-grid"></div>
-
-    <!-- 加载状态 -->
-    <div id="loading" style="text-align: center; padding: 40px; display: none;">
-      <div
-        style="display: inline-block; width: 30px; height: 30px; border: 3px solid #f3f3f3; border-top: 3px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite;">
-      </div>
-      <p style="color: var(--text-secondary); margin-top: 10px;">加载中...</p>
+    <!-- Content Grid -->
+    <div id="image-grid" class="image-grid">
+      <!-- Cards will be injected here by JS -->
     </div>
 
-    <!-- 空状态 -->
-    <div id="empty" style="text-align: center; padding: 60px 20px; color: var(--text-secondary); display: none;">
-      <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;">📷</div>
-      <p>暂无图片记录</p>
+    <!-- States -->
+    <div id="loading" class="state-container">
+      <div class="spinner"></div>
+      <p>正在加载颜值数据...</p>
     </div>
 
-    <!-- 加载更多提示 -->
-    <div id="load-more-trigger" style="height: 20px; width: 100%;"></div>
-    <div id="load-more-status" style="text-align: center; padding: 20px; color: var(--text-secondary); display: none;">
-      <div
-        style="display: inline-block; width: 24px; height: 24px; border: 2px solid #f3f3f3; border-top: 2px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; vertical-align: middle; margin-right: 8px;">
-      </div>
-      <span>正在加载更多...</span>
-    </div>
-    <div id="no-more-data"
-      style="text-align: center; padding: 30px; color: var(--text-secondary); font-size: 0.9rem; display: none;">
-      ✨ 已经到底啦，喵～
+    <div id="empty" class="state-container" style="display: none;">
+      <div style="font-size: 4rem; margin-bottom: 16px;">📷</div>
+      <h3>暂无记录</h3>
+      <p>快去拍一张试试吧！</p>
     </div>
 
+    <div id="load-more-trigger" style="height: 20px;"></div>
+
+    <div id="load-more-status" class="state-container" style="display: none; padding: 20px;">
+      <div class="spinner" style="width: 24px; height: 24px; border-width: 2px;"></div>
+    </div>
+
+    <div id="no-more-data" class="state-container" style="display: none; padding: 20px;">
+      <p>✨ 已经到底啦，喵～</p>
+    </div>
 
   </div>
 
   <script src="/images.js"></script>
-  <script>
-    // Simple spin animation injection if not present (though style.css handles most)
-    // style.css doesn't have @keyframes spin if I didn't add it.
-    // I should add it to style.css or here.
-    // Wait, inline styles above use 'animation: spin'.
-  </script>
-  <style>
-    @keyframes spin {
-      0% {
-        transform: rotate(0deg);
-      }
-
-      100% {
-        transform: rotate(360deg);
-      }
-    }
-  </style>
 </body>
 
 </html>

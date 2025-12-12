@@ -30,6 +30,7 @@ const orderSelect = document.getElementById('order');
 const applyFilterBtn = document.getElementById('apply-filter');
 const resetFilterBtn = document.getElementById('reset-filter');
 const batchDeleteBtn = document.getElementById('batch-delete');
+const selectionActions = document.getElementById('selection-actions'); // New container
 const confirmSelectionBtn = document.getElementById('confirm-selection');
 const cancelDeleteBtn = document.getElementById('cancel-delete');
 const totalCountDisplay = document.getElementById('total-count');
@@ -241,12 +242,18 @@ function renderImageGrid(images) {
     // 渲染HTML
     imageItem.innerHTML = `
       <div class="image-wrapper">
-        <img src="${image.image_url}" alt="颜值图片">
+        <img src="${image.image_url}" alt="颜值图片" loading="lazy">
         <div class="score-badge">${image.score.toFixed(1)}</div>
+        <div class="selection-overlay"></div>
       </div>
-      <div class="image-info">
-        <p style="margin:0;font-weight:600;font-size:0.9rem;">${formatTime(image.timestamp)}</p>
-        <p style="margin:0.25rem 0 0;font-size:0.85rem;color:var(--text-secondary);">${image.gender} · ${image.age}岁</p>
+      <div class="card-info">
+        <div class="info-header">
+          <span class="info-time">${formatTime(image.timestamp)}</span>
+        </div>
+        <div class="info-tags">
+          <span class="tag">${image.gender}</span>
+          <span class="tag">${image.age}岁</span>
+        </div>
       </div>
     `;
 
@@ -277,18 +284,12 @@ function renderImageGrid(images) {
   });
 }
 
-// 更新图片项样式
+// 更新图片项样式 (Now handled by CSS class .selected)
 function updateImageItemStyle(imageItem, isSelected) {
   if (isSelected) {
-    imageItem.style.opacity = '0.6';
-    imageItem.style.border = '2px solid #e74c3c';
-    imageItem.style.backgroundColor = '#f5f5f5';
-    imageItem.style.filter = 'grayscale(100%)';
+    imageItem.classList.add('selected');
   } else {
-    imageItem.style.opacity = '1';
-    imageItem.style.border = '';
-    imageItem.style.backgroundColor = '';
-    imageItem.style.filter = 'grayscale(0%)';
+    imageItem.classList.remove('selected');
   }
 }
 
@@ -630,29 +631,31 @@ function enterDeleteMode() {
   deleteMode = true;
   // 显示确认选择和取消按钮，隐藏批量删除按钮
   batchDeleteBtn.style.display = 'none';
-  confirmSelectionBtn.style.display = 'inline-block';
-  cancelDeleteBtn.style.display = 'inline-block';
+  if (selectionActions) selectionActions.style.display = 'flex'; // Show container
+  
   // 清空之前的选择
   selectedImages.clear();
   // 更新所有卡片样式
   document.querySelectorAll('.image-card').forEach(item => {
+    item.classList.add('deleting'); // Add visual cue for delete mode
     updateImageItemStyle(item, false);
   });
   // 显示操作提示
-  showToast('已进入删除模式，请选择要删除的图片', 2000);
+  showToast('已进入批量管理模式，请选择图片', 2000);
 }
 
 // 退出删除模式
 function exitDeleteMode() {
   deleteMode = false;
   // 恢复批量删除按钮，隐藏确认和取消按钮
-  batchDeleteBtn.style.display = 'inline-block';
-  confirmSelectionBtn.style.display = 'none';
-  cancelDeleteBtn.style.display = 'none';
+  batchDeleteBtn.style.display = 'inline-flex';
+  if (selectionActions) selectionActions.style.display = 'none'; // Hide container
+
   // 清空选择
   selectedImages.clear();
   // 更新所有卡片样式
   document.querySelectorAll('.image-card').forEach(item => {
+    item.classList.remove('deleting'); // Remove visual cue
     updateImageItemStyle(item, false);
   });
 }
