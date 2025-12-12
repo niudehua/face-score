@@ -6,20 +6,24 @@
  * @returns {Promise<string>} - 图片的唯一标识符
  */
 async function calculateImageId(imageBase64) {
-  // 先将base64转换为二进制数据，再计算哈希
-  const binaryString = atob(imageBase64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
+  try {
+    // 先将base64转换为二进制数据，再计算哈希
+    const binaryString = atob(imageBase64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    
+    // 计算二进制数据的SHA-256哈希
+    const hashBuffer = await crypto.subtle.digest('SHA-256', bytes);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    // 返回前32个字符作为图片ID
+    return hashHex.substring(0, 32);
+  } catch (error) {
+    throw new Error(`计算图片ID失败: ${error.message}`);
   }
-  
-  // 计算二进制数据的SHA-256哈希
-  const hashBuffer = await crypto.subtle.digest('SHA-256', bytes);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  
-  // 返回前32个字符作为图片ID
-  return hashHex.substring(0, 32);
 }
 
 /**
@@ -142,6 +146,7 @@ async function deleteImagesFromR2(r2Bucket, md5List) {
       } catch (error) {
         // 继续删除其他图片，不中断整个批量操作
         // 错误会被上层调用者处理
+        console.warn(`删除图片 ${md5} 失败:`, error.message);
       }
     }
     

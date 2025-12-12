@@ -231,7 +231,14 @@ export async function onRequestGet(context) {
     // 5. 存储到KV，设置过期时间为7天
     const expirationTtl = 7 * 24 * 60 * 60; // 7天
     console.log('[DEBUG] 存储会话到KV');
-    await SESSION_KV.put(sessionId, JSON.stringify(sessionData), { expirationTtl });
+    
+    // 添加错误处理
+    try {
+      await SESSION_KV.put(sessionId, JSON.stringify(sessionData), { expirationTtl });
+    } catch (kvError) {
+      console.error('存储会话到KV失败:', kvError);
+      throw new Error(`Failed to store session in KV: ${kvError.message}`);
+    }
 
     // 6. 设置Cookie
     const cookie = `session_id=${sessionId}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${expirationTtl}`;
@@ -249,6 +256,8 @@ export async function onRequestGet(context) {
   } catch (error) {
     console.error('GitHub登录失败:', error);
     console.error('GitHub登录失败详情:', error.stack);
+    
+    // 返回错误响应
     return new Response(JSON.stringify({
       success: false,
       message: 'GitHub登录失败，请稍后重试',
