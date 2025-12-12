@@ -4,8 +4,8 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" href="/favicon.png" type="image/png">
-  <title>颜值档案 - 颜值打分机</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>颜值档案</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -14,103 +14,62 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 
-<body>
-  <div class="dashboard-container">
-    <!-- Header -->
-    <header class="dashboard-header">
-      <div class="brand-section">
-        <h1 class="brand-title">
-          <span>✨</span>
-          <span>颜值档案</span>
-        </h1>
-        <a href="/" class="btn btn-text" style="font-size: 0.9rem;">
-          ← 返回打分
+<body class="images-page">
+  <div class="app-layout">
+
+    <!-- Minimalist Sticky Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <a href="/" class="nav-btn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
         </a>
       </div>
 
-      <div class="user-profile">
-        <span id="username-display" class="user-name"></span>
-        <button id="logout-btn" class="btn btn-secondary" style="padding: 6px 14px; font-size: 0.85rem;">
-          退出
-        </button>
+      <div class="header-center">
+        <h1 class="app-title">颜值档案</h1>
+        <span id="total-count" class="subtitle-count">加载中...</span>
+      </div>
+
+      <div class="header-right">
+        <button id="manage-btn" class="text-btn">管理</button>
       </div>
     </header>
 
-    <!-- Filters & Actions -->
-    <div class="action-bar filter-bar">
+    <!-- Content Area -->
+    <main id="image-grid" class="image-grid minimalist-grid">
+      <!-- Cards injected by JS -->
+    </main>
 
-      <!-- Left Controls: Filter -->
-      <div class="filter-controls" style="display:contents;">
-        <div class="filter-group">
-          <div class="input-wrapper">
-            <input type="date" id="date-from" class="custom-date" placeholder="开始日期" />
-          </div>
-          <span style="color: #adb5bd;">→</span>
-          <div class="input-wrapper">
-            <input type="date" id="date-to" class="custom-date" placeholder="结束日期" />
-          </div>
-        </div>
-
-        <div class="filter-group">
-          <div class="input-wrapper">
-            <select id="sort-by" class="custom-select">
-              <option value="timestamp">按时间</option>
-              <option value="score">按颜值</option>
-            </select>
-          </div>
-          <div class="input-wrapper">
-            <select id="order" class="custom-select">
-              <option value="desc">降序</option>
-              <option value="asc">升序</option>
-            </select>
-          </div>
-          <button id="apply-filter" class="btn btn-primary">筛选</button>
-          <button id="reset-filter" class="btn btn-text">重置</button>
-        </div>
-      </div>
-
-      <!-- Right Controls: Batch Action -->
-      <div class="batch-actions filter-group" style="margin-left: auto;">
-        <span id="total-count"
-          style="margin-right: 12px; font-weight: 500; font-size: 0.9rem; color: var(--text-secondary);"></span>
-
-        <button id="batch-delete" class="btn btn-secondary" style="color: #e03131; border-color: #ffd8d8;">
-          <span style="font-size: 1.1em; line-height: 1;">🗑</span> 批量管理
-        </button>
-
-        <!-- Hidden Action Mode Buttons -->
-        <div id="selection-actions" style="display: none; height: 100%; align-items: center; gap: 8px;">
-          <button id="confirm-selection" class="btn btn-danger">确认删除</button>
-          <button id="cancel-delete" class="btn btn-secondary">取消</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Content Grid -->
-    <div id="image-grid" class="image-grid">
-      <!-- Cards will be injected here by JS -->
-    </div>
-
-    <!-- States -->
+    <!-- Loading / Empty States -->
     <div id="loading" class="state-container">
       <div class="spinner"></div>
-      <p>正在加载颜值数据...</p>
     </div>
 
     <div id="empty" class="state-container" style="display: none;">
-      <div style="font-size: 4rem; margin-bottom: 16px;">📷</div>
-      <h3>暂无记录</h3>
-      <p>快去拍一张试试吧！</p>
+      <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">📷</div>
+      <p>暂无照片</p>
     </div>
 
-    <div id="load-more-trigger" style="height: 20px;"></div>
-
-    <div id="load-more-status" class="state-container" style="display: none; padding: 20px;">
-      <div class="spinner" style="width: 24px; height: 24px; border-width: 2px;"></div>
+    <div id="load-more-status" class="state-container compact" style="display: none;">
+      <div class="spinner small"></div>
     </div>
 
-    <div id="no-more-data" class="state-container" style="display: none; padding: 20px;">
-      <p>✨ 已经到底啦，喵～</p>
+    <div id="load-more-trigger"></div>
+
+    <!-- Floating Bottom Action Bar (Hidden by default) -->
+    <div id="bottom-bar" class="bottom-action-bar">
+      <div class="bar-content">
+        <span id="selection-count">已选择 0 张</span>
+        <button id="delete-btn" class="action-btn delete" disabled>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"
+              stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          删除
+        </button>
+      </div>
     </div>
 
   </div>
