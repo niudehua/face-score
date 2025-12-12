@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
-  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer onload="initTurnstile()"></script>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>
 </head>
 
 <body>
@@ -74,12 +74,6 @@
 
     // 动态初始化 Turnstile 组件，若未配置则隐藏控件
     async function initTurnstile() {
-      // 确保 DOM 完全加载
-      if (document.readyState !== 'complete') {
-        document.addEventListener('DOMContentLoaded', initTurnstile);
-        return;
-      }
-      
       const widgetContainer = document.querySelector('.turnstile-container');
       try {
         const res = await fetch('/api/turnstile');
@@ -106,6 +100,9 @@
 
     // 页面加载完成后初始化事件监听
     document.addEventListener('DOMContentLoaded', () => {
+      // 初始化 Turnstile 组件
+      initTurnstile();
+      
       // 添加查看所有图片按钮的点击事件
       const imagesBtn = document.getElementById('imagesBtn');
       if (imagesBtn) {
