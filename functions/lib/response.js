@@ -102,29 +102,24 @@ export function createErrorResponse(error, options = {}) {
   return response;
 }
 
-// 导出默认响应头以供使用
-export { DEFAULT_HEADERS };
-
 /**
  * 创建CORS响应头
- * @param {string|string[]} allowedOrigins - 允许的源（支持字符串或数组）
+ * @param {string|string[]} allowedOrigins - 允许的源
  * @param {Request} request - 请求对象
  * @returns {Object} CORS响应头
  */
 export function createCORSHeaders(allowedOrigins = '*', request = null) {
-  const origin = request?.headers?.get('Origin') || '';
-  
-  // 如果允许所有源
-  if (allowedOrigins === '*') {
+  // 如果没有请求对象，返回默认CORS头
+  if (!request) {
     return {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': Array.isArray(allowedOrigins) ? allowedOrigins[0] || '*' : allowedOrigins,
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Turnstile-Response',
-      'Access-Control-Allow-Credentials': 'false'
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Turnstile-Response'
     };
   }
 
-  // 如果指定了允许的源列表
+  // 获取请求来源
+  const origin = request.headers.get('Origin') || '*';
   const origins = Array.isArray(allowedOrigins) ? allowedOrigins : [allowedOrigins];
   const isAllowed = origins.includes(origin);
 
@@ -158,4 +153,3 @@ export function handleOptionsRequest(allowedOrigins = '*', request = null) {
     headers: corsHeaders
   });
 }
-

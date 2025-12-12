@@ -91,7 +91,6 @@ export async function onRequestDelete(context) {
       // 从KV中删除会话
       await SESSION_KV.delete(sessionId);
     }
-
     // 清除Cookie
     const cookie = 'session_id=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0';
 

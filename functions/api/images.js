@@ -1,4 +1,3 @@
-// 导入模块
 import { getImages, deleteImages, getImagesByIds } from '../lib/db.js';
 import { rateLimit } from '../lib/rate-limit.js';
 import { deleteImagesFromR2 } from '../lib/storage.js';
@@ -41,32 +40,32 @@ export async function onRequestGet(context) {
   const logger = createLogger('images-api');
   const corsHeaders = createCORSHeaders('*', context.request);
 
-  // 1. 实施限流
-  const rateLimitResult = await rateLimit(context.request, context, {
-    path: '/api/images',
-    ...RATE_LIMIT_CONFIG.IMAGES
-  });
-
-  if (rateLimitResult.limited) {
-    logger.warn('请求被限流', { ip: context.request.headers.get('CF-Connecting-IP') });
-    return rateLimitResult.response;
-  }
-
-  // 2. 验证会话
-  const sessionResult = await verifySession(context.request, context.env);
-  if (!sessionResult.valid) {
-    logger.warn('会话验证失败', { message: sessionResult.message });
-    return createErrorResponse(sessionResult.message, {
-      status: HTTP_STATUS.UNAUTHORIZED,
-      headers: corsHeaders,
-      rateLimitInfo: rateLimitResult
-    });
-  }
-  
-  logger.debug('会话验证成功', { username: sessionResult.sessionData.username });
-
-  // 3. 解析请求参数
   try {
+    // 1. 实施限流
+    const rateLimitResult = await rateLimit(context.request, context, {
+      path: '/api/images',
+      ...RATE_LIMIT_CONFIG.IMAGES
+    });
+
+    if (rateLimitResult.limited) {
+      logger.warn('请求被限流', { ip: context.request.headers.get('CF-Connecting-IP') });
+      return rateLimitResult.response;
+    }
+
+    // 2. 验证会话
+    const sessionResult = await verifySession(context.request, context.env);
+    if (!sessionResult.valid) {
+      logger.warn('会话验证失败', { message: sessionResult.message });
+      return createErrorResponse(sessionResult.message, {
+        status: HTTP_STATUS.UNAUTHORIZED,
+        headers: corsHeaders,
+        rateLimitInfo: rateLimitResult
+      });
+    }
+    
+    logger.debug('会话验证成功', { username: sessionResult.sessionData.username });
+
+    // 3. 解析请求参数
     const url = new URL(context.request.url);
     const params = new URLSearchParams(url.search);
     
@@ -133,7 +132,7 @@ export async function onRequestGet(context) {
     return createErrorResponse(err.message, {
       status: HTTP_STATUS.BAD_REQUEST,
       headers: corsHeaders,
-      rateLimitInfo: rateLimitResult,
+      rateLimitInfo: null, // 错误情况下不返回限流信息
       logs: logger.getLogs(),
       debug: true
     });
@@ -146,32 +145,32 @@ export async function onRequestDelete(context) {
   const logger = createLogger('images-delete-api');
   const corsHeaders = createCORSHeaders('*', context.request);
 
-  // 1. 实施限流
-  const rateLimitResult = await rateLimit(context.request, context, {
-    path: '/api/images',
-    limit: 10, // 每分钟10次请求
-    windowSeconds: 60
-  });
-
-  if (rateLimitResult.limited) {
-    logger.warn('请求被限流', { ip: context.request.headers.get('CF-Connecting-IP') });
-    return rateLimitResult.response;
-  }
-
-  // 2. 验证会话
-  const sessionResult = await verifySession(context.request, context.env);
-  if (!sessionResult.valid) {
-    logger.warn('会话验证失败', { message: sessionResult.message });
-    return createErrorResponse(sessionResult.message, {
-      status: HTTP_STATUS.UNAUTHORIZED,
-      headers: corsHeaders,
-      rateLimitInfo: rateLimitResult
-    });
-  }
-  
-  logger.debug('会话验证成功', { username: sessionResult.sessionData.username });
-
   try {
+    // 1. 实施限流
+    const rateLimitResult = await rateLimit(context.request, context, {
+      path: '/api/images',
+      limit: 10, // 每分钟10次请求
+      windowSeconds: 60
+    });
+
+    if (rateLimitResult.limited) {
+      logger.warn('请求被限流', { ip: context.request.headers.get('CF-Connecting-IP') });
+      return rateLimitResult.response;
+    }
+
+    // 2. 验证会话
+    const sessionResult = await verifySession(context.request, context.env);
+    if (!sessionResult.valid) {
+      logger.warn('会话验证失败', { message: sessionResult.message });
+      return createErrorResponse(sessionResult.message, {
+        status: HTTP_STATUS.UNAUTHORIZED,
+        headers: corsHeaders,
+        rateLimitInfo: rateLimitResult
+      });
+    }
+    
+    logger.debug('会话验证成功', { username: sessionResult.sessionData.username });
+
     // 3. 解析请求体
     const body = await context.request.json();
     const { ids } = body;
@@ -247,7 +246,7 @@ export async function onRequestDelete(context) {
     return createErrorResponse(errorMessage, {
       status: statusCode,
       headers: corsHeaders,
-      rateLimitInfo: rateLimitResult,
+      rateLimitInfo: null, // 错误情况下不返回限流信息
       logs: logger.getLogs(),
       debug: true
     });

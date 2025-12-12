@@ -13,104 +13,104 @@ export async function onRequestPost(context) {
   const logger = createLogger('score-api');
   const debug = false; // 从请求参数中获取
 
-  // 检查必需的环境变量
-  if (!FACEPP_KEY || !FACEPP_SECRET) {
-    logger.error('Face++ API密钥未配置');
-    return createErrorResponse('服务器配置错误，请联系管理员', {
-      status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-      debug
-    });
-  }
-
-  // 1. 实施限流
-  const rateLimitResult = await rateLimit(context.request, context, {
-    path: '/api/score',
-    ...RATE_LIMIT_CONFIG.SCORE
-  });
-
-  if (rateLimitResult.limited) {
-    logger.warn('请求被限流', { ip: context.request.headers.get('CF-Connecting-IP') });
-    return rateLimitResult.response;
-  }
-
-  // 获取AI模型ID，支持通过环境变量配置
-  const AI_MODEL_ID = context.env.AI_MODEL_ID || "@cf/meta/llama-3-8b-instruct";
-  logger.debug(`使用AI模型: ${AI_MODEL_ID}`);
-
-  // 2. 解析请求体
-  let body;
   try {
-    body = await context.request.json();
-  } catch (err) {
-    logger.error('解析请求体失败', err);
-    return createErrorResponse('请求体格式错误', {
-      status: HTTP_STATUS.BAD_REQUEST,
-      rateLimitInfo: rateLimitResult,
-      logs: debug ? logger.getLogs() : undefined,
-      debug
+    // 检查必需的环境变量
+    if (!FACEPP_KEY || !FACEPP_SECRET) {
+      logger.error('Face++ API密钥未配置');
+      return createErrorResponse('服务器配置错误，请联系管理员', {
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        debug
+      });
+    }
+
+    // 1. 实施限流
+    const rateLimitResult = await rateLimit(context.request, context, {
+      path: '/api/score',
+      ...RATE_LIMIT_CONFIG.SCORE
     });
-  }
 
-  const { image: imageBase64, debug: requestDebug = false } = body;
-  const isDebugMode = requestDebug;
+    if (rateLimitResult.limited) {
+      logger.warn('请求被限流', { ip: context.request.headers.get('CF-Connecting-IP') });
+      return rateLimitResult.response;
+    }
 
-  // 3. 验证图片数据
-  if (!imageBase64) {
-    logger.warn('缺少图片数据');
-    return createErrorResponse('缺少 image 字段', {
-      status: HTTP_STATUS.BAD_REQUEST,
-      rateLimitInfo: rateLimitResult,
-      logs: isDebugMode ? logger.getLogs() : undefined,
-      debug: isDebugMode
-    });
-  }
+    // 获取AI模型ID，支持通过环境变量配置
+    const AI_MODEL_ID = context.env.AI_MODEL_ID || "@cf/meta/llama-3-8b-instruct";
+    logger.debug(`使用AI模型: ${AI_MODEL_ID}`);
 
-  const imageValidation = validateBase64Image(imageBase64);
-  if (!imageValidation.valid) {
-    logger.warn('图片验证失败', { error: imageValidation.error });
-    return createErrorResponse(imageValidation.error || '图片格式无效', {
-      status: HTTP_STATUS.BAD_REQUEST,
-      rateLimitInfo: rateLimitResult,
-      logs: isDebugMode ? logger.getLogs() : undefined,
-      debug: isDebugMode
-    });
-  }
+    // 2. 解析请求体
+    let body;
+    try {
+      body = await context.request.json();
+    } catch (err) {
+      logger.error('解析请求体失败', err);
+      return createErrorResponse('请求体格式错误', {
+        status: HTTP_STATUS.BAD_REQUEST,
+        rateLimitInfo: rateLimitResult,
+        logs: debug ? logger.getLogs() : undefined,
+        debug
+      });
+    }
 
-  // 4. Turnstile 验证（小程序请求跳过）
-  let isMiniProgram = false;
-  
-  // 检查请求是否来自小程序
-  if (body.app_type === 'miniprogram' || context.request.headers.get('X-App-Type') === 'miniprogram') {
-    isMiniProgram = true;
-    logger.debug('检测到小程序请求，跳过 Turnstile 验证');
-  }
-  
-  if (TURNSTILE_SECRET_KEY && !isMiniProgram) {
-    const turnstileToken = await extractTurnstileToken(context.request);
-    const isVerified = await verifyTurnstile(turnstileToken, TURNSTILE_SECRET_KEY);
-    
-    if (!isVerified) {
-      logger.warn('Turnstile 验证失败');
-      return createErrorResponse('验证失败，请检查您的请求', {
-        status: HTTP_STATUS.FORBIDDEN,
+    const { image: imageBase64, debug: requestDebug = false } = body;
+    const isDebugMode = requestDebug;
+
+    // 3. 验证图片数据
+    if (!imageBase64) {
+      logger.warn('缺少图片数据');
+      return createErrorResponse('缺少 image 字段', {
+        status: HTTP_STATUS.BAD_REQUEST,
         rateLimitInfo: rateLimitResult,
         logs: isDebugMode ? logger.getLogs() : undefined,
         debug: isDebugMode
       });
     }
+
+    const imageValidation = validateBase64Image(imageBase64);
+    if (!imageValidation.valid) {
+      logger.warn('图片验证失败', { error: imageValidation.error });
+      return createErrorResponse(imageValidation.error || '图片格式无效', {
+        status: HTTP_STATUS.BAD_REQUEST,
+        rateLimitInfo: rateLimitResult,
+        logs: isDebugMode ? logger.getLogs() : undefined,
+        debug: isDebugMode
+      });
+    }
+
+    // 4. Turnstile 验证（小程序请求跳过）
+    let isMiniProgram = false;
     
-    logger.debug('Turnstile 验证成功');
-  } else if (!isMiniProgram) {
-    logger.debug('Turnstile 密钥未配置，跳过验证');
-  }
+    // 检查请求是否来自小程序
+    if (body.app_type === 'miniprogram' || context.request.headers.get('X-App-Type') === 'miniprogram') {
+      isMiniProgram = true;
+      logger.debug('检测到小程序请求，跳过 Turnstile 验证');
+    }
+    
+    if (TURNSTILE_SECRET_KEY && !isMiniProgram) {
+      const turnstileToken = await extractTurnstileToken(context.request);
+      const isVerified = await verifyTurnstile(turnstileToken, TURNSTILE_SECRET_KEY);
+      
+      if (!isVerified) {
+        logger.warn('Turnstile 验证失败');
+        return createErrorResponse('验证失败，请检查您的请求', {
+          status: HTTP_STATUS.FORBIDDEN,
+          rateLimitInfo: rateLimitResult,
+          logs: isDebugMode ? logger.getLogs() : undefined,
+          debug: isDebugMode
+        });
+      }
+      
+      logger.debug('Turnstile 验证成功');
+    } else if (!isMiniProgram) {
+      logger.debug('Turnstile 密钥未配置，跳过验证');
+    }
 
-  const formData = new FormData();
-  formData.append("api_key", FACEPP_KEY);
-  formData.append("api_secret", FACEPP_SECRET);
-  formData.append("image_base64", imageBase64);
-  formData.append("return_attributes", "age,gender,smiling,headpose,facequality,blur,eyestatus,emotion,ethnicity,beauty,mouthstatus,eyegaze,skinstatus");
+    const formData = new FormData();
+    formData.append("api_key", FACEPP_KEY);
+    formData.append("api_secret", FACEPP_SECRET);
+    formData.append("image_base64", imageBase64);
+    formData.append("return_attributes", "age,gender,smiling,headpose,facequality,blur,eyestatus,emotion,ethnicity,beauty,mouthstatus,eyegaze,skinstatus");
 
-  try {
     logger.debug('正在请求 Face++ 接口');
     const resp = await fetch("https://api-us.faceplusplus.com/facepp/v3/detect", {
       method: "POST",
@@ -337,9 +337,9 @@ export async function onRequestPost(context) {
     logger.error('Face++ 调用异常', e);
     return createErrorResponse('Face++ 调用失败喵～', {
       status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-      rateLimitInfo: rateLimitResult,
-      logs: isDebugMode ? logger.getLogs() : undefined,
-      debug: isDebugMode
+      rateLimitInfo: null, // 错误情况下不返回限流信息
+      logs: debug ? logger.getLogs() : undefined,
+      debug
     });
   }
 }
