@@ -68,3 +68,4 @@ pnpm-lock.yaml
 # Local config
 *.local.* 
 .trae/*
+.cursor/*

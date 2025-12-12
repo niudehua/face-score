@@ -398,43 +398,28 @@ async function getImages(d1, options = {}) {
 async function deleteImages(d1, ids) {
   try {
     if (!ids || ids.length === 0) {
-      console.log('deleteImages: 空ID列表，直接返回');
       return { success: true, deleted: 0 };
     }
-    
-    console.log('deleteImages: 收到ID数量:', ids.length);
-    console.log('deleteImages: ID列表:', ids);
     
     let totalDeleted = 0;
     const batchSize = 20;
     
-    // 移除事务，直接执行批量删除
+    // 批量删除，分批处理以避免SQL参数限制
     for (let i = 0; i < ids.length; i += batchSize) {
       const batchIds = ids.slice(i, i + batchSize);
-      console.log(`deleteImages: 处理批次 ${i/batchSize + 1}，ID数量: ${batchIds.length}`);
-      
       const placeholders = batchIds.map(() => '?').join(',');
       const sql = `DELETE FROM face_scores WHERE id IN (${placeholders})`;
-      console.log(`deleteImages: 执行SQL: ${sql}`);
-      console.log(`deleteImages: 绑定参数: ${batchIds}`);
       
       const result = await d1.prepare(sql)
-      .bind(...batchIds)
-      .run();
+        .bind(...batchIds)
+        .run();
       
-      console.log(`deleteImages: 批次执行结果:`, result);
       const batchDeleted = result.meta?.changes || 0;
-      console.log(`deleteImages: 批次删除数量: ${batchDeleted}`);
-      
       totalDeleted += batchDeleted;
     }
     
-    console.log(`deleteImages: 总删除数量: ${totalDeleted}`);
-    
     return { success: true, deleted: totalDeleted };
   } catch (err) {
-    console.error('deleteImages: 错误详情:', err);
-    console.error('deleteImages: 错误堆栈:', err.stack);
     throw new Error(`D1批量删除照片失败: ${err.message}`);
   }
 }
@@ -448,12 +433,8 @@ async function deleteImages(d1, ids) {
 async function getImagesByIds(d1, ids) {
   try {
     if (!ids || ids.length === 0) {
-      console.log('getImagesByIds: 空ID列表，直接返回');
       return [];
     }
-    
-    console.log('getImagesByIds: 收到ID数量:', ids.length);
-    console.log('getImagesByIds: ID列表:', ids);
     
     let allResults = [];
     const batchSize = 20; // 每批处理20个ID，避免IN子句参数限制
@@ -461,35 +442,23 @@ async function getImagesByIds(d1, ids) {
     // 分批处理
     for (let i = 0; i < ids.length; i += batchSize) {
       const batchIds = ids.slice(i, i + batchSize);
-      console.log(`getImagesByIds: 处理批次 ${i/batchSize + 1}，ID数量: ${batchIds.length}`);
       
       // 构建IN子句的参数占位符
       const placeholders = batchIds.map(() => '?').join(',');
       const sql = `SELECT id, md5, image_url FROM face_scores WHERE id IN (${placeholders})`;
-      console.log(`getImagesByIds: 执行SQL: ${sql}`);
-      console.log(`getImagesByIds: 绑定参数: ${batchIds}`);
       
       // 执行查询
       const result = await d1.prepare(sql)
-      .bind(...batchIds)
-      .all();
+        .bind(...batchIds)
+        .all();
       
-      console.log(`getImagesByIds: 批次查询结果:`, result);
-      
-      // 修复：确保结果格式正确
+      // 确保结果格式正确
       const batchResults = Array.isArray(result.results) ? result.results : [];
-      console.log(`getImagesByIds: 批次返回记录数: ${batchResults.length}`);
-      
       allResults = allResults.concat(batchResults);
     }
     
-    console.log(`getImagesByIds: 总查询结果记录数: ${allResults.length}`);
-    console.log(`getImagesByIds: 总查询结果:`, allResults);
-    
     return allResults;
   } catch (err) {
-    console.error('getImagesByIds: 错误详情:', err);
-    console.error('getImagesByIds: 错误堆栈:', err.stack);
     throw new Error(`D1根据ID获取照片失败: ${err.message}`);
   }
 }

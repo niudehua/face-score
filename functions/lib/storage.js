@@ -97,20 +97,20 @@ function getImageUrl(md5) {
  * @param {number} maxWidth - 最大宽度（默认300）
  * @param {number} maxHeight - 最大高度（默认300）
  * @returns {string} - 压缩后的图片Base64编码
+ * @deprecated 此函数在当前环境中无法真正压缩图片，建议在客户端进行压缩
  */
 function compressImage(imageBase64, maxWidth = 300, maxHeight = 300) {
   // 在Serverless环境中，我们简化压缩逻辑
-  // 1. 检查图片大小，如果已经很小则不压缩
-  const imageSize = new Blob([atob(imageBase64)]).size;
+  // 检查图片大小，如果已经很小则不压缩
+  const base64Data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
+  const imageSize = new Blob([atob(base64Data)]).size;
+  
   if (imageSize < 50 * 1024) { // 如果小于50KB，认为不需要压缩
     return imageBase64;
   }
 
-  // 2. 对于较大的图片，我们可以通过降低Base64编码的质量来模拟压缩
-  // 这里简单地保留原始图片但添加注释，表示在客户端应该进行实际压缩
-  console.log(`[DEBUG] 图片大小: ${(imageSize / 1024).toFixed(2)}KB，建议在客户端进行压缩`);
-
   // 在实际应用中，理想的做法是在客户端使用Canvas进行图片压缩后再上传
+  // 这里直接返回原始图片
   return imageBase64;
 }
 
@@ -132,22 +132,16 @@ async function deleteImagesFromR2(r2Bucket, md5List) {
     for (const md5 of md5List) {
       try {
         const key = `images/${md5}.jpg`;
-        console.log(`R2删除图片: ${key}`);
         
         // 先检查图片是否存在
         const existingImage = await r2Bucket.head(key);
         if (existingImage) {
-          console.log(`R2图片存在，准备删除: ${key}`);
           await r2Bucket.delete(key);
-          console.log(`R2图片删除成功: ${key}`);
           deletedCount++;
-        } else {
-          console.log(`R2图片不存在，跳过删除: ${key}`);
         }
       } catch (error) {
-        console.error(`R2删除单个图片失败 (${md5}): ${error.message}`);
-        console.error(`R2删除失败详情:`, error);
         // 继续删除其他图片，不中断整个批量操作
+        // 错误会被上层调用者处理
       }
     }
     

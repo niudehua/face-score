@@ -1,74 +1,88 @@
 // 导入模块
-import { calculateImageId, uploadImage, getImageUrl, compressImage } from '../lib/storage.js';
+import { calculateImageId, uploadImage, getImageUrl } from '../lib/storage.js';
 import { insertOrUpdateScore } from '../lib/db.js';
 import { verifyTurnstile, extractTurnstileToken } from '../lib/turnstile.js';
-import { rateLimit, addRateLimitHeaders } from '../lib/rate-limit.js';
+import { rateLimit } from '../lib/rate-limit.js';
+import { createSuccessResponse, createErrorResponse } from '../lib/response.js';
+import { createLogger } from '../lib/logger.js';
+import { validateBase64Image } from '../lib/validator.js';
+import { RATE_LIMIT_CONFIG, HTTP_STATUS } from '../lib/constants.js';
 
 export async function onRequestPost(context) {
   const { FACEPP_KEY, FACEPP_SECRET, TURNSTILE_SECRET_KEY } = context.env;
-  const logs = [];
+  const logger = createLogger('score-api');
+  const debug = false; // 从请求参数中获取
 
-  function log(msg) {
-    logs.push(msg);
-    console.log(msg);  // 这里打印到 Workers 控制台
+  // 检查必需的环境变量
+  if (!FACEPP_KEY || !FACEPP_SECRET) {
+    logger.error('Face++ API密钥未配置');
+    return createErrorResponse('服务器配置错误，请联系管理员', {
+      status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      debug
+    });
   }
-
-  // 计算字符串的SHA-256哈希值（用于生成唯一ID）
-  async function calculateSHA256(data) {
-    // 将字符串转换为ArrayBuffer
-    const encoder = new TextEncoder();
-    const dataBuffer = encoder.encode(data);
-
-    // 计算SHA-256哈希（Cloudflare Workers环境下使用Crypto API）
-    const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
-
-    // 将ArrayBuffer转换为十六进制字符串
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-    // 返回完整的SHA-256哈希值
-    return hashHex;
-  }
-
-  log(`🐾 [DEBUG] FACEPP_KEY: ${FACEPP_KEY ? "已设置" : "未设置"}`);
-  log(`🐾 [DEBUG] FACEPP_SECRET: ${FACEPP_SECRET ? "已设置" : "未设置"}`);
-  log(`🐾 [DEBUG] TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY ? "已设置" : "未设置"}`);
 
   // 1. 实施限流
   const rateLimitResult = await rateLimit(context.request, context, {
     path: '/api/score',
-    limit: 10, // 每分钟10次请求
-    windowSeconds: 60
+    ...RATE_LIMIT_CONFIG.SCORE
   });
-  
-  // 获取AI模型ID，支持通过环境变量配置
-  const AI_MODEL_ID = context.env.AI_MODEL_ID || "@cf/meta/llama-3-8b-instruct";
-  log(`🤖 [DEBUG] 使用的AI模型: ${AI_MODEL_ID}`);
 
   if (rateLimitResult.limited) {
-    log(`❌ [ERROR] 请求被限流: ${rateLimitResult.response.status}`);
+    logger.warn('请求被限流', { ip: context.request.headers.get('CF-Connecting-IP') });
     return rateLimitResult.response;
   }
 
-  // 2. Turnstile 验证
+  // 获取AI模型ID，支持通过环境变量配置
+  const AI_MODEL_ID = context.env.AI_MODEL_ID || "@cf/meta/llama-3-8b-instruct";
+  logger.debug(`使用AI模型: ${AI_MODEL_ID}`);
+
+  // 2. 解析请求体
+  let body;
+  try {
+    body = await context.request.json();
+  } catch (err) {
+    logger.error('解析请求体失败', err);
+    return createErrorResponse('请求体格式错误', {
+      status: HTTP_STATUS.BAD_REQUEST,
+      rateLimitInfo: rateLimitResult,
+      logs: debug ? logger.getLogs() : undefined,
+      debug
+    });
+  }
+
+  const { image: imageBase64, debug: requestDebug = false } = body;
+  const isDebugMode = requestDebug;
+
+  // 3. 验证图片数据
+  if (!imageBase64) {
+    logger.warn('缺少图片数据');
+    return createErrorResponse('缺少 image 字段', {
+      status: HTTP_STATUS.BAD_REQUEST,
+      rateLimitInfo: rateLimitResult,
+      logs: isDebugMode ? logger.getLogs() : undefined,
+      debug: isDebugMode
+    });
+  }
+
+  const imageValidation = validateBase64Image(imageBase64);
+  if (!imageValidation.valid) {
+    logger.warn('图片验证失败', { error: imageValidation.error });
+    return createErrorResponse(imageValidation.error || '图片格式无效', {
+      status: HTTP_STATUS.BAD_REQUEST,
+      rateLimitInfo: rateLimitResult,
+      logs: isDebugMode ? logger.getLogs() : undefined,
+      debug: isDebugMode
+    });
+  }
+
+  // 4. Turnstile 验证（小程序请求跳过）
   let isMiniProgram = false;
   
   // 检查请求是否来自小程序
-  try {
-    const body = await context.request.clone().json();
-    // 检查请求体中的标识
-    if (body.app_type === 'miniprogram') {
-      isMiniProgram = true;
-      log(`🐱 [DEBUG] 检测到小程序请求，跳过 Turnstile 验证`);
-    }
-  } catch (err) {
-    // 忽略 JSON 解析错误
-  }
-  
-  // 检查请求头中的标识
-  if (!isMiniProgram && context.request.headers.get('X-App-Type') === 'miniprogram') {
+  if (body.app_type === 'miniprogram' || context.request.headers.get('X-App-Type') === 'miniprogram') {
     isMiniProgram = true;
-    log(`🐱 [DEBUG] 检测到小程序请求头，跳过 Turnstile 验证`);
+    logger.debug('检测到小程序请求，跳过 Turnstile 验证');
   }
   
   if (TURNSTILE_SECRET_KEY && !isMiniProgram) {
@@ -76,43 +90,18 @@ export async function onRequestPost(context) {
     const isVerified = await verifyTurnstile(turnstileToken, TURNSTILE_SECRET_KEY);
     
     if (!isVerified) {
-      log(`❌ [ERROR] Turnstile 验证失败: 无效或缺失令牌`);
-      return new Response(JSON.stringify({ 
-        error: "验证失败，请检查您的请求喵～", 
-        logs 
-      }), {
-        status: 403,
-        headers: { "Content-Type": "application/json" },
+      logger.warn('Turnstile 验证失败');
+      return createErrorResponse('验证失败，请检查您的请求', {
+        status: HTTP_STATUS.FORBIDDEN,
+        rateLimitInfo: rateLimitResult,
+        logs: isDebugMode ? logger.getLogs() : undefined,
+        debug: isDebugMode
       });
     }
     
-    log(`✅ [DEBUG] Turnstile 验证成功`);
-  } else if (isMiniProgram) {
-    log(`🐱 [DEBUG] 小程序请求，跳过 Turnstile 验证`);
-  } else {
-    log(`⚠️ [WARN] Turnstile 密钥未配置，跳过验证`);
-  }
-
-  let body;
-  try {
-    body = await context.request.json();
-    log(`🐾 [DEBUG] 接收到请求 body: ${JSON.stringify(body)}`);
-  } catch (err) {
-    log(`❌ [ERROR] 解析 JSON body 失败: ${err.message}`);
-    return new Response(JSON.stringify({ error: "请求体不是有效 JSON 喵～", logs }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  const { image: imageBase64, debug } = body;
-
-  if (!imageBase64) {
-    log("⚠️ [WARN] image 字段为空");
-    return new Response(JSON.stringify({ error: "缺少 image 字段喵～", logs }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+    logger.debug('Turnstile 验证成功');
+  } else if (!isMiniProgram) {
+    logger.debug('Turnstile 密钥未配置，跳过验证');
   }
 
   const formData = new FormData();
@@ -122,31 +111,26 @@ export async function onRequestPost(context) {
   formData.append("return_attributes", "age,gender,smiling,headpose,facequality,blur,eyestatus,emotion,ethnicity,beauty,mouthstatus,eyegaze,skinstatus");
 
   try {
-    log(`🐾 [DEBUG] 正在请求 Face++ 接口...`);
+    logger.debug('正在请求 Face++ 接口');
     const resp = await fetch("https://api-us.faceplusplus.com/facepp/v3/detect", {
       method: "POST",
       body: formData,
     });
 
-    log(`📡 [DEBUG] 返回状态码: ${resp.status}`);
+    logger.debug(`Face++ 返回状态码: ${resp.status}`);
     const result = await resp.json();
-    log(`✅ [DEBUG] Face++ 返回结果: ${JSON.stringify(result)}`);
 
     if (!resp.ok) {
-      log(`❌ [ERROR] 接口非正常响应: HTTP ${resp.status}`);
-      let response = new Response(JSON.stringify({
-        error: "Face++ 接口响应错误喵～",
-        status: resp.status,
-        detail: result.error_message || "未知错误",
-        logs: debug ? logs : undefined,
-      }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-
-      // 添加限流响应头
-      response = addRateLimitHeaders(response, rateLimitResult);
-      return response;
+      logger.error('Face++ 接口响应错误', { status: resp.status, error: result.error_message });
+      return createErrorResponse(
+        result.error_message || "Face++ 接口响应错误",
+        {
+          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          rateLimitInfo: rateLimitResult,
+          logs: isDebugMode ? logger.getLogs() : undefined,
+          debug: isDebugMode
+        }
+      );
     }
 
     if (result.faces && result.faces.length > 0) {
@@ -235,9 +219,9 @@ export async function onRequestPost(context) {
         1
       )}，pitch:${pitch.toFixed(1)}，roll:${roll.toFixed(1)}。${skinStatusDesc}。${eyeStatusDesc}，${mouthStatusDesc}，${ethnicityDesc}，${eyeGazeDesc}。请用20～50字写一段有趣的中文颜值点评，语言要俏皮、接地气，既能夸得人心花怒放，也能调侃得人忍俊不禁。不许搬数字，要用风趣、形象的词汇来形容颜值，比如“自带美颜Buff”、“长在我笑点上”、“帅得像Bug一样难复现”，要让人一看就嘴角上扬，想转发给朋友笑一笑！`;
 
-      log(`🎨 [DEBUG] 生成点评 prompt: ${prompt}`);
+      logger.debug('生成AI点评提示词');
 
-      let comment = "颜值点评生成失败了喵～";
+      let comment = "颜值点评生成失败";
       
       try {
         const ai = context.env.AI;
@@ -246,22 +230,19 @@ export async function onRequestPost(context) {
             messages: [{ role: "user", content: prompt }],
           });
           
-          log(`✨ [DEBUG] AI 返回结果: ${JSON.stringify(aiRes)}`);
-          
           if (aiRes) {
             if (Array.isArray(aiRes.choices) && aiRes.choices.length > 0 && aiRes.choices[0].message && aiRes.choices[0].message.content) {
-              comment = aiRes.choices[0].message.content;
+              comment = aiRes.choices[0].message.content.trim();
             } else if (typeof aiRes.response === "string") {
-              comment = aiRes.response;
+              comment = aiRes.response.trim();
             }
           }
         } else {
-          log(`⚠️ [WARN] AI服务未配置或不可用，使用默认评论`);
+          logger.warn('AI服务未配置或不可用，使用默认评论');
           comment = `哇，颜值评分${score.toFixed(1)}分，太厉害了！`;
         }
       } catch (aiError) {
-        log(`❌ [ERROR] AI调用失败: ${aiError.message}`);
-        log(`⚠️ [INFO] 使用默认评论代替`);
+        logger.error('AI调用失败', aiError);
         comment = `哇，颜值评分${score.toFixed(1)}分，太厉害了！`;
       }
 
@@ -272,22 +253,21 @@ export async function onRequestPost(context) {
       const r2 = context.env.FACE_IMAGES;
 
       if (r2) {
-        log(`✅ [DEBUG] R2已绑定，准备存储图片`);
+        logger.debug('R2已绑定，准备存储图片');
         try {
           // 计算图片的唯一标识符作为主键
           const imageId = await calculateImageId(imageBase64);
           const id = `face_${imageId}`;
-          log(`✅ [DEBUG] 图片ID生成: ${imageId}`);
+          logger.debug(`图片ID生成: ${imageId}`);
 
           // 上传图片到 R2
           const r2Key = await uploadImage(r2, imageBase64, imageId);
           imageUrl = getImageUrl(imageId);  // 使用API路径
-          log(`✅ [DEBUG] 图片已成功上传到R2: ${r2Key}`);
+          logger.debug(`图片已成功上传到R2: ${r2Key}`);
 
-          if (debug) {
-            log(`[DEBUG] 图片ID: ${imageId}`);
-            log(`[DEBUG] 原始图片大小: ${(new Blob([atob(imageBase64)]).size / 1024).toFixed(2)}KB`);
-            log(`[DEBUG] R2存储路径: ${r2Key}`);
+          if (isDebugMode) {
+            const imageSize = new Blob([atob(imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64)]).size;
+            logger.debug('图片存储详情', { imageId, size: `${(imageSize / 1024).toFixed(2)}KB`, r2Key });
           }
 
           // 准备插入/更新数据
@@ -302,80 +282,64 @@ export async function onRequestPost(context) {
             image_url: imageUrl,
             md5: imageId
           };
-          log(`📋 [DEBUG] 准备存储数据: ${JSON.stringify(scoreData, null, 2)}`);
 
           // 尝试存储到D1数据库（可选）
           if (d1) {
-            log(`✅ [DEBUG] D1已绑定，准备存储元数据`);
+            logger.debug('D1已绑定，准备存储元数据');
             try {
               const d1Result = await insertOrUpdateScore(d1, scoreData);
               storedKey = scoreData.id;
-              log(`✅ [DEBUG] 数据已成功存储到D1 - ID: ${scoreData.id}, 影响行数: ${d1Result.changes || 0}`);
-              log(`✅ [DEBUG] 完整存储路径 - R2: ${r2Key}, D1: ${scoreData.id}`);
+              logger.debug('数据已成功存储到D1', { id: scoreData.id, changes: d1Result.changes || 0 });
             } catch (d1Error) {
               // 检查是否为Cloudflare内部的duration错误
               if (d1Error.message.includes('duration')) {
-                log(`⚠️ [WARN] 遇到Cloudflare内部D1错误（duration），这是本地开发环境bug`);
-                log(`⚠️ [INFO] 继续执行，该错误不影响生产环境`);
+                logger.warn('遇到Cloudflare内部D1错误（duration），这是本地开发环境bug');
               } else if (d1Error.message.includes('no such table')) {
-                log(`⚠️ [WARN] 表不存在，可能创建失败: ${d1Error.message}`);
+                logger.warn('表不存在，可能创建失败', { error: d1Error.message });
               } else {
-                log(`❌ [ERROR] D1存储错误: ${d1Error.message}`);
-                log(`❌ [ERROR] D1错误堆栈: ${d1Error.stack || '无堆栈信息'}`);
+                logger.error('D1存储错误', d1Error);
               }
-              log(`⚠️ [INFO] 继续执行，仅R2存储成功`);
               // 即使D1存储失败，R2存储已经成功，继续执行
             }
           } else {
-            log(`⚠️ [WARN] D1未绑定，跳过元数据存储 - 请检查FACE_SCORE_DB绑定`);
-            log(`✅ [INFO] 图片已成功存储到R2: ${r2Key}`);
+            logger.warn('D1未绑定，跳过元数据存储');
           }
         } catch (storageError) {
-          log(`❌ [ERROR] 存储错误: ${storageError.message}`);
-          log(`❌ [ERROR] 错误堆栈: ${storageError.stack || '无堆栈信息'}`);
+          logger.error('存储错误', storageError);
           // 即使存储失败也继续执行，返回评分结果
         }
       } else {
-        log(`⚠️ [WARN] R2未绑定，跳过图片存储 - 请检查FACE_IMAGES绑定`);
-        if (d1) log(`⚠️ [WARN] 由于R2未绑定，跳过D1存储`);
+        logger.warn('R2未绑定，跳过图片存储');
+        if (d1) logger.warn('由于R2未绑定，跳过D1存储');
       }
 
-      let response = new Response(JSON.stringify({
+      return createSuccessResponse({
         score,
         comment,
-        logs: debug ? logs : undefined,
         key: storedKey,
         image_url: imageUrl
-      }), {
-        headers: { "Content-Type": "application/json" },
+      }, {
+        rateLimitInfo: rateLimitResult,
+        logs: isDebugMode ? logger.getLogs() : undefined,
+        debug: isDebugMode
       });
-
-      // 添加限流响应头
-      response = addRateLimitHeaders(response, rateLimitResult);
-      return response;
     } else {
-      log("⚠️ [WARN] 没有检测到人脸");
-      let response = new Response(JSON.stringify({ error: "没有检测到人脸喵～", logs: debug ? logs : undefined }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
-
-    // 添加限流响应头
-    response = addRateLimitHeaders(response, rateLimitResult);
-    return response;
+      logger.warn('没有检测到人脸');
+      return createErrorResponse('没有检测到人脸喵～', {
+        status: HTTP_STATUS.BAD_REQUEST,
+        rateLimitInfo: rateLimitResult,
+        logs: isDebugMode ? logger.getLogs() : undefined,
+        debug: isDebugMode
+      });
     }
 
   } catch (e) {
-    log(`❌ [ERROR] Face++ 调用异常: ${e.message}`);
-    let response = new Response(JSON.stringify({
-      error: "Face++ 调用失败喵～", detail: e.message, logs: debug ? logs : undefined
-    }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
+    logger.error('Face++ 调用异常', e);
+    return createErrorResponse('Face++ 调用失败喵～', {
+      status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      rateLimitInfo: rateLimitResult,
+      logs: isDebugMode ? logger.getLogs() : undefined,
+      debug: isDebugMode
     });
-
-    // 添加限流响应头
-    response = addRateLimitHeaders(response, rateLimitResult);
-    return response;
   }
 }
