@@ -15,10 +15,21 @@
     <button class="clear-preview-btn" bindtap="clearPreview">×</button>
   </view>
 
+
+  <!-- 模式切换 -->
+  <view class="mode-selector">
+    <view class="mode-item {{mode === 'score' ? 'active' : ''}}" bindtap="switchMode" data-mode="score">
+      颜值评分 🌸
+    </view>
+    <view class="mode-item {{mode === 'fortune' ? 'active' : ''}}" bindtap="switchMode" data-mode="fortune">
+      AI 看相 🔮
+    </view>
+  </view>
+
   <!-- 空状态 -->
   <view class="empty-state" wx:else>
-    <view class="empty-state-icon">📷</view>
-    <view class="empty-state-text">还没有选择照片呢~</view>
+    <view class="empty-state-icon">{{mode === 'score' ? '📷' : '✋'}}</view>
+    <view class="empty-state-text">{{mode === 'score' ? '还没有选择照片呢~' : '请上传一张清晰的面部照片\n大师为您看相'}}</view>
   </view>
 
   <!-- 操作按钮区域 -->
