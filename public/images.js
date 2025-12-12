@@ -41,7 +41,7 @@ function initEventListeners() {
 // Auth
 async function verifyLogin() {
   try {
-    const res = await fetch('/api/auth');
+    const res = await fetch('/api/auth', { credentials: 'include' });
     const data = await res.json();
     if (data.success) return true;
     window.location.href = '/api/auth/github';
@@ -70,7 +70,9 @@ async function loadImages(page = 1, isAppend = false) {
 
   try {
     // Simplified URL (Sort by timestamp desc default)
-    const res = await fetch(`/api/images?page=${page}&limit=${limit}&sort_by=timestamp&order=desc`);
+    const res = await fetch(`/api/images?page=${page}&limit=${limit}&sort_by=timestamp&order=desc`, {
+      credentials: 'include'
+    });
     const data = await res.json();
 
     if (data.data) {
