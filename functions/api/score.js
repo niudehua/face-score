@@ -10,6 +10,8 @@ import { RATE_LIMIT_CONFIG, HTTP_STATUS } from '../lib/constants.js';
 
 export async function onRequestPost(context) {
   const { FACEPP_KEY, FACEPP_SECRET, TURNSTILE_SECRET_KEY } = context.env;
+  // 将空字符串视为未配置，方便本地跳过
+  const hasTurnstileSecret = typeof TURNSTILE_SECRET_KEY === 'string' && TURNSTILE_SECRET_KEY.trim().length > 0;
   const logger = createLogger('score-api');
   const debug = false; // 从请求参数中获取
 
@@ -86,7 +88,7 @@ export async function onRequestPost(context) {
       logger.debug('检测到小程序请求，跳过 Turnstile 验证');
     }
     
-    if (TURNSTILE_SECRET_KEY && !isMiniProgram) {
+    if (hasTurnstileSecret && !isMiniProgram) {
       const turnstileToken = await extractTurnstileToken(context.request);
       const isVerified = await verifyTurnstile(turnstileToken, TURNSTILE_SECRET_KEY);
       

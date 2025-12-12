@@ -139,6 +139,21 @@ export async function onRequestGet(context) {
   };
 
   try {
+    // 后门配置：BYPASS_AUTH=true 时，视为已登录（仅用于预览/调试）
+    const bypass =
+      typeof env.BYPASS_AUTH === 'string' &&
+      env.BYPASS_AUTH.toLowerCase() === 'true';
+    if (bypass) {
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'bypass auth enabled',
+        data: { username: 'bypass' }
+      }), {
+        status: 200,
+        headers: noCacheHeaders
+      });
+    }
+
     // 从Cookie中获取会话ID
     const cookies = request.headers.get('Cookie') || '';
     const sessionIdMatch = cookies.match(/session_id=([^;]+)/);

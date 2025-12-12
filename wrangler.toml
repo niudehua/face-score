@@ -3,10 +3,11 @@
 # 项目名称
 name = "face-score"
 
-# Pages 项目设置
-[pages]
-# 构建输出目录（如果使用框架需要构建）
-build_output_dir = "public"
+# 静态资源目录（Pages 本地开发需要）
+pages_build_output_dir = "public"
+
+# 兼容性日期（避免 wrangler 警告）
+compatibility_date = "2025-12-12"
 
 # 环境变量配置
 [vars]
@@ -33,15 +34,10 @@ database_id = "face_score_db"  # 本地开发时可以使用任意字符串
 
 # R2 存储桶绑定
 [[r2_buckets]]
-binding = "R2_BUCKET"
+binding = "FACE_IMAGES"
 bucket_name = "face-score-images"
-
-# 兼容性日期（解决 wrangler 警告）
-compatibility_date = "2025-10-11"
 
 # 本地开发配置
 [dev]
 # 本地开发服务器端口
 port = 8788
-# 本地开发环境变量文件
-vars_file = ".dev.vars"

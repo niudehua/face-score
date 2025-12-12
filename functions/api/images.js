@@ -5,8 +5,14 @@ import { createSuccessResponse, createErrorResponse, createCORSHeaders } from '.
 import { createLogger } from '../lib/logger.js';
 import { RATE_LIMIT_CONFIG, HTTP_STATUS } from '../lib/constants.js';
 
-// 验证会话
+// 验证会话（支持后门跳过）
 async function verifySession(request, env) {
+  const bypass =
+    typeof env.BYPASS_AUTH === 'string' &&
+    env.BYPASS_AUTH.toLowerCase() === 'true';
+  if (bypass) {
+    return { valid: true, sessionData: { username: 'bypass' } };
+  }
   const { SESSION_KV } = env;
   
   // 从Cookie中获取会话ID
@@ -36,7 +42,7 @@ async function verifySession(request, env) {
 }
 
 export async function onRequestGet(context) {
-  const { FACE_SCORE_DB, SESSION_KV } = context.env;
+  const { FACE_SCORE_DB } = context.env;
   const logger = createLogger('images-api');
   const corsHeaders = createCORSHeaders('*', context.request);
 
@@ -145,6 +151,7 @@ export async function onRequestDelete(context) {
   const logger = createLogger('images-delete-api');
   const corsHeaders = createCORSHeaders('*', context.request);
 
+  // 删除操作不支持后门跳过，确保安全
   try {
     // 1. 实施限流
     const rateLimitResult = await rateLimit(context.request, context, {
@@ -172,7 +179,18 @@ export async function onRequestDelete(context) {
     logger.debug('会话验证成功', { username: sessionResult.sessionData.username });
 
     // 3. 解析请求体
-    const body = await context.request.json();
+    let body;
+    try {
+      body = await context.request.json();
+    } catch (parseError) {
+      logger.error('解析请求体失败', parseError);
+      return createErrorResponse('请求体格式错误', {
+        status: HTTP_STATUS.BAD_REQUEST,
+        headers: corsHeaders,
+        rateLimitInfo: rateLimitResult
+      });
+    }
+    
     const { ids } = body;
     
     logger.debug('请求体解析成功', { idsCount: ids?.length });
@@ -207,15 +225,33 @@ export async function onRequestDelete(context) {
     // 6. 从R2删除图片
     let r2Deleted = 0;
     if (FACE_IMAGES && md5List.length > 0) {
-      r2Deleted = await deleteImagesFromR2(FACE_IMAGES, md5List);
-      logger.debug('从R2删除成功', { deleted: r2Deleted });
+      try {
+        r2Deleted = await deleteImagesFromR2(FACE_IMAGES, md5List);
+        logger.debug('从R2删除成功', { deleted: r2Deleted });
+      } catch (r2Error) {
+        logger.error('从R2删除图片失败', r2Error);
+        return createErrorResponse('删除图片文件失败', {
+          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          headers: corsHeaders,
+          rateLimitInfo: rateLimitResult
+        });
+      }
     } else if (!FACE_IMAGES) {
       logger.warn('未绑定FACE_IMAGES，跳过R2删除');
     }
     
     // 7. 从D1删除记录
-    const d1Result = await deleteImages(FACE_SCORE_DB, ids);
-    logger.debug('从D1删除成功', { deleted: d1Result.deleted });
+    try {
+      const d1Result = await deleteImages(FACE_SCORE_DB, ids);
+      logger.debug('从D1删除成功', { deleted: d1Result.deleted });
+    } catch (d1Error) {
+      logger.error('从D1删除记录失败', d1Error);
+      return createErrorResponse('删除数据库记录失败', {
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        headers: corsHeaders,
+        rateLimitInfo: rateLimitResult
+      });
+    }
     
     // 8. 返回响应
     return createSuccessResponse({

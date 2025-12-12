@@ -43,8 +43,6 @@
     <div id="result"></div>
 
     <button id="imagesBtn" class="secondary-btn" style="display: none;">浏览所有颜值照片</button>
-    <button id="loginBtn" class="secondary-btn" onclick="window.location.href='/api/auth/github'"
-      style="display: none;">GitHub 登录</button>
     <button id="logoutBtn" class="secondary-btn" onclick="handleLogout()" style="display: none;">退出登录</button>
   </div>
 
@@ -71,23 +69,32 @@
       reader.readAsDataURL(file);
     };
 
-    // 动态初始化 Turnstile 组件
+    // Turnstile 状态标记（未配置则跳过）
+    let turnstileEnabled = false;
+
+    // 动态初始化 Turnstile 组件，若未配置则隐藏控件
     async function initTurnstile() {
+      const widgetContainer = document.querySelector('.turnstile-container');
       try {
         const res = await fetch('/api/turnstile');
         const data = await res.json();
 
-        if (data.site_key) {
+        if (data.site_key && typeof data.site_key === 'string' && data.site_key.trim()) {
+          turnstileEnabled = true;
           // 使用获取到的站点密钥初始化 Turnstile 组件
           turnstile.render('#turnstile-widget', {
             sitekey: data.site_key,
             theme: 'light'
           });
         } else {
-          console.warn('Turnstile site key not configured');
+          turnstileEnabled = false;
+          console.warn('Turnstile site key not configured, skip captcha');
+          if (widgetContainer) widgetContainer.style.display = 'none';
         }
       } catch (error) {
-        console.error('Failed to initialize Turnstile:', error);
+        turnstileEnabled = false;
+        console.error('Failed to initialize Turnstile, skip captcha:', error);
+        if (widgetContainer) widgetContainer.style.display = 'none';
       }
     }
 
@@ -109,25 +116,21 @@
           const response = await fetch('/api/auth', { credentials: 'include' });
           const data = await response.json();
 
-          const loginBtn = document.getElementById('loginBtn');
           const logoutBtn = document.getElementById('logoutBtn');
           const imagesBtn = document.getElementById('imagesBtn');
 
           if (data.success) {
             // 已登录，显示登出和图片按钮，隐藏登录按钮
-            loginBtn.style.display = 'none';
             logoutBtn.style.display = 'block';
             imagesBtn.style.display = 'block';
           } else {
-            // 未登录，隐藏所有按钮（登录按钮通过点击标题5次显示）
-            loginBtn.style.display = 'none';
+            // 未登录，隐藏管理入口按钮，仅保留后门触发
             logoutBtn.style.display = 'none';
             imagesBtn.style.display = 'none';
           }
         } catch (error) {
           console.error('检查登录状态失败:', error);
           // 出错时隐藏所有按钮
-          document.getElementById('loginBtn').style.display = 'none';
           document.getElementById('logoutBtn').style.display = 'none';
           document.getElementById('imagesBtn').style.display = 'none';
         }
@@ -163,13 +166,12 @@
 
         // 点击5次触发后门
         if (clickCount === 5) {
-          // 检查登录状态
           try {
             const response = await fetch('/api/auth', { credentials: 'include' });
             const data = await response.json();
 
             if (data.success) {
-              // 已登录，直接进入图片列表
+              // 已登录或后门开启，直接进入图片列表
               window.location.href = '/images';
             } else {
               // 未登录，跳转到GitHub登录
@@ -201,11 +203,14 @@
         resultDiv.innerText = "评分中，猫猫正在认真分析中喵...";
 
         try {
-          // 获取 Turnstile 响应令牌
-          const token = turnstile.getResponse();
-          if (!token) {
-            resultDiv.innerText = "验证失败，请完成验证码喵～";
-            return;
+          // 获取 Turnstile 响应令牌（仅当启用且组件可用）
+          let token = null;
+          if (turnstileEnabled && typeof turnstile !== 'undefined' && typeof turnstile.getResponse === 'function') {
+            token = turnstile.getResponse();
+            if (!token) {
+              resultDiv.innerText = "验证失败，请完成验证码喵～";
+              return;
+            }
           }
 
           const res = await fetch("/api/score", {
@@ -213,7 +218,8 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               image: base64,
-              turnstile_response: token
+              // 仅在启用时携带 Turnstile token
+              ...(token ? { turnstile_response: token } : {})
             }),
           });
           if (!res.ok) throw new Error("接口请求失败喵～");
