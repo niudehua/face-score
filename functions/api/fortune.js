@@ -3,16 +3,20 @@ import { calculateImageId, uploadImage, getImageUrl } from '../lib/storage.js';
 import { insertOrUpdateScore } from '../lib/db.js';
 import { verifyTurnstile } from '../lib/turnstile.js';
 import { rateLimit } from '../lib/rate-limit.js';
-import { createSuccessResponse, createErrorResponse } from '../lib/response.js';
+import { createSuccessResponse, createErrorResponse, handleOptionsRequest } from '../lib/response.js';
 import { createLogger } from '../lib/logger.js';
 import { validateBase64Image } from '../lib/validator.js';
 import { RATE_LIMIT_CONFIG, HTTP_STATUS } from '../lib/constants.js';
+
+export async function onRequestOptions(context) {
+  return handleOptionsRequest();
+}
 
 export async function onRequestPost(context) {
   const { FACEPP_KEY, FACEPP_SECRET, TURNSTILE_SECRET_KEY } = context.env;
   const hasTurnstileSecret = typeof TURNSTILE_SECRET_KEY === 'string' && TURNSTILE_SECRET_KEY.trim().length > 0;
   const logger = createLogger('fortune-api');
-  const debug = false; 
+  const debug = false;
 
   try {
     // 检查必需的环境变量
@@ -32,7 +36,7 @@ export async function onRequestPost(context) {
     }
 
     const AI_MODEL_ID = context.env.AI_MODEL_ID || "@cf/meta/llama-3-8b-instruct";
-    
+
     // 2. 解析请求
     let body;
     try {
@@ -58,7 +62,7 @@ export async function onRequestPost(context) {
     if (body.app_type === 'miniprogram' || context.request.headers.get('X-App-Type') === 'miniprogram') {
       isMiniProgram = true;
     }
-    
+
     if (hasTurnstileSecret && !isMiniProgram) {
       const turnstileToken = body.turnstile_response;
       const isVerified = await verifyTurnstile(turnstileToken, TURNSTILE_SECRET_KEY);
@@ -101,9 +105,9 @@ export async function onRequestPost(context) {
       } = face.attributes;
 
       // --- 玄学映射开始 ---
-      
+
       const genderText = gender.value === "Male" ? "男施主" : "女施主";
-      
+
       // 气色 (Skin Status)
       const healthScore = skinstatus.health || 50;
       let qiSe = "气色一般";
@@ -116,7 +120,7 @@ export async function onRequestPost(context) {
       const rightEyeOpen = (100 - (eyestatus.right_eye_status.no_glass_eye_close || 0)).toFixed(1);
       let eyeSpirit = "眼神柔和";
       if (parseFloat(leftEyeOpen) > 90) eyeSpirit = "目光如炬，炯炯有神";
-      
+
       // 笑容 (Smile) - 人缘
       const smileValue = smile.value || 0;
       let socialLuck = "人缘平稳";
@@ -125,8 +129,8 @@ export async function onRequestPost(context) {
       else socialLuck = "神情庄重，不怒自威";
 
       // 情绪 (Emotion)
-      const specificEmotion = Object.entries(emotion).sort((a,b) => b[1]-a[1])[0][0]; // 取概率最高的情绪
-      
+      const specificEmotion = Object.entries(emotion).sort((a, b) => b[1] - a[1])[0][0]; // 取概率最高的情绪
+
       // 构建提示词
       const prompt = `
       你是一位精通中国传统面相学（麻衣神相）的老法师，语言风格要古风、神秘但又幽默风趣。
@@ -150,7 +154,7 @@ export async function onRequestPost(context) {
       `;
 
       let fortuneReport = "大师正在闭关，请稍后再试...";
-      
+
       try {
         const ai = context.env.AI;
         if (ai) {
@@ -169,19 +173,19 @@ export async function onRequestPost(context) {
 
       // 存储逻辑 (可选：如果想单独存看相记录，可以改表名，这里暂时复用或跳过)
       // 为简单起见，这里我们只利用 R2 存图，D1 数据可以存入同样的表，但在 comment 里标记是“看相”
-      
+
       // ... (省略存储逻辑，为了快速上线先不存，或者后续再加上)
-      
+
       // 如果需要返回图片URL，还是需要上传R2
       let imageUrl = null;
       if (context.env.FACE_IMAGES) {
-          try {
-             const imageId = await calculateImageId(imageBase64);
-             await uploadImage(context.env.FACE_IMAGES, imageBase64, imageId);
-             imageUrl = getImageUrl(imageId);
-          } catch(e) {
-             logger.warn("图片存储失败", e);
-          }
+        try {
+          const imageId = await calculateImageId(imageBase64);
+          await uploadImage(context.env.FACE_IMAGES, imageBase64, imageId);
+          imageUrl = getImageUrl(imageId);
+        } catch (e) {
+          logger.warn("图片存储失败", e);
+        }
       }
 
       return createSuccessResponse({
@@ -191,9 +195,9 @@ export async function onRequestPost(context) {
         image_url: imageUrl,
         // 返回一些原始特征供前端做特效（可选）
         traits: {
-           gender: genderText,
-           age: age.value,
-           health_score: healthScore
+          gender: genderText,
+          age: age.value,
+          health_score: healthScore
         }
       }, {
         rateLimitInfo: rateLimitResult,

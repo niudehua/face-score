@@ -162,12 +162,23 @@ Page({
   // 调用评分API
   callScoreAPI(base64Data, path = '/api/score') {
     return new Promise((resolve, reject) => {
-      // 假设 apiUrl 是完整路径 (如 .../api/score)，我们需要根据 path 调整
-      // 如果 path 是 /api/fortune，我们将 apiUrl 中的 score 替换为 fortune
       let url = app.globalData.apiUrl;
-      if (path.includes('fortune')) {
-        url = url.replace(/score$/, 'fortune');
+
+      // 智能处理 API URL
+      if (url.endsWith('/api/score')) {
+        // 情况1：配置的是完整 API 路径 (旧配置兼容)
+        if (path.includes('fortune')) {
+          url = url.replace('score', 'fortune');
+        }
+      } else {
+        // 情况2：配置的是域名/BaseURL (标准配置)
+        // 去除末尾斜杠
+        url = url.replace(/\/$/, '');
+        // 拼接路径
+        url = url + path;
       }
+
+      console.log('API Request URL:', url); // Debug log
 
       wx.request({
         url: url,
