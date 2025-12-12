@@ -40,13 +40,60 @@ function initEventListeners() {
 
 // Auth
 async function verifyLogin() {
+  // Check for redirect loop
+  const MAX_RETRIES = 3;
+  const WINDOW_MS = 30000; // 30 seconds
+
+  const now = Date.now();
+  let authState = JSON.parse(sessionStorage.getItem('auth_state') || '{"count": 0, "start": 0}');
+
+  // Reset window if expired
+  if (now - authState.start > WINDOW_MS) {
+    authState = { count: 0, start: now };
+  }
+
+  if (authState.count >= MAX_RETRIES) {
+    console.error('Too many auth redirects detected, stopping loop.');
+    // Show error UI instead of redirecting
+    document.body.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#333;padding:20px;text-align:center;">
+        <h2 style="margin-bottom:10px;">认证重试次数过多</h2>
+        <p style="margin-bottom:20px;color:#666;">检测到登录循环。请尝试清除浏览器 Cookie 或稍后重试。</p>
+        <button onclick="sessionStorage.removeItem('auth_state');window.location.reload();" style="padding:10px 20px;background:#000;color:#fff;border:none;border-radius:6px;cursor:pointer;">重试</button>
+        <a href="/" style="margin-top:15px;color:#666;text-decoration:none;font-size:14px;">返回首页</a>
+      </div>
+    `;
+    return false;
+  }
+
   try {
     const res = await fetch('/api/auth', { credentials: 'include' });
+
+    if (res.status === 429) {
+      console.warn('Auth check rate limited');
+      // Don't count as a failed auth attempt that triggers redirect, just wait
+      return false;
+    }
+
     const data = await res.json();
-    if (data.success) return true;
+    if (data.success) {
+      // Login successful, clear counter
+      sessionStorage.removeItem('auth_state');
+      return true;
+    }
+
+    // Auth failed
+    authState.count++;
+    sessionStorage.setItem('auth_state', JSON.stringify(authState));
+
     window.location.href = '/api/auth/github';
     return false;
-  } catch {
+  } catch (e) {
+    console.error('Auth verification error:', e);
+    // Network error or other issue
+    authState.count++;
+    sessionStorage.setItem('auth_state', JSON.stringify(authState));
+
     window.location.href = '/api/auth/github';
     return false;
   }

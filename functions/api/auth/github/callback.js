@@ -242,7 +242,8 @@ export async function onRequestGet(context) {
       status: 302,
       headers: {
         'Location': '/images',
-        'Set-Cookie': cookie
+        'Set-Cookie': cookie,
+        'Cache-Control': 'no-store'
       }
     });
   } catch (error) {
