@@ -64,16 +64,14 @@ export async function onRequestPost(context) {
 
     if (hasTurnstileSecret && !isMiniProgram) {
       const turnstileToken = body.turnstile_response;
-      logger.debug(`开始 Turnstile 验证, Token 长度: ${turnstileToken ? turnstileToken.length : 0}`);
 
       const isVerified = await verifyTurnstile(turnstileToken, TURNSTILE_SECRET_KEY);
-      logger.debug(`Turnstile 验证结果: ${isVerified}`);
 
       if (!isVerified) {
         return createErrorResponse('验证失败，请检查您的请求', { status: HTTP_STATUS.FORBIDDEN });
       }
     } else {
-      logger.debug(`跳过 Turnstile 验证: hasSecret=${hasTurnstileSecret}, isMiniProgram=${isMiniProgram}`);
+      // logger.debug(`跳过 Turnstile 验证: hasSecret=${hasTurnstileSecret}, isMiniProgram=${isMiniProgram}`);
     }
 
     // 5. 调用 Face++

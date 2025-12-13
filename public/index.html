@@ -11,7 +11,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>
-  <meta name="referrer" content="origin-when-cross-origin" />
 </head>
 
 <body>
@@ -116,9 +115,6 @@
         const data = await res.json();
 
         if (data.site_key && typeof data.site_key === 'string' && data.site_key.trim()) {
-          console.log('Turnstile Debug: Received Site Key:', data.site_key);
-          console.log('Turnstile Debug: Current Hostname:', window.location.hostname);
-
           turnstileEnabled = true;
           // 使用获取到的站点密钥初始化 Turnstile 组件
           turnstile.render('#turnstile-widget', {
