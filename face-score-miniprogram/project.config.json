@@ -1,4 +1,5 @@
 {
+  "projectname": "颜究所",
   "setting": {
     "es6": true,
     "postcss": true,

@@ -1,22 +1,16 @@
 <view class="container">
-  <!-- 装饰性猫咪图标 -->
-  <view class="cat-decoration cat-top-left">🐱</view>
-  <view class="cat-decoration cat-top-right">🐱</view>
-  <view class="cat-decoration cat-bottom-left">🐱</view>
-  <view class="cat-decoration cat-bottom-right">🐱</view>
-
   <!-- 标题区域 -->
   <image class="app-logo" src="/images/logo.png" mode="aspectFit"></image>
-  <h1>AI 喵相馆 🐱</h1>
-  <p>上传一张照片，让 AI 猫猫帮你评分吧～</p>
+  <h1>颜究所</h1>
+  <p>上传照片，获取您的面部气质分析报告</p>
 
   <!-- 模式切换 -->
   <view class="mode-selector">
     <view class="mode-item {{mode === 'score' ? 'active' : ''}}" bindtap="switchMode" data-mode="score">
-      颜值评分 🌸
+      颜值评分
     </view>
     <view class="mode-item {{mode === 'fortune' ? 'active' : ''}}" bindtap="switchMode" data-mode="fortune">
-      AI 看相 🔮
+      气质解读
     </view>
   </view>
 
@@ -28,8 +22,8 @@
 
   <!-- 空状态 -->
   <view class="empty-state" wx:else>
-    <view class="empty-state-icon">{{mode === 'score' ? '📷' : '✋'}}</view>
-    <view class="empty-state-text">{{mode === 'score' ? '还没有选择照片呢~' : '请上传一张清晰的面部照片\n大师为您看相'}}</view>
+    <view class="empty-state-icon">{{mode === 'score' ? '📷' : '✨'}}</view>
+    <view class="empty-state-text">{{mode === 'score' ? '请选择一张照片' : '请上传清晰面部照片\n生成气质分析报告'}}</view>
   </view>
 
   <!-- 操作按钮区域 -->
@@ -38,14 +32,14 @@
       {{previewShow ? '重新选择' : '选择照片'}}
     </button>
     <button bindtap="submitScore" disabled="{{submitting}}" class="primary-button">
-      {{submitting ? '评分中...' : '开始评分'}}
+      {{submitting ? '分析中...' : '生成分析报告'}}
     </button>
   </view>
 
   <!-- 加载状态 -->
   <view class="loading-container" wx:if="{{submitting}}">
     <view class="loading-spinner"></view>
-    <view class="loading-text">评分中，猫猫正在认真分析中喵...</view>
+    <view class="loading-text">正在分析面部特征...</view>
   </view>
 
   <!-- 结果显示区域 -->

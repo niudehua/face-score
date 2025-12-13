@@ -1,6 +1,5 @@
 // 导入模块
 import { calculateImageId, uploadImage, getImageUrl } from '../lib/storage.js';
-import { insertOrUpdateScore } from '../lib/db.js';
 import { verifyTurnstile } from '../lib/turnstile.js';
 import { rateLimit } from '../lib/rate-limit.js';
 import { createSuccessResponse, createErrorResponse, handleOptionsRequest } from '../lib/response.js';
@@ -104,7 +103,7 @@ export async function onRequestPost(context) {
         beauty,
       } = face.attributes;
 
-      // --- 玄学映射开始 ---
+      // --- 美学特征映射开始 ---
 
       const genderText = gender.value === "Male" ? "男施主" : "女施主";
 
@@ -133,27 +132,27 @@ export async function onRequestPost(context) {
 
       // 构建提示词
       const prompt = `
-      你是一位精通中国传统面相学（麻衣神相）的老法师，语言风格要古风、神秘但又幽默风趣。
-      请根据以下面相数据为这位${genderText}（约${age.value}岁）算一卦：
+      你是一位资深美学与心理分析师，擅长通过面部特征分析人物的气质、性格魅力和第一印象。
+      请根据以下面部特征数据，为这位${genderText}（约${age.value}岁）生成一份“气质分析报告”：
       
-      【面相数据】
-      1. 气色健康度：${healthScore.toFixed(1)}（${qiSe}）
-      2. 眼神精气神：${eyeSpirit}
-      3. 面部表情：${specificEmotion}
-      4. 笑容程度：${smileValue.toFixed(1)}（${socialLuck}）
-      5. 颜值底子：${beauty.gender === 'Male' ? beauty.male_score : beauty.female_score} 分
+      【面部特征数据】
+      1. 气色状态：${healthScore.toFixed(1)}（${qiSe}）
+      2. 眼神特征：${eyeSpirit}
+      3. 情绪状态：${specificEmotion}
+      4. 亲和力（笑容）：${smileValue.toFixed(1)}（${socialLuck}）
+      5. 颜值基础分：${beauty.gender === 'Male' ? beauty.male_score : beauty.female_score} 分
       
-      【要求】
-      请输出一段约100字左右的运势解读，包含：
-      1. 用四字成语点评整体面相（如“天庭饱满”、“红鸾星动”等）。
-      2. 详细解读【事业】、【姻缘】、【健康】三方面的近期运势。
-      3. 最后给出一个幽默的“转运建议”（比如“多喝奶茶”、“少写Bug”、“转发此结果到朋友圈”）。
+      【输出要求】
+      请输出一段约100字左右的分析报告，包含：
+      1. 用3-4个词概括整体气质（如“温婉大气”、“干练自信”、“阳光活力”等）。
+      2. 详细解读【性格魅力】和【给人的第一印象】。
+      3. 最后给出一个温暖的“形象建议”或“社交Tip”。
       
-      语气要像是在路边摆摊的算命大师，多用“本座掐指一算”、“施主”等词汇，但内容要积极向上，让人看了开心。
-      只需返回解读内容，不要包含其他开场白。
+      语气要专业、温暖、治愈，不仅要夸奖优点，还要给出有建设性的鼓励。避免使用“运势”、“吉凶”、“算命”等玄学术语。
+      只需返回报告内容，不要包含其他开场白。
       `;
 
-      let fortuneReport = "大师正在闭关，请稍后再试...";
+      let fortuneReport = "分析师正在生成报告，请稍后再试...";
 
       try {
         const ai = context.env.AI;
@@ -189,8 +188,8 @@ export async function onRequestPost(context) {
       }
 
       return createSuccessResponse({
-        type: 'fortune',
-        title: '面相运势批语',
+        type: 'fortune', // 保持 type 不变以兼容前端
+        title: '气质分析报告',
         comment: fortuneReport,
         image_url: imageUrl,
         // 返回一些原始特征供前端做特效（可选）
@@ -205,7 +204,7 @@ export async function onRequestPost(context) {
       });
 
     } else {
-      return createErrorResponse('未检测到人脸，大师看不清呐', { status: HTTP_STATUS.BAD_REQUEST });
+      return createErrorResponse('未检测到人脸，请上传清晰的面部照片', { status: HTTP_STATUS.BAD_REQUEST });
     }
 
   } catch (e) {

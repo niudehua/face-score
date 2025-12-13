@@ -49,7 +49,7 @@
 
 ## 📁 目录结构
 
-```
+```text
 face-score/
 ├── face-score-miniprogram/ # 微信小程序前端代码
 │   ├── pages/             # 页面文件
@@ -77,7 +77,8 @@ FACEPP_SECRET=你的Face++Secret
 
 ### 2. 小程序配置
 
-* 修改 `face-score-miniprogram/project.config.json` 中的 `appid` 为你自己的。
+- 修改 `face-score-miniprogram/project.config.json` 中的 `appid` 为你自己的。
+
 - 如果本地开发，请在 `face-score-miniprogram/config/` 下创建 `config.local.js` (已忽略提交) 配置本地 API 地址。
 
 ```javascript

@@ -47,7 +47,7 @@ Page({
           tempFilePath: tempFilePath,
           result: ''
         })
-        this.showToast('照片选择成功！', 'success')
+        this.showToast('照片选择成功', 'success')
       }
     })
   },
@@ -82,7 +82,7 @@ Page({
   // 提交评分
   async submitScore() {
     if (!this.data.tempFilePath) {
-      this.showToast('喵～先选张照片才能开始哦！', 'none')
+      this.showToast('请先选择一张照片', 'none')
       return
     }
 
@@ -102,38 +102,38 @@ Page({
       const data = res.data;
 
       if (isFortune) {
-        // --- 看相模式逻辑 ---
+        // --- 气质解读模式逻辑 ---
         if (data.comment) {
-          let msg = `🔮 ${data.title || '大师亲批'} 🔮\n\n`;
+          let msg = `✨ ${data.title || '气质分析报告'} ✨\n\n`;
           msg += data.comment;
           this.setData({ result: msg });
         } else {
-          this.setData({ result: '大师有些累了，请稍后再试喵～' });
+          this.setData({ result: '分析暂时繁忙，请稍后再试' });
         }
 
       } else {
         // --- 评分模式逻辑 ---
         if (data.score !== undefined && data.score !== null) {
           const score = Number(data.score.toFixed(1))
-          let msg = `喵喵评分：${score} / 100 🐾\n\n`
+          let msg = `综合评分：${score} / 100\n\n`
 
           // 如果后端返回了AI生成的点评，就优先显示
           if (data.comment) {
-            msg += `猫猫点评：${data.comment}\n\n`
+            msg += `分析点评：${data.comment}\n\n`
           } else {
-            // 后端没返回AI文案，就走本地逻辑兜底
+            // 后端没返回文案，就走本地逻辑兜底
             if (score < 40) {
-              msg += '🐱 喵呜，内在美才是最最重要的！抱抱～'
+              msg += '内在美是最宝贵的财富。'
             } else if (score < 50) {
-              msg += '💫 你有那种治愈系的可爱气质，慢慢展现更迷人喵～'
+              msg += '你有独特的个人气质，自信最美。'
             } else if (score < 60) {
-              msg += '✨ 气质清新，但有特别的小闪光点，越看越舒服～'
+              msg += '气质清新，给人的感觉很舒适。'
             } else if (score < 70) {
-              msg += '😻 哇，已经很有吸引力啦，有点明星气场呢！'
+              msg += '很有吸引力，散发着独特的魅力。'
             } else if (score < 80) {
-              msg += '🌟 超棒！你走在街上绝对是回头率超高的小猫猫！'
+              msg += '非常出众！你的气质在人群中很亮眼。'
             } else {
-              msg += '🔥 绝绝子！你的魅力突破天际，猫猫都要尖叫啦！'
+              msg += '完美！无论是颜值还是气质都无可挑剔。'
             }
           }
 
@@ -142,7 +142,7 @@ Page({
           })
         } else {
           this.setData({
-            result: '检测失败，喵呜～换张更清晰的照片试试吧？'
+            result: '检测失败，请换张清晰的照片试试'
           })
         }
       }
@@ -150,7 +150,7 @@ Page({
     } catch (err) {
       console.error('API请求错误:', err)
       this.setData({
-        result: '出错了喵～请稍后再试一下！'
+        result: '出错了，请稍后重试！'
       })
     } finally {
       this.setData({
@@ -213,7 +213,7 @@ Page({
   // 保存图片
   saveResult() {
     if (!this.data.result) {
-      this.showToast('还没有评分结果呢～', 'none')
+      this.showToast('还没有评分结果', 'none')
       return
     }
 
@@ -227,7 +227,7 @@ Page({
       filePath: this.data.previewUrl,
       success: () => {
         wx.hideLoading()
-        this.showToast('图片保存成功！', 'success')
+        this.showToast('图片保存成功', 'success')
       },
       fail: (err) => {
         wx.hideLoading()
@@ -251,17 +251,17 @@ Page({
   // 分享给朋友
   onShareAppMessage() {
     return {
-      title: '快来试试 AI 喵相馆！',
+      title: '快来试试面部气质测评！',
       path: '/pages/index/index',
       imageUrl: this.data.previewUrl || '/favicon.png',
-      desc: '颜值评分 & AI 看相，这也太准了吧！'
+      desc: '颜值评分 & 气质解读，快来测测吧！'
     }
   },
 
   // 分享到朋友圈
   onShareTimeline() {
     return {
-      title: '快来试试 AI 喵相馆！',
+      title: '快来试试面部气质测评！',
       query: '',
       imageUrl: this.data.previewUrl || '/favicon.png'
     }

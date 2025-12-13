@@ -1,28 +1,28 @@
 :root {
-    /* Modern Palette (New) */
-    --primary-color: #ff6b81;
-    --primary-hover: #fa425a;
-    --secondary-color: #f1f3f5;
-    --text-main: #2d3436;
-    --text-secondary: #636e72;
-    --bg-color: #f8f9fa;
+    /* Minimalist Palette */
+    --primary-color: #333333;
+    --primary-hover: #000000;
+    --secondary-color: #f8f9fa;
+    --text-main: #333333;
+    --text-secondary: #666666;
+    --bg-color: #ffffff;
     --card-bg: #ffffff;
 
     /* Shadows */
-    --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 10px 15px rgba(0, 0, 0, 0.08);
-    --shadow-lg: 0 20px 25px rgba(0, 0, 0, 0.12);
-    --shadow-hover: 0 20px 25px rgba(0, 0, 0, 0.12);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.05);
+    --shadow-hover: 0 10px 15px rgba(0, 0, 0, 0.08);
 
     /* Radius */
-    --radius-lg: 24px;
-    --radius-md: 16px;
-    --radius-sm: 12px;
+    --radius-lg: 12px;
+    --radius-md: 8px;
+    --radius-sm: 6px;
 
-    /* Legacy Compatibility (Old Variables Mapped to New) */
-    --bg-gradient-start: #fff1f2;
-    --bg-gradient-end: #fff0f5;
-    --font-sans: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    /* Legacy Compatibility */
+    --bg-gradient-start: #ffffff;
+    --bg-gradient-end: #f8f9fa;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 * {
@@ -35,8 +35,7 @@ body {
     padding: 0;
     font-family: var(--font-sans);
     background-color: var(--bg-color);
-    /* Subtle gradient for main page, overridden by specific layouts if needed */
-    background: linear-gradient(135deg, #fff5f7 0%, #fff0f5 100%);
+    background: #ffffff;
     color: var(--text-main);
     min-height: 100vh;
 }
@@ -171,6 +170,45 @@ body>.container {
 .container p {
     color: var(--text-secondary);
     margin-bottom: 2rem;
+}
+
+/* Mode Selector */
+.mode-selector {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 2rem;
+    padding: 6px;
+    background: #f1f3f5;
+    border-radius: var(--radius-md);
+    position: relative;
+    max-width: 320px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.mode-item {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.mode-item.active {
+    background: white;
+    color: var(--primary-color);
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.mode-item:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.5);
+    color: var(--text-main);
 }
 
 /* File Upload */
@@ -688,9 +726,8 @@ input[type="file"] {
 }
 
 /* Specific overlay for minimalist grid score (optional: maybe just show image) */
-.minimalist-grid .image-wrapper::after {
-    /* Gradient overlay at bottom for readability if we showed score, but we hide it for now */
-}
+/* Specific overlay for minimalist grid score (optional: maybe just show image) */
+/* .minimalist-grid .image-wrapper::after { } */
 
 /* Selection State in Minimalist Grid */
 .image-card .selection-overlay {

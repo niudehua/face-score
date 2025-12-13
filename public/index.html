@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/png" href="/logo.png">
-  <title>AI 喵相馆 - 科学颜值打分 & AI 看相</title>
+  <title>颜究所 - 科学打分 & 气质分析</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,9 +19,14 @@
       <div class="logo">
         <img src="/logo.png" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;">
       </div>
-      <h1>AI 喵相馆 🐱</h1>
-      <p>上传一张照片，AI 既能科学打分，又能玄学看相～</p>
+      <h1>颜究所</h1>
+      <p>上传一张照片，获取您的颜值分数与气质分析报告</p>
     </header>
+
+    <div class="mode-selector">
+      <div class="mode-item active" onclick="switchMode('score')" id="mode-score">颜值评分</div>
+      <div class="mode-item" onclick="switchMode('fortune')" id="mode-fortune">气质解读</div>
+    </div>
 
     <div class="file-upload-wrapper">
       <input type="file" id="fileInput" accept="image/*" />
@@ -33,7 +38,7 @@
               d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
             </path>
           </svg>
-          <span class="file-upload-text">点击选择照片</span>
+          <span class="file-upload-text" id="uploadText">点击选择照片</span>
         </div>
         <img id="preview" class="upload-preview" alt="Preview" />
       </label>
@@ -43,7 +48,7 @@
       <div id="turnstile-widget" data-theme="light"></div>
     </div>
 
-    <button id="submitBtn">开始评分</button>
+    <button id="submitBtn">生成分析报告</button>
 
     <div id="result"></div>
 
@@ -73,6 +78,31 @@
       };
       reader.readAsDataURL(file);
     };
+
+    // 模式切换逻辑
+    let currentMode = 'score'; // 'score' | 'fortune'
+
+    function switchMode(mode) {
+      if (currentMode === mode) return;
+      currentMode = mode;
+
+      // 更新 Tab 样式
+      document.querySelectorAll('.mode-item').forEach(el => el.classList.remove('active'));
+      document.getElementById(`mode-${mode}`).classList.add('active');
+
+      // 更新按钮文字
+      const btn = document.getElementById('submitBtn');
+      btn.innerText = mode === 'score' ? '开始颜值评分' : '生成气质分析';
+
+      // 更新上传提示语
+      const uploadText = document.getElementById('uploadText');
+      uploadText.innerText = mode === 'score' ? '点击选择照片' : '上传照片，测测你的气质';
+
+      // 隐藏结果区域
+      const resultDiv = document.getElementById('result');
+      resultDiv.style.display = 'none';
+      resultDiv.innerText = '';
+    }
 
     // Turnstile 状态标记（未配置则跳过）
     let turnstileEnabled = false;
@@ -206,7 +236,8 @@
       reader.onload = async function () {
         const base64 = reader.result.split(",")[1];
         const resultDiv = document.getElementById("result");
-        resultDiv.innerText = "评分中，猫猫正在认真分析中喵...";
+        resultDiv.innerText = currentMode === 'score' ? "正在分析五官特征..." : "美学分析师正在解读气质...";
+        resultDiv.style.display = 'block';
 
         try {
           // 获取 Turnstile 响应令牌（仅当启用且组件可用）
@@ -219,7 +250,9 @@
             }
           }
 
-          const res = await fetch("/api/score", {
+          const apiEndpoint = currentMode === 'score' ? "/api/score" : "/api/fortune";
+
+          const res = await fetch(apiEndpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -228,7 +261,7 @@
               ...(token ? { turnstile_response: token } : {})
             }),
           });
-          if (!res.ok) throw new Error("接口请求失败喵～");
+          if (!res.ok) throw new Error("接口请求失败");
           const data = await res.json();
 
           if (data.score !== undefined && data.score !== null) {
@@ -237,7 +270,7 @@
 
             // 💬 如果后端返回了 AI 生成的点评，就优先显示
             if (data.comment) {
-              msg += `猫猫点评：${data.comment}\n\n`;
+              msg += `分析点评：${data.comment}\n\n`;
             } else {
               // 后端没返回 AI 文案，就走本地逻辑兜底
               if (score < 40) {
@@ -251,16 +284,42 @@
               } else if (score < 80) {
                 msg += "🌟 超棒！你走在街上绝对是回头率超高的小猫猫！";
               } else {
-                msg += "🔥 绝绝子！你的颜值突破天际，猫猫都要尖叫啦！";
+                msg += "🔥 绝绝子！你的颜值突破天际，令人惊艳！";
               }
             }
 
-            resultDiv.innerText = msg;
+            if (currentMode === 'score') {
+              // 颜值评分模式结果
+              const score = Number(data.score.toFixed(1));
+              let msg = `颜值分数：${score} / 100 🐾\n\n`;
+
+              if (data.comment) {
+                msg += `分析点评：${data.comment}\n\n`;
+              } else {
+                if (score < 40) msg += "🐱 喵呜，内在美才是最最重要的！抱抱～";
+                else if (score < 50) msg += "💫 你有那种治愈系的可爱气质，慢慢展现更迷人喵～";
+                else if (score < 60) msg += "✨ 中等颜值，但有特别的小闪光点，越看越舒服～";
+                else if (score < 70) msg += "😻 哇，已经很有吸引力啦，有点明星气场呢！";
+                else if (score < 80) msg += "🌟 超棒！你走在街上绝对是回头率超高的小猫猫！";
+                else msg += "🔥 绝绝子！你的颜值突破天际，令人惊艳！";
+              }
+              resultDiv.innerText = msg;
+
+            } else {
+              // 气质解读模式结果
+              if (data.title && data.comment) {
+                resultDiv.innerHTML = `<strong>${data.title}</strong>\n\n${data.comment}`;
+              } else if (data.comment) {
+                resultDiv.innerText = data.comment;
+              } else {
+                resultDiv.innerText = "分析完成，但未生成解读内容。";
+              }
+            }
           } else {
             resultDiv.innerText = "检测失败，喵呜～换张更清晰的照片试试吧？";
           }
         } catch (e) {
-          resultDiv.innerText = "出错了喵～请稍后再试一下！";
+          resultDiv.innerText = "出错了，请稍后再试！";
           console.error("评分请求错误:", e);
         } finally {
           // 重置 Turnstile 验证码，防止 token 重用导致 invalid (Error 600010)
