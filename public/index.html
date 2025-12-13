@@ -115,6 +115,9 @@
         const data = await res.json();
 
         if (data.site_key && typeof data.site_key === 'string' && data.site_key.trim()) {
+          console.log('Turnstile Debug: Received Site Key:', data.site_key);
+          console.log('Turnstile Debug: Current Hostname:', window.location.hostname);
+
           turnstileEnabled = true;
           // 使用获取到的站点密钥初始化 Turnstile 组件
           turnstile.render('#turnstile-widget', {
