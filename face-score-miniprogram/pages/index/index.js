@@ -164,19 +164,8 @@ Page({
     return new Promise((resolve, reject) => {
       let url = app.globalData.apiUrl;
 
-      // 智能处理 API URL
-      if (url.endsWith('/api/score')) {
-        // 情况1：配置的是完整 API 路径 (旧配置兼容)
-        if (path.includes('fortune')) {
-          url = url.replace('score', 'fortune');
-        }
-      } else {
-        // 情况2：配置的是域名/BaseURL (标准配置)
-        // 去除末尾斜杠
-        url = url.replace(/\/$/, '');
-        // 拼接路径
-        url = url + path;
-      }
+      // 直接拼接 Host 和 Path (去除 Host 末尾斜杠以防重复)
+      url = url.replace(/\/$/, '') + path;
 
       console.log('API Request URL:', url); // Debug log
 
