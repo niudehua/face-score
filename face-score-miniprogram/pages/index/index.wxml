@@ -50,7 +50,7 @@
     <!-- 操作按钮 -->
     <view class="action-buttons">
       <button class="action-button" bindtap="shareResult">分享结果</button>
-      <button class="action-button primary" bindtap="saveResult">保存图片</button>
+      <button class="action-button primary" bindtap="saveResult">保存报告</button>
     </view>
   </view>
   <!-- 用于生成分享图的 Canvas (隐藏) -->

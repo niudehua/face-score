@@ -42,10 +42,13 @@ jobs:
       - name: 配置环境变量
         working-directory: ./face-score-miniprogram
         run: |
-          echo "NODE_ENV=production" >> .env
-          echo "APPID=${{ secrets.WECHAT_APPID }}" >> .env
-          echo "API_BASE_URL=${{ secrets.API_BASE_URL }}" >> .env
-          cat .env
+          cd config
+          echo "module.exports = {" > config.local.js
+          echo "  apiUrl: '${{ secrets.API_BASE_URL }}'," >> config.local.js
+          echo "  appid: '${{ secrets.WECHAT_APPID }}'," >> config.local.js
+          echo "  debug: false" >> config.local.js
+          echo "};" >> config.local.js
+          cat config.local.js
 
       # 7. 上传小程序代码
       - name: 上传小程序代码

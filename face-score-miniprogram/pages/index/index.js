@@ -232,7 +232,7 @@ Page({
     }
 
     wx.showLoading({
-      title: '生成海报中...',
+      title: '正在生成报告...',
       mask: true
     })
 
@@ -290,13 +290,13 @@ Page({
             fail: (err) => {
               console.error('生成图片失败:', err)
               wx.hideLoading()
-              this.showToast('生成图片失败', 'none')
+              this.showToast('生成报告失败', 'none')
             }
           })
         } catch (error) {
           console.error('绘制失败:', error)
           wx.hideLoading()
-          this.showToast('海报绘制出错', 'none')
+          this.showToast('报告绘制出错', 'none')
         }
       })
   },
@@ -413,17 +413,29 @@ Page({
       filePath: filePath,
       success: () => {
         wx.hideLoading()
-        this.showToast('海报保存成功', 'success')
+        this.showToast('报告已保存到相册', 'success')
       },
       fail: (err) => {
         wx.hideLoading()
         console.error('保存图片失败:', err)
-        if (err.errMsg.indexOf('auth deny') > -1) {
-          this.showToast('需要授权才能保存图片', 'none')
-          wx.openSetting({
-            success: (settingRes) => {
-              if (settingRes.authSetting['scope.writePhotosAlbum']) {
-                this.saveImageToAlbum(filePath)
+        // 检查是否是权限问题
+        if (err.errMsg.indexOf('auth deny') > -1 || err.errMsg.indexOf('authorize:fail') > -1) {
+          wx.showModal({
+            title: '权限提示',
+            content: '需要您的授权才能保存报告到相册，是否去设置打开权限？',
+            confirmText: '去设置',
+            success: (res) => {
+              if (res.confirm) {
+                wx.openSetting({
+                  success: (settingRes) => {
+                    if (settingRes.authSetting['scope.writePhotosAlbum']) {
+                      this.showToast('授权成功，正在保存...', 'none')
+                      this.saveImageToAlbum(filePath)
+                    } else {
+                      this.showToast('您已拒绝授权', 'none')
+                    }
+                  }
+                })
               }
             }
           })
