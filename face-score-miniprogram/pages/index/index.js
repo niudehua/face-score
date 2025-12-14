@@ -108,7 +108,7 @@ Page({
           msg += data.comment;
           this.setData({ result: msg });
         } else {
-          this.setData({ result: '分析暂时繁忙，请稍后再试' });
+          this.setData({ result: '美学分析师正在打盹，请稍后再次召唤喵～' });
         }
 
       } else {
@@ -142,7 +142,7 @@ Page({
           })
         } else {
           this.setData({
-            result: '检测失败，请换张清晰的照片试试'
+            result: '喵呜？没看清呢，换张清晰的照片试试吧～'
           })
         }
       }
@@ -150,7 +150,7 @@ Page({
     } catch (err) {
       console.error('API请求错误:', err)
       this.setData({
-        result: '出错了，请稍后重试！'
+        result: '网络信号溜去捉迷藏啦，请检查网络后再试一次喵～'
       })
     } finally {
       this.setData({
