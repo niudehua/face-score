@@ -53,4 +53,6 @@
       <button class="action-button primary" bindtap="saveResult">保存图片</button>
     </view>
   </view>
+  <!-- 用于生成分享图的 Canvas (隐藏) -->
+  <canvas type="2d" id="shareCanvas" style="position: fixed; left: -9999px; top: 0; width: 375px; height: 600px;"></canvas>
 </view>

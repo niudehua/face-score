@@ -199,7 +199,32 @@ Page({
     this.showToast('分享功能已打开', 'success')
   },
 
-  // 保存图片
+  // 计算文本所需高度
+  calculateTextHeight(ctx, text, maxWidth, lineHeight) {
+    const words = text.split('')
+    let line = ''
+    let lineCount = 1
+
+    for (let n = 0; n < words.length; n++) {
+      if (words[n] === '\n') {
+        line = ''
+        lineCount++
+        continue
+      }
+      const testLine = line + words[n]
+      const metrics = ctx.measureText(testLine)
+      const testWidth = metrics.width
+      if (testWidth > maxWidth && n > 0) {
+        line = words[n]
+        lineCount++
+      } else {
+        line = testLine
+      }
+    }
+    return lineCount * lineHeight
+  },
+
+  // 保存结果图片
   saveResult() {
     if (!this.data.result) {
       this.showToast('还没有评分结果', 'none')
@@ -207,16 +232,188 @@ Page({
     }
 
     wx.showLoading({
-      title: '保存中...',
+      title: '生成海报中...',
       mask: true
     })
 
-    // 这里简化处理，实际可以使用canvas生成带结果的图片
+    const query = wx.createSelectorQuery()
+    query.select('#shareCanvas')
+      .fields({ node: true, size: true })
+      .exec(async (res) => {
+        if (!res[0] || !res[0].node) {
+          wx.hideLoading()
+          this.showToast('生成失败，Canvas未找到', 'none')
+          return
+        }
+
+        const canvas = res[0].node
+        const ctx = canvas.getContext('2d')
+
+        // --- 预计算高度 ---
+        // 临时设置字体用于计算
+        ctx.font = '14px sans-serif'
+        const maxWidth = 300
+        const lineHeight = 28 // 增加行高，提升阅读体验
+        const textHeight = this.calculateTextHeight(ctx, this.data.result, maxWidth, lineHeight)
+
+        // 布局参数
+        const headerHeight = 375      // 图片区
+        const titleAreaHeight = 80    // Logo & 分割线区
+        const footerHeight = 60       // 底部 Slogan 区
+        const paddingBottom = 20      // 额外底部留白
+
+        // 总高度 = 各部分之和
+        const totalHeight = headerHeight + titleAreaHeight + textHeight + footerHeight + paddingBottom
+
+        // 设置高清 Canvas
+        const dpr = 2
+        canvas.width = 375 * dpr
+        canvas.height = totalHeight * dpr
+        ctx.scale(dpr, dpr)
+
+        try {
+          // 绘制海报
+          await this.drawShareImage(canvas, ctx, totalHeight, textHeight)
+
+          // 生成图片
+          wx.canvasToTempFilePath({
+            canvas: canvas,
+            x: 0,
+            y: 0,
+            width: 375 * dpr,
+            height: totalHeight * dpr,
+            destWidth: 375 * dpr,
+            destHeight: totalHeight * dpr,
+            success: (res) => {
+              this.saveImageToAlbum(res.tempFilePath)
+            },
+            fail: (err) => {
+              console.error('生成图片失败:', err)
+              wx.hideLoading()
+              this.showToast('生成图片失败', 'none')
+            }
+          })
+        } catch (error) {
+          console.error('绘制失败:', error)
+          wx.hideLoading()
+          this.showToast('海报绘制出错', 'none')
+        }
+      })
+  },
+
+  // 绘制分享海报内容
+  async drawShareImage(canvas, ctx, totalHeight, textHeight) {
+    const w = 375
+    // 注意：totalHeight 是计算出的 Logic Height
+
+    // 1. 绘制白色背景
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, w, totalHeight)
+
+    // 2. 绘制用户上传的照片
+    const img = canvas.createImage()
+    img.src = this.data.previewUrl
+    await new Promise((resolve, reject) => {
+      img.onload = resolve
+      img.onerror = reject
+    })
+
+    const targetSize = 375
+    const imgRatio = img.width / img.height
+    let drawW, drawH, sx, sy
+
+    if (imgRatio > 1) {
+      drawH = img.height
+      drawW = img.height
+      sx = (img.width - img.height) / 2
+      sy = 0
+    } else {
+      drawW = img.width
+      drawH = img.width
+      sx = 0
+      sy = (img.height - img.width) / 2
+    }
+
+    ctx.drawImage(img, sx, sy, drawW, drawH, 0, 0, targetSize, targetSize)
+
+    // 3. 绘制文字区域
+    const textStartY = 375 + 25 // 图片下方25px开始
+
+    // 动态文案配置
+    const isScoreMode = this.data.mode === 'score'
+    const titleText = isScoreMode ? '颜究所 · 颜值鉴定书' : '颜究所 · 气质解读报告'
+    const sloganText = isScoreMode ? '—— 科学打分 · 发现你的美 ——' : '—— 面相美学 · 探索独特气质 ——'
+
+    // 4. 绘制标题
+    ctx.font = 'bold 18px sans-serif'
+    ctx.fillStyle = '#333333'
+    ctx.textAlign = 'center'
+    ctx.fillText(titleText, w / 2, textStartY)
+
+    // 5. 绘制分割线
+    ctx.beginPath()
+    ctx.moveTo(40, textStartY + 15)
+    ctx.lineTo(335, textStartY + 15)
+    ctx.strokeStyle = '#eeeeee'
+    ctx.lineWidth = 1
+    ctx.stroke()
+
+    // 6. 绘制分析结果
+    ctx.font = '14px sans-serif'
+    ctx.fillStyle = '#666666'
+    ctx.textAlign = 'left'
+
+    const text = this.data.result
+    const maxWidth = 300
+    const lineHeight = 28 // 保持计算时的一致
+    let x = 37.5
+    let y = textStartY + 45
+
+    this.wrapText(ctx, text, x, y, maxWidth, lineHeight)
+
+    // 7. 绘制底部 Logo 或 Slogan (始终位于底部)
+    ctx.font = '12px sans-serif'
+    ctx.fillStyle = '#999999'
+    ctx.textAlign = 'center'
+    // 位于: 总高度 - 30px
+    ctx.fillText(sloganText, w / 2, totalHeight - 30)
+  },
+
+  // Canvas 文字自动换行
+  wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+    const words = text.split('')
+    let line = ''
+
+    for (let n = 0; n < words.length; n++) {
+      if (words[n] === '\n') {
+        ctx.fillText(line, x, y)
+        line = ''
+        y += lineHeight
+        continue
+      }
+
+      const testLine = line + words[n]
+      const metrics = ctx.measureText(testLine)
+      const testWidth = metrics.width
+
+      if (testWidth > maxWidth && n > 0) {
+        ctx.fillText(line, x, y)
+        line = words[n]
+        y += lineHeight
+      } else {
+        line = testLine
+      }
+    }
+    ctx.fillText(line, x, y)
+  },
+
+  // 真正的保存逻辑
+  saveImageToAlbum(filePath) {
     wx.saveImageToPhotosAlbum({
-      filePath: this.data.previewUrl,
+      filePath: filePath,
       success: () => {
         wx.hideLoading()
-        this.showToast('图片保存成功', 'success')
+        this.showToast('海报保存成功', 'success')
       },
       fail: (err) => {
         wx.hideLoading()
@@ -226,7 +423,7 @@ Page({
           wx.openSetting({
             success: (settingRes) => {
               if (settingRes.authSetting['scope.writePhotosAlbum']) {
-                this.saveResult()
+                this.saveImageToAlbum(filePath)
               }
             }
           })

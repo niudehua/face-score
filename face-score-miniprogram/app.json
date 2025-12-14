@@ -9,5 +9,10 @@
     "navigationBarTextStyle": "black"
   },
   "style": "v2",
-  "sitemapLocation": "sitemap.json"
+  "sitemapLocation": "sitemap.json",
+  "permission": {
+    "scope.writePhotosAlbum": {
+      "desc": "为了将精美的分析报告保存到您的相册，请允许保存权限喵～"
+    }
+  }
 }
