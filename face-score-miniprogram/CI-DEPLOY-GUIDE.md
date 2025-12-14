@@ -11,11 +11,12 @@
    - 勾选「启用自定义处理命令」和「启用环境变量」
 
 2. 创建 `.env` 文件：
+
    ```
    # 开发环境
    NODE_ENV=development
    APPID=你的开发环境appid
-   API_URL=你的开发环境API地址
+   API_BASE_URL=你的开发环境API地址
    ```
 
 ### 1.2 GitHub Secrets配置
@@ -28,7 +29,7 @@
 |------|------|------|------|
 | WECHAT_APPID | Secret | 微信小程序appid | 是 |
 | WECHAT_PRIVATE_KEY | Secret | Base64编码的私钥内容 | 是 |
-| API_URL | Secret | 后端API地址 | 是 |
+| API_BASE_URL | Secret | 后端API基础地址(含协议头) | 是 |
 
 ## 2. 如何获取配置值
 
@@ -46,6 +47,7 @@
 4. 点击「生成」或「下载」私钥文件（.p12格式）
 5. 将私钥文件转换为Base64编码：
    - 在命令行中执行：
+
      ```bash
      # Linux/Mac
      base64 private.p12 > private.base64
@@ -53,6 +55,7 @@
      # Windows
      certutil -encode private.p12 private.base64
      ```
+
    - 复制文件内容作为WECHAT_PRIVATE_KEY值
 
 ## 3. GitHub Actions部署

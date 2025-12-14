@@ -33,8 +33,8 @@ const getEnvConfig = () => {
   // 从环境变量获取敏感配置
   if (typeof process !== 'undefined') {
     // API地址
-    if (process.env.API_URL) {
-      envConfig.apiUrl = process.env.API_URL;
+    if (process.env.API_BASE_URL) {
+      envConfig.apiUrl = process.env.API_BASE_URL;
     }
 
     // AppID
@@ -72,8 +72,8 @@ try {
 
 // 确保配置完整
 if (!currentConfig.apiUrl) {
-  console.error('❌ API_URL环境变量未配置');
-  // 开发环境也必须配置API_URL
+  console.error('❌ API_BASE_URL环境变量未配置');
+  // 开发环境也必须配置API_BASE_URL
 }
 
 if (!currentConfig.appid) {

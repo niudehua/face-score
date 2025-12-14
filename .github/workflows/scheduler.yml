@@ -2,7 +2,7 @@ name: Scheduled Tasks
 on:
   schedule:
     # 每天下午18点运行
-    - cron: '0 18 * * *'
+    - cron: "0 18 * * *"
   workflow_dispatch: # 允许手动触发
 
 jobs:
@@ -11,8 +11,8 @@ jobs:
     steps:
       - name: Run Cleanup Task
         run: |
-          curl -X GET https://${{ secrets.PAGES_URL }}/api/cleanup
-      
+          curl -X GET ${{ secrets.API_BASE_URL }}/api/cleanup
+
       - name: Run Verify Task
         run: |
-          curl -X GET https://${{ secrets.PAGES_URL }}/api/verify?action=retention
+          curl -X GET ${{ secrets.API_BASE_URL }}/api/verify?action=retention
