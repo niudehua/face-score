@@ -132,25 +132,46 @@ export async function onRequestPost(context) {
       return createErrorResponse(error.message || '人脸检测失败，请确保图片清晰且包含人脸', { status: HTTP_STATUS.BAD_REQUEST });
     }
 
-    const attributesA = faceA.attributes;
-    const attributesB = faceB.attributes;
+    let attributesA, attributesB;
+    try {
+      attributesA = faceA.attributes;
+      attributesB = faceB.attributes;
 
-    const genderA = attributesA.gender.value === 'Male' ? '男' : '女';
-    const ageA = attributesA.age.value;
-    const scoreA = attributesA.beauty.male_score > attributesA.beauty.female_score
-      ? attributesA.beauty.male_score
-      : attributesA.beauty.female_score;
+      if (!attributesA || !attributesB) {
+        throw new Error('Face++未返回人脸属性');
+      }
+    } catch (attrError) {
+      logger.error('属性提取失败', attrError);
+      return createErrorResponse('属性提取失败: ' + attrError.message, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR });
+    }
 
-    const genderB = attributesB.gender.value === 'Male' ? '男' : '女';
-    const ageB = attributesB.age.value;
-    const scoreB = attributesB.beauty.male_score > attributesB.beauty.female_score
-      ? attributesB.beauty.male_score
-      : attributesB.beauty.female_score;
+    let genderA, ageA, scoreA, genderB, ageB, scoreB, smileA, smileB;
+    try {
+      genderA = (attributesA.gender?.value === 'Male') ? '男' : '女';
+      ageA = attributesA.age?.value || 0;
+      scoreA = Math.max(attributesA.beauty?.male_score || 0, attributesA.beauty?.female_score || 0);
 
-    const smileA = attributesA.smiling.value;
-    const smileB = attributesB.smiling.value;
-    const emotionA = Object.entries(attributesA.emotion).reduce((a, b) => a[1] > b[1] ? a : b)[0];
-    const emotionB = Object.entries(attributesB.emotion).reduce((a, b) => a[1] > b[1] ? a : b)[0];
+      genderB = (attributesB.gender?.value === 'Male') ? '男' : '女';
+      ageB = attributesB.age?.value || 0;
+      scoreB = Math.max(attributesB.beauty?.male_score || 0, attributesB.beauty?.female_score || 0);
+
+      smileA = attributesA.smiling?.value || 0;
+      smileB = attributesB.smiling?.value || 0;
+    } catch (attrError) {
+      logger.error('属性值访问失败', attrError);
+      return createErrorResponse('属性值访问失败: ' + attrError.message, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR });
+    }
+    let emotionA = 'neutral', emotionB = 'neutral';
+    try {
+      if (attributesA.emotion) {
+        emotionA = Object.entries(attributesA.emotion).reduce((a, b) => a[1] > b[1] ? a : b)[0];
+      }
+      if (attributesB.emotion) {
+        emotionB = Object.entries(attributesB.emotion).reduce((a, b) => a[1] > b[1] ? a : b)[0];
+      }
+    } catch (emotionError) {
+      logger.error('情绪分析失败', emotionError);
+    }
 
     let temperamentA = '';
     if (smileA >= 80) temperamentA += '亲和力强 ';
@@ -307,6 +328,6 @@ export async function onRequestPost(context) {
 
   } catch (error) {
     logger.error('CP契合度分析失败', error);
-    return createErrorResponse('分析失败，请稍后重试', { status: HTTP_STATUS.INTERNAL_SERVER_ERROR });
+    return createErrorResponse('分析失败: ' + error.message, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR });
   }
 }
