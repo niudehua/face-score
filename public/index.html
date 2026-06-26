@@ -26,9 +26,10 @@
     <div class="mode-selector">
       <div class="mode-item active" onclick="switchMode('score')" id="mode-score">颜值评分</div>
       <div class="mode-item" onclick="switchMode('fortune')" id="mode-fortune">气质解读</div>
+      <div class="mode-item" onclick="switchMode('couple')" id="mode-couple">CP契合度</div>
     </div>
 
-    <div class="file-upload-wrapper">
+    <div class="file-upload-wrapper" id="uploadWrapper">
       <input type="file" id="fileInput" accept="image/*" />
       <label for="fileInput" class="file-upload-label" id="uploadLabel">
         <div class="upload-placeholder">
@@ -41,6 +42,22 @@
           <span class="file-upload-text" id="uploadText">点击选择照片</span>
         </div>
         <img id="preview" class="upload-preview" alt="Preview" />
+      </label>
+    </div>
+
+    <div class="file-upload-wrapper couple-upload" id="uploadWrapperB" style="display: none;">
+      <input type="file" id="fileInputB" accept="image/*" />
+      <label for="fileInputB" class="file-upload-label" id="uploadLabelB">
+        <div class="upload-placeholder">
+          <svg class="file-upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+            </path>
+          </svg>
+          <span class="file-upload-text" id="uploadTextB">点击选择第二张照片</span>
+        </div>
+        <img id="previewB" class="upload-preview" alt="Preview B" />
       </label>
     </div>
 
@@ -79,8 +96,32 @@
       reader.readAsDataURL(file);
     };
 
+    // 第二张照片选择后预览
+    document.getElementById("fileInputB").onchange = function () {
+      const fileInput = this;
+      const previewImg = document.getElementById("previewB");
+      const uploadLabel = document.getElementById("uploadLabelB");
+
+      if (!fileInput.files.length) {
+        previewImg.classList.remove("show");
+        uploadLabel.classList.remove("has-image");
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+      reader.onload = function () {
+        previewImg.src = reader.result;
+        previewImg.classList.add("show");
+        uploadLabel.classList.add("has-image");
+      };
+      reader.readAsDataURL(file);
+    };
+
     // 模式切换逻辑
-    let currentMode = 'score'; // 'score' | 'fortune'
+    let currentMode = 'score'; // 'score' | 'fortune' | 'couple'
+    let imageBase64A = '';
+    let imageBase64B = '';
 
     function switchMode(mode) {
       if (currentMode === mode) return;
@@ -92,11 +133,22 @@
 
       // 更新按钮文字
       const btn = document.getElementById('submitBtn');
-      btn.innerText = mode === 'score' ? '开始颜值评分' : '生成气质分析';
-
-      // 更新上传提示语
       const uploadText = document.getElementById('uploadText');
-      uploadText.innerText = mode === 'score' ? '点击选择照片' : '上传照片，测测你的气质';
+      const uploadWrapperB = document.getElementById('uploadWrapperB');
+
+      if (mode === 'score') {
+        btn.innerText = '开始颜值评分';
+        uploadText.innerText = '点击选择照片';
+        uploadWrapperB.style.display = 'none';
+      } else if (mode === 'fortune') {
+        btn.innerText = '生成气质分析';
+        uploadText.innerText = '上传照片，测测你的气质';
+        uploadWrapperB.style.display = 'none';
+      } else {
+        btn.innerText = '开始CP契合度测试';
+        uploadText.innerText = '点击选择第一张照片';
+        uploadWrapperB.style.display = 'block';
+      }
 
       // 隐藏结果区域
       const resultDiv = document.getElementById('result');
@@ -227,6 +279,74 @@
 
     document.getElementById("submitBtn").onclick = async function () {
       const fileInput = document.getElementById("fileInput");
+      const fileInputB = document.getElementById("fileInputB");
+      const resultDiv = document.getElementById("result");
+
+      if (currentMode === 'couple') {
+        if (!fileInput.files.length || !fileInputB.files.length) {
+          alert("喵～请选择两张照片才能测试CP契合度哦！");
+          return;
+        }
+
+        resultDiv.innerText = "正在分析两人的契合度...";
+        resultDiv.style.display = 'block';
+
+        try {
+          const readerA = new FileReader();
+          const readerB = new FileReader();
+
+          const base64A = await new Promise((resolve) => {
+            readerA.onload = () => resolve(readerA.result.split(",")[1]);
+            readerA.readAsDataURL(fileInput.files[0]);
+          });
+
+          const base64B = await new Promise((resolve) => {
+            readerB.onload = () => resolve(readerB.result.split(",")[1]);
+            readerB.readAsDataURL(fileInputB.files[0]);
+          });
+
+          let token = null;
+          if (turnstileEnabled && typeof turnstile !== 'undefined' && typeof turnstile.getResponse === 'function') {
+            token = turnstile.getResponse();
+            if (!token) {
+              resultDiv.innerText = "验证失败，请完成验证码喵～";
+              return;
+            }
+          }
+
+          const res = await fetch("/api/couple", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              imageA: base64A,
+              imageB: base64B,
+              ...(token ? { turnstile_response: token } : {})
+            }),
+          });
+          if (!res.ok) throw new Error("接口请求失败");
+          const data = await res.json();
+
+          if (data.score !== undefined && data.score !== null) {
+            const score = Number(data.score.toFixed(1));
+            let msg = `💕 CP契合度：${score} / 100\n\n`;
+            msg += `等级：${data.grade || '待评估'}\n\n`;
+            if (data.highlights) msg += `匹配亮点：${data.highlights}\n\n`;
+            if (data.notes) msg += `需要注意：${data.notes}\n\n`;
+            if (data.tags) msg += `标签：${data.tags}`;
+            resultDiv.innerText = msg;
+          } else {
+            resultDiv.innerText = "分析失败，请重试。";
+          }
+        } catch (e) {
+          resultDiv.innerText = "网络信号溜去捉迷藏啦，请检查网络后再试一次喵～";
+        } finally {
+          if (turnstileEnabled && typeof turnstile !== 'undefined' && typeof turnstile.reset === 'function') {
+            turnstile.reset('#turnstile-widget');
+          }
+        }
+        return;
+      }
+
       if (!fileInput.files.length) {
         alert("喵～先选张照片才能评分哦！");
         return;
@@ -235,12 +355,10 @@
       const reader = new FileReader();
       reader.onload = async function () {
         const base64 = reader.result.split(",")[1];
-        const resultDiv = document.getElementById("result");
         resultDiv.innerText = currentMode === 'score' ? "正在分析五官特征..." : "美学分析师正在解读气质...";
         resultDiv.style.display = 'block';
 
         try {
-          // 获取 Turnstile 响应令牌（仅当启用且组件可用）
           let token = null;
           if (turnstileEnabled && typeof turnstile !== 'undefined' && typeof turnstile.getResponse === 'function') {
             token = turnstile.getResponse();
@@ -257,7 +375,6 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               image: base64,
-              // 仅在启用时携带 Turnstile token
               ...(token ? { turnstile_response: token } : {})
             }),
           });
@@ -265,11 +382,9 @@
           const data = await res.json();
 
 
-          // 这里的逻辑需要同时兼容 score 模式 (有 score 字段) 和 fortune 模式 (有 type='fortune' 字段)
           if ((data.score !== undefined && data.score !== null) || data.type === 'fortune') {
 
             if (currentMode === 'score') {
-              // 颜值评分模式结果
               if (data.score !== undefined) {
                 const score = Number(data.score.toFixed(1));
                 let msg = `颜值分数：${score} / 100 🐾\n\n`;
@@ -290,7 +405,6 @@
               }
 
             } else {
-              // 气质解读模式结果
               if (data.title && data.comment) {
                 resultDiv.innerHTML = `<strong>${data.title}</strong>\n\n${data.comment}`;
               } else if (data.comment) {

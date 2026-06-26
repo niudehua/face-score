@@ -26,6 +26,7 @@ jobs:
           env: |
             PROMPT_SCORE=${{ secrets.PROMPT_SCORE }}
             PROMPT_TEMPERAMENT=${{ secrets.PROMPT_TEMPERAMENT }}
+            PROMPT_COUPLE=${{ secrets.PROMPT_COUPLE }}
             AI_MODEL_ID=${{ secrets.AI_MODEL_ID }}
             FACEPP_KEY=${{ secrets.FACEPP_KEY }}
             FACEPP_SECRET=${{ secrets.FACEPP_SECRET }}

@@ -12,12 +12,36 @@
     <view class="mode-item {{mode === 'fortune' ? 'active' : ''}}" bindtap="switchMode" data-mode="fortune">
       气质解读
     </view>
+    <view class="mode-item {{mode === 'couple' ? 'active' : ''}}" bindtap="switchMode" data-mode="couple">
+      CP契合度
+    </view>
   </view>
 
-  <!-- 预览区域 -->
-  <view class="preview-container" wx:if="{{previewShow}}">
+  <!-- 单人模式预览区域 -->
+  <view class="preview-container" wx:if="{{previewShow && mode !== 'couple'}}">
     <image id="preview" class="show" src="{{previewUrl}}" mode="aspectFit"></image>
     <button class="clear-preview-btn" bindtap="clearPreview">×</button>
+  </view>
+
+  <!-- CP模式双图片预览区域 -->
+  <view class="couple-preview-container" wx:if="{{mode === 'couple'}}">
+    <view class="couple-preview-item" wx:if="{{previewUrlA}}">
+      <image class="couple-preview-image" src="{{previewUrlA}}" mode="aspectFit"></image>
+      <button class="clear-preview-btn" bindtap="clearPreviewA">×</button>
+    </view>
+    <view class="couple-empty-item" wx:else bindtap="chooseImageA">
+      <view class="empty-state-icon">👤</view>
+      <view class="empty-state-text">选择第一张照片</view>
+    </view>
+
+    <view class="couple-preview-item" wx:if="{{previewUrlB}}">
+      <image class="couple-preview-image" src="{{previewUrlB}}" mode="aspectFit"></image>
+      <button class="clear-preview-btn" bindtap="clearPreviewB">×</button>
+    </view>
+    <view class="couple-empty-item" wx:else bindtap="chooseImageB">
+      <view class="empty-state-icon">👤</view>
+      <view class="empty-state-text">选择第二张照片</view>
+    </view>
   </view>
 
   <!-- 空状态 -->

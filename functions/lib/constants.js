@@ -16,6 +16,8 @@ export const HTTP_STATUS = {
 // 限流配置
 export const RATE_LIMIT_CONFIG = {
   SCORE: { limit: 10, windowSeconds: 60 },
+  FORTUNE: { limit: 10, windowSeconds: 60 },
+  COUPLE: { limit: 5, windowSeconds: 60 },
   IMAGE: { limit: 50, windowSeconds: 60 },
   IMAGES: { limit: 50, windowSeconds: 60 },
   CLEANUP: { limit: 5, windowSeconds: 60 },

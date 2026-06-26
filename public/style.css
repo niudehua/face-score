@@ -217,6 +217,11 @@ body>.container {
     position: relative;
 }
 
+.couple-upload {
+    margin-top: 0.5rem;
+    margin-bottom: 0;
+}
+
 .file-upload-label {
     display: flex;
     flex-direction: column;

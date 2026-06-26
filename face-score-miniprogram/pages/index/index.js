@@ -6,11 +6,15 @@ Page({
     previewUrl: '',
     previewShow: false,
     tempFilePath: '',
+    previewUrlA: '',
+    tempFilePathA: '',
+    previewUrlB: '',
+    tempFilePathB: '',
     submitting: false,
     result: '',
     toastVisible: false,
     toastMessage: '',
-    mode: 'score' // score | fortune
+    mode: 'score' // score | fortune | couple
   },
 
   // 切换模式
@@ -20,7 +24,11 @@ Page({
 
     this.setData({
       mode,
-      result: '' // 切换模式时清空结果
+      result: '',
+      previewUrlA: '',
+      tempFilePathA: '',
+      previewUrlB: '',
+      tempFilePathB: ''
     })
   },
 
@@ -33,7 +41,7 @@ Page({
     })
   },
 
-  // 选择图片
+  // 选择图片（单人模式）
   chooseImage() {
     wx.chooseImage({
       count: 1,
@@ -52,7 +60,43 @@ Page({
     })
   },
 
-  // 清空预览
+  // 选择图片A（CP模式）
+  chooseImageA() {
+    wx.chooseImage({
+      count: 1,
+      sizeType: ['compressed'],
+      sourceType: ['album', 'camera'],
+      success: (res) => {
+        const tempFilePath = res.tempFilePaths[0]
+        this.setData({
+          previewUrlA: tempFilePath,
+          tempFilePathA: tempFilePath,
+          result: ''
+        })
+        this.showToast('第一张照片选择成功', 'success')
+      }
+    })
+  },
+
+  // 选择图片B（CP模式）
+  chooseImageB() {
+    wx.chooseImage({
+      count: 1,
+      sizeType: ['compressed'],
+      sourceType: ['album', 'camera'],
+      success: (res) => {
+        const tempFilePath = res.tempFilePaths[0]
+        this.setData({
+          previewUrlB: tempFilePath,
+          tempFilePathB: tempFilePath,
+          result: ''
+        })
+        this.showToast('第二张照片选择成功', 'success')
+      }
+    })
+  },
+
+  // 清空预览（单人模式）
   clearPreview() {
     this.setData({
       previewUrl: '',
@@ -61,6 +105,26 @@ Page({
       result: ''
     })
     this.showToast('已清空照片', 'success')
+  },
+
+  // 清空预览A（CP模式）
+  clearPreviewA() {
+    this.setData({
+      previewUrlA: '',
+      tempFilePathA: '',
+      result: ''
+    })
+    this.showToast('已清空第一张照片', 'success')
+  },
+
+  // 清空预览B（CP模式）
+  clearPreviewB() {
+    this.setData({
+      previewUrlB: '',
+      tempFilePathB: '',
+      result: ''
+    })
+    this.showToast('已清空第二张照片', 'success')
   },
 
   // 转换图片为Base64
@@ -81,6 +145,49 @@ Page({
 
   // 提交评分
   async submitScore() {
+    const isCouple = this.data.mode === 'couple'
+
+    if (isCouple) {
+      if (!this.data.tempFilePathA || !this.data.tempFilePathB) {
+        this.showToast('请先选择两张照片', 'none')
+        return
+      }
+
+      this.setData({
+        submitting: true,
+        result: ''
+      })
+
+      try {
+        const base64DataA = await this.imageToBase64(this.data.tempFilePathA)
+        const base64DataB = await this.imageToBase64(this.data.tempFilePathB)
+
+        const res = await this.callCoupleAPI(base64DataA, base64DataB)
+        const data = res.data
+
+        if (data.score !== undefined && data.score !== null) {
+          const score = Number(data.score.toFixed(1))
+          let msg = `💕 CP契合度：${score} / 100\n\n`
+          msg += `等级：${data.grade || '待评估'}\n\n`
+          if (data.highlights) msg += `匹配亮点：${data.highlights}\n\n`
+          if (data.notes) msg += `需要注意：${data.notes}\n\n`
+          if (data.tags) msg += `标签：${data.tags}`
+          this.setData({ result: msg })
+        } else {
+          this.setData({ result: '分析失败，请重试。' })
+        }
+
+      } catch (err) {
+        console.error('API请求错误:', err)
+        this.setData({
+          result: '网络信号溜去捉迷藏啦，请检查网络后再试一次喵～'
+        })
+      } finally {
+        this.setData({ submitting: false })
+      }
+      return
+    }
+
     if (!this.data.tempFilePath) {
       this.showToast('请先选择一张照片', 'none')
       return
@@ -92,17 +199,14 @@ Page({
     })
 
     try {
-      // 转换为Base64
       const base64Data = await this.imageToBase64(this.data.tempFilePath)
 
-      // 根据模式选择API
       const isFortune = this.data.mode === 'fortune'
       const res = await this.callScoreAPI(base64Data, isFortune ? '/api/fortune' : '/api/score')
 
       const data = res.data;
 
       if (isFortune) {
-        // --- 气质解读模式逻辑 ---
         if (data.comment) {
           let msg = `✨ ${data.title || '气质分析报告'} ✨\n\n`;
           msg += data.comment;
@@ -112,16 +216,13 @@ Page({
         }
 
       } else {
-        // --- 评分模式逻辑 ---
         if (data.score !== undefined && data.score !== null) {
           const score = Number(data.score.toFixed(1))
           let msg = `综合评分：${score} / 100\n\n`
 
-          // 如果后端返回了AI生成的点评，就优先显示
           if (data.comment) {
             msg += `分析点评：${data.comment}\n\n`
           } else {
-            // 后端没返回文案，就走本地逻辑兜底
             if (score < 40) {
               msg += '内在美是最宝贵的财富。'
             } else if (score < 50) {
@@ -164,21 +265,50 @@ Page({
     return new Promise((resolve, reject) => {
       let url = app.globalData.apiUrl;
 
-      // 直接拼接 Host 和 Path (去除 Host 末尾斜杠以防重复)
       url = url.replace(/\/$/, '') + path;
 
-      console.log('API Request URL:', url); // Debug log
+      console.log('API Request URL:', url);
 
       wx.request({
         url: url,
         method: 'POST',
         header: {
           'Content-Type': 'application/json',
-          'X-App-Type': 'miniprogram' // 添加请求头标识
+          'X-App-Type': 'miniprogram'
         },
         data: {
           image: base64Data,
-          app_type: 'miniprogram' // 添加请求体标识
+          app_type: 'miniprogram'
+        },
+        success: (res) => {
+          resolve(res)
+        },
+        fail: (err) => {
+          reject(err)
+        }
+      })
+    })
+  },
+
+  // 调用CP契合度API
+  callCoupleAPI(base64DataA, base64DataB) {
+    return new Promise((resolve, reject) => {
+      let url = app.globalData.apiUrl;
+      url = url.replace(/\/$/, '') + '/api/couple';
+
+      console.log('API Request URL:', url);
+
+      wx.request({
+        url: url,
+        method: 'POST',
+        header: {
+          'Content-Type': 'application/json',
+          'X-App-Type': 'miniprogram'
+        },
+        data: {
+          imageA: base64DataA,
+          imageB: base64DataB,
+          app_type: 'miniprogram'
         },
         success: (res) => {
           resolve(res)

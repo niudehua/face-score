@@ -463,6 +463,136 @@ async function getImagesByIds(d1, ids) {
   }
 }
 
+async function ensureCoupleTableExists(d1) {
+  try {
+    const tableCheck = await d1.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='couple_matches'"
+    ).first();
+    
+    if (!tableCheck) {
+      await d1.prepare(`
+        CREATE TABLE couple_matches (
+          id TEXT PRIMARY KEY,
+          score REAL NOT NULL,
+          grade TEXT NOT NULL,
+          highlights TEXT NOT NULL,
+          notes TEXT NOT NULL,
+          tags TEXT NOT NULL,
+          genderA TEXT NOT NULL,
+          ageA INTEGER NOT NULL,
+          scoreA REAL NOT NULL,
+          genderB TEXT NOT NULL,
+          ageB INTEGER NOT NULL,
+          scoreB REAL NOT NULL,
+          timestamp TEXT NOT NULL,
+          image_url_a TEXT NOT NULL,
+          image_url_b TEXT NOT NULL,
+          md5_a TEXT NOT NULL,
+          md5_b TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `).run();
+      
+      await d1.prepare("CREATE INDEX idx_couple_matches_timestamp ON couple_matches(timestamp)").run();
+      await d1.prepare("CREATE INDEX idx_couple_matches_created_at ON couple_matches(created_at)").run();
+    }
+    
+    return true;
+  } catch (err) {
+    throw new Error(`D1表检查或创建失败(couple_matches): ${err.message}`);
+  }
+}
+
+async function insertOrUpdateCoupleMatch(d1, matchData) {
+  try {
+    await ensureCoupleTableExists(d1);
+    
+    const query = `
+      INSERT INTO couple_matches (id, score, grade, highlights, notes, tags,
+        genderA, ageA, scoreA, genderB, ageB, scoreB, 
+        timestamp, image_url_a, image_url_b, md5_a, md5_b)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        score = excluded.score,
+        grade = excluded.grade,
+        highlights = excluded.highlights,
+        notes = excluded.notes,
+        tags = excluded.tags,
+        genderA = excluded.genderA,
+        ageA = excluded.ageA,
+        scoreA = excluded.scoreA,
+        genderB = excluded.genderB,
+        ageB = excluded.ageB,
+        scoreB = excluded.scoreB,
+        timestamp = excluded.timestamp,
+        image_url_a = excluded.image_url_a,
+        image_url_b = excluded.image_url_b,
+        created_at = CURRENT_TIMESTAMP
+    `;
+    
+    return await d1.prepare(query)
+      .bind(
+        matchData.id,
+        matchData.score,
+        matchData.grade,
+        matchData.highlights,
+        matchData.notes,
+        matchData.tags,
+        matchData.genderA,
+        matchData.ageA,
+        matchData.scoreA,
+        matchData.genderB,
+        matchData.ageB,
+        matchData.scoreB,
+        matchData.timestamp,
+        matchData.image_url_a,
+        matchData.image_url_b,
+        matchData.md5_a,
+        matchData.md5_b
+      )
+      .run();
+  } catch (err) {
+    throw new Error(`D1插入或更新失败(couple_matches): ${err.message}`);
+  }
+}
+
+async function getOldCoupleRecords(d1, cutoffTimestamp) {
+  try {
+    const result = await d1.prepare(
+      "SELECT id, md5_a, md5_b FROM couple_matches WHERE timestamp < ?"
+    )
+    .bind(cutoffTimestamp)
+    .all();
+    
+    return result.results || [];
+  } catch (err) {
+    throw new Error(`D1获取旧记录失败(couple_matches): ${err.message}`);
+  }
+}
+
+async function deleteOldCoupleRecords(d1, cutoffTimestamp) {
+  try {
+    await d1.exec("BEGIN TRANSACTION;");
+    
+    try {
+      const result = await d1.prepare(
+        "DELETE FROM couple_matches WHERE timestamp < ?"
+      )
+      .bind(cutoffTimestamp)
+      .run();
+      
+      await d1.exec("COMMIT;");
+      
+      return result;
+    } catch (transactionError) {
+      await d1.exec("ROLLBACK;");
+      throw transactionError;
+    }
+  } catch (err) {
+    throw new Error(`D1删除旧记录失败(couple_matches): ${err.message}`);
+  }
+}
+
 export {
   init,
   ensureTableExists,
@@ -474,5 +604,9 @@ export {
   getCleanupStatus,
   getImages,
   deleteImages,
-  getImagesByIds
+  getImagesByIds,
+  ensureCoupleTableExists,
+  insertOrUpdateCoupleMatch,
+  getOldCoupleRecords,
+  deleteOldCoupleRecords
 };
