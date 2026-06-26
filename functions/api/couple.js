@@ -77,7 +77,7 @@ export async function onRequestPost(context) {
       formData.append("api_key", FACEPP_KEY);
       formData.append("api_secret", FACEPP_SECRET);
       formData.append("image_base64", imageBase64);
-      formData.append("return_attributes", "gender,age,beauty,emotion,skinstatus,eyestatus,mouthstatus,ethnicity,facequality,blur,pose,smile,glass");
+      formData.append("return_attributes", "age,gender,smiling,headpose,facequality,blur,eyestatus,emotion,ethnicity,beauty,mouthstatus,eyegaze,skinstatus");
 
       const response = await fetch(FACEPP_API_URL, {
         method: "POST",
@@ -124,8 +124,8 @@ export async function onRequestPost(context) {
       ? attributesB.beauty.male_score
       : attributesB.beauty.female_score;
 
-    const smileA = attributesA.smile.value;
-    const smileB = attributesB.smile.value;
+    const smileA = attributesA.smiling.value;
+    const smileB = attributesB.smiling.value;
     const emotionA = Object.entries(attributesA.emotion).reduce((a, b) => a[1] > b[1] ? a : b)[0];
     const emotionB = Object.entries(attributesB.emotion).reduce((a, b) => a[1] > b[1] ? a : b)[0];
 
