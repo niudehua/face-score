@@ -34,6 +34,9 @@ export const SESSION_TTL = 7 * 24 * 60 * 60; // 7天
 // 批量操作批次大小
 export const BATCH_SIZE = 20;
 
+// Face++ API 默认地址
+export const DEFAULT_FACEPP_API_URL = "https://api-us.faceplusplus.com/facepp/v3/detect";
+
 // 日志级别
 export const LOG_LEVEL = {
   DEBUG: 'DEBUG',

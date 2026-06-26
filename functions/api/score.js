@@ -6,7 +6,7 @@ import { rateLimit } from '../lib/rate-limit.js';
 import { createSuccessResponse, createErrorResponse } from '../lib/response.js';
 import { createLogger } from '../lib/logger.js';
 import { validateBase64Image } from '../lib/validator.js';
-import { RATE_LIMIT_CONFIG, HTTP_STATUS } from '../lib/constants.js';
+import { RATE_LIMIT_CONFIG, HTTP_STATUS, DEFAULT_FACEPP_API_URL } from '../lib/constants.js';
 import { getScorePrompt, formatPrompt } from '../lib/prompts.js';
 
 export async function onRequestPost(context) {
@@ -115,8 +115,11 @@ export async function onRequestPost(context) {
     formData.append("image_base64", imageBase64);
     formData.append("return_attributes", "age,gender,smiling,headpose,facequality,blur,eyestatus,emotion,ethnicity,beauty,mouthstatus,eyegaze,skinstatus");
 
+    const FACEPP_API_URL = context.env.FACEPP_API_URL || DEFAULT_FACEPP_API_URL;
+    logger.debug(`使用 Face++ API: ${FACEPP_API_URL}`);
+
     logger.debug('正在请求 Face++ 接口');
-    const resp = await fetch("https://api-us.faceplusplus.com/facepp/v3/detect", {
+    const resp = await fetch(FACEPP_API_URL, {
       method: "POST",
       body: formData,
     });

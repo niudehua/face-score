@@ -5,7 +5,7 @@ import { rateLimit } from '../lib/rate-limit.js';
 import { createSuccessResponse, createErrorResponse, handleOptionsRequest } from '../lib/response.js';
 import { createLogger } from '../lib/logger.js';
 import { validateBase64Image } from '../lib/validator.js';
-import { RATE_LIMIT_CONFIG, HTTP_STATUS } from '../lib/constants.js';
+import { RATE_LIMIT_CONFIG, HTTP_STATUS, DEFAULT_FACEPP_API_URL } from '../lib/constants.js';
 import { getCouplePrompt, formatPrompt } from '../lib/prompts.js';
 
 export async function onRequestOptions(context) {
@@ -33,6 +33,8 @@ export async function onRequestPost(context) {
     }
 
     const AI_MODEL_ID = context.env.AI_MODEL_ID || "@cf/meta/llama-3-8b-instruct";
+    const FACEPP_API_URL = context.env.FACEPP_API_URL || DEFAULT_FACEPP_API_URL;
+    logger.debug(`使用 Face++ API: ${FACEPP_API_URL}`);
 
     let body;
     try {
@@ -77,7 +79,7 @@ export async function onRequestPost(context) {
       formData.append("image_base64", imageBase64);
       formData.append("return_attributes", "gender,age,beauty,emotion,skinstatus,eyestatus,mouthstatus,ethnicity,facequality,blur,pose,smile,glass");
 
-      const response = await fetch("https://api-cn.faceplusplus.com/facepp/v3/detect", {
+      const response = await fetch(FACEPP_API_URL, {
         method: "POST",
         body: formData
       });
