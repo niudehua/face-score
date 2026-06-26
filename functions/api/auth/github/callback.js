@@ -6,7 +6,7 @@ function generateSessionId() {
 // 处理GitHub回调
 export async function onRequestGet(context) {
   const { request, env } = context;
-  const { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, ALLOWED_GITHUB_USERS, SESSION_KV } = env;
+  const { OAUTH_GITHUB_CLIENT_ID, OAUTH_GITHUB_CLIENT_SECRET, ALLOWED_GITHUB_USERS, SESSION_KV } = env;
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
 
@@ -28,8 +28,8 @@ export async function onRequestGet(context) {
   try {
     // 检查环境变量
     console.log('[DEBUG] 检查环境变量:');
-    console.log(`[DEBUG] GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID ? '已设置' : '未设置'}`);
-    console.log(`[DEBUG] GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET ? '已设置' : '未设置'}`);
+    console.log(`[DEBUG] OAUTH_GITHUB_CLIENT_ID: ${OAUTH_GITHUB_CLIENT_ID ? '已设置' : '未设置'}`);
+    console.log(`[DEBUG] OAUTH_GITHUB_CLIENT_SECRET: ${OAUTH_GITHUB_CLIENT_SECRET ? '已设置' : '未设置'}`);
     console.log(`[DEBUG] ALLOWED_GITHUB_USERS: ${ALLOWED_GITHUB_USERS || '未设置'}`);
 
     // 1. 交换授权码获取访问令牌
@@ -37,8 +37,8 @@ export async function onRequestGet(context) {
 
     // 注意：GitHub OAuth令牌交换端点需要使用表单格式发送请求
     const formData = new URLSearchParams();
-    formData.append('client_id', GITHUB_CLIENT_ID);
-    formData.append('client_secret', GITHUB_CLIENT_SECRET);
+    formData.append('client_id', OAUTH_GITHUB_CLIENT_ID);
+    formData.append('client_secret', OAUTH_GITHUB_CLIENT_SECRET);
     formData.append('code', code);
     const formDataString = formData.toString();
 
