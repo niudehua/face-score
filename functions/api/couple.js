@@ -102,6 +102,7 @@ export async function onRequestPost(context) {
     try {
       faceA = await analyzeFace(imageBase64A);
       logger.debug('图片A分析完成');
+      await new Promise(resolve => setTimeout(resolve, 200));
       faceB = await analyzeFace(imageBase64B);
       logger.debug('图片B分析完成');
     } catch (error) {
