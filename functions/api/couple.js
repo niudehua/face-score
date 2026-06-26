@@ -174,15 +174,37 @@ export async function onRequestPost(context) {
       temperamentB: temperamentB || '自然气质'
     });
 
-    const aiResponse = await context.env.AI.run(AI_MODEL_ID, {
-      messages: [{ role: "user", content: prompt }]
-    });
+    const ai = context.env.AI;
+    let aiContent = '';
 
-    let aiContent = typeof aiResponse === 'object' && aiResponse.response
-      ? aiResponse.response
-      : typeof aiResponse === 'string'
-        ? aiResponse
-        : JSON.stringify(aiResponse);
+    if (ai && typeof ai.run === "function") {
+      try {
+        const aiResponse = await ai.run(AI_MODEL_ID, {
+          messages: [{ role: "user", content: prompt }]
+        });
+
+        if (aiResponse) {
+          if (Array.isArray(aiResponse.choices) && aiResponse.choices.length > 0 && aiResponse.choices[0].message && aiResponse.choices[0].message.content) {
+            aiContent = aiResponse.choices[0].message.content.trim();
+          } else if (typeof aiResponse.response === "string") {
+            aiContent = aiResponse.response.trim();
+          } else if (typeof aiResponse === "string") {
+            aiContent = aiResponse;
+          } else {
+            aiContent = JSON.stringify(aiResponse);
+          }
+        }
+      } catch (aiError) {
+        logger.error('AI调用失败', aiError);
+      }
+    } else {
+      logger.warn('AI服务未配置或不可用');
+    }
+
+    // 如果 AI 返回为空，使用默认内容
+    if (!aiContent) {
+      aiContent = 'AI服务暂时不可用，请稍后重试';
+    }
 
     let matchScore = 0, grade = '', highlights = '', notes = '', tags = '';
     
