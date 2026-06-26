@@ -13,34 +13,13 @@ jobs:
 
     steps:
       - name: Checkout code 🐾
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      - name: Setup Node.js 🟢
-        uses: actions/setup-node@v4
+      - name: Deploy Pages �
+        uses: cloudflare/pages-action@v1
         with:
-          node-version: 20
-          cache: 'npm'
-
-      - name: Install Wrangler CLI 🛠️
-        run: npm install -g wrangler@3
-
-      - name: Deploy with Wrangler 🚀
-        run: |
-          wrangler pages deploy public \
-            --project-name=face-score-pages \
-            --branch=main \
-            --api-token=${{ secrets.CLOUDFLARE_API_TOKEN }} \
-            --account-id=${{ secrets.ACCOUNT_ID }} \
-            --env=production
-        env:
-          PROMPT_SCORE: ${{ secrets.PROMPT_SCORE }}
-          PROMPT_TEMPERAMENT: ${{ secrets.PROMPT_TEMPERAMENT }}
-          PROMPT_COUPLE: ${{ secrets.PROMPT_COUPLE }}
-          AI_MODEL_ID: ${{ secrets.AI_MODEL_ID }}
-          FACEPP_KEY: ${{ secrets.FACEPP_KEY }}
-          FACEPP_SECRET: ${{ secrets.FACEPP_SECRET }}
-          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
-          TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
-          OAUTH_GITHUB_CLIENT_ID: ${{ secrets.OAUTH_GITHUB_CLIENT_ID }}
-          OAUTH_GITHUB_CLIENT_SECRET: ${{ secrets.OAUTH_GITHUB_CLIENT_SECRET }}
-          ALLOWED_GITHUB_USERS: ${{ secrets.ALLOWED_GITHUB_USERS }}
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.ACCOUNT_ID }}
+          projectName: "face-score-pages"
+          directory: "public"
+          branch: main

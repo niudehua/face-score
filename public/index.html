@@ -163,25 +163,13 @@
     async function initTurnstile() {
       const widgetContainer = document.querySelector('.turnstile-container');
       try {
-        // 临时测试：如果 API 返回空，使用调试密钥测试
         const res = await fetch('/api/turnstile');
         const data = await res.json();
 
-        console.log('API 响应:', data);
-
-        let siteKey = data.site_key;
-
-        // 临时：如果环境变量未配置，使用 Cloudflare 测试密钥（仅用于测试）
-        if (!siteKey || !siteKey.trim()) {
-          console.warn('⚠️ TURNSTILE_SITE_KEY 未从环境变量获取，使用调试密钥测试');
-          siteKey = '1x00000000000000000000AA'; // Cloudflare 官方测试密钥
-        }
-
-        if (siteKey && typeof siteKey === 'string' && siteKey.trim()) {
+        if (data.site_key && typeof data.site_key === 'string' && data.site_key.trim()) {
           turnstileEnabled = true;
-          // 使用获取到的站点密钥初始化 Turnstile 组件
           turnstile.render('#turnstile-widget', {
-            sitekey: siteKey,
+            sitekey: data.site_key,
             theme: 'light'
           });
         } else {
