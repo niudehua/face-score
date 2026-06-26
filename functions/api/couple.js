@@ -72,38 +72,60 @@ export async function onRequestPost(context) {
       }
     }
 
-    async function analyzeFace(imageBase64) {
+    // 带重试的 Face++ 人脸分析函数
+    async function analyzeFaceWithRetry(imageBase64, maxRetries = 3) {
       const formData = new FormData();
       formData.append("api_key", FACEPP_KEY);
       formData.append("api_secret", FACEPP_SECRET);
       formData.append("image_base64", imageBase64);
       formData.append("return_attributes", "age,gender,smiling,headpose,facequality,blur,eyestatus,emotion,ethnicity,beauty,mouthstatus,eyegaze,skinstatus");
 
-      const response = await fetch(FACEPP_API_URL, {
-        method: "POST",
-        body: formData
-      });
+      let lastError;
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          const response = await fetch(FACEPP_API_URL, {
+            method: "POST",
+            body: formData
+          });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error_message: 'Face++请求失败' }));
-        throw new Error(`Face++ API错误: ${errorData.error_message || '未知错误'}`);
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error_message: 'Face++请求失败' }));
+            const errorMsg = errorData.error_message || '未知错误';
+
+            // 如果是并发限制，等待后重试
+            if (errorMsg.includes('CONCURRENCY_LIMIT_EXCEEDED')) {
+              logger.warn(`Face++ 并发限制，第 ${attempt + 1} 次重试...`);
+              await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+              continue;
+            }
+
+            throw new Error(`Face++ API错误: ${errorMsg}`);
+          }
+
+          const data = await response.json();
+          if (!data.faces || data.faces.length === 0) {
+            throw new Error('未检测到人脸');
+          }
+
+          return data.faces[0];
+        } catch (error) {
+          lastError = error;
+          // 非并发限制错误，直接抛出
+          if (!error.message.includes('CONCURRENCY_LIMIT_EXCEEDED')) {
+            throw error;
+          }
+        }
       }
 
-      const data = await response.json();
-      if (!data.faces || data.faces.length === 0) {
-        throw new Error('未检测到人脸');
-      }
-
-      return data.faces[0];
+      throw lastError || new Error('Face++ 并发限制，重试次数已用尽');
     }
 
     logger.debug('开始分析图片A...');
     let faceA, faceB;
     try {
-      faceA = await analyzeFace(imageBase64A);
+      faceA = await analyzeFaceWithRetry(imageBase64A);
       logger.debug('图片A分析完成');
-      await new Promise(resolve => setTimeout(resolve, 200));
-      faceB = await analyzeFace(imageBase64B);
+      faceB = await analyzeFaceWithRetry(imageBase64B);
       logger.debug('图片B分析完成');
     } catch (error) {
       logger.error('人脸分析失败', error);
