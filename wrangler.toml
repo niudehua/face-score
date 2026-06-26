@@ -1,43 +1,6 @@
-# Wrangler configuration file for Cloudflare Pages
+name = "face-score-pages"
+main = ""
+compatibility_date = "2024-01-01"
 
-# 项目名称
-name = "face-score"
-
-# 静态资源目录（Pages 本地开发需要）
-pages_build_output_dir = "public"
-
-# 兼容性日期（避免 wrangler 警告）
-compatibility_date = "2025-12-12"
-
-# 环境变量配置
-[vars]
-# 这里可以配置默认的环境变量，会被 .dev.vars 文件覆盖
-
-# KV 命名空间绑定（用于限流）
-# 注意：本地开发时不需要实际的 KV 命名空间 ID，wrangler 会模拟 KV 存储
-[[kv_namespaces]]
-binding = "RATE_LIMIT_KV"
-id = "face-score"  # 本地开发时可以使用任意字符串
-preview_id = "face-score"  # 本地开发时可以使用任意字符串
-
-# KV 命名空间绑定（用于登录会话管理）
-[[kv_namespaces]]
-binding = "SESSION_KV"
-id = "session-kv"  # 本地开发时可以使用任意字符串
-preview_id = "session-kv"  # 本地开发时可以使用任意字符串
-
-# D1 数据库绑定
-[[d1_databases]]
-binding = "FACE_SCORE_DB"
-database_name = "face_score_db"
-database_id = "face_score_db"  # 本地开发时可以使用任意字符串
-
-# R2 存储桶绑定
-[[r2_buckets]]
-binding = "FACE_IMAGES"
-bucket_name = "face-score-images"
-
-# 本地开发配置
-[dev]
-# 本地开发服务器端口
-port = 8788
+[env.production]
+name = "face-score-pages"
