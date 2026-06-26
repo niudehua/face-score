@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -25,3 +26,13 @@ jobs:
           env: |
             PROMPT_SCORE=${{ secrets.PROMPT_SCORE }}
             PROMPT_TEMPERAMENT=${{ secrets.PROMPT_TEMPERAMENT }}
+            AI_MODEL_ID=${{ secrets.AI_MODEL_ID }}
+            FACEPP_KEY=${{ secrets.FACEPP_KEY }}
+            FACEPP_SECRET=${{ secrets.FACEPP_SECRET }}
+            TURNSTILE_SECRET_KEY=${{ secrets.TURNSTILE_SECRET_KEY }}
+            TURNSTILE_SITE_KEY=${{ secrets.TURNSTILE_SITE_KEY }}
+            ADMIN_USERNAME=${{ secrets.ADMIN_USERNAME }}
+            ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
+            GITHUB_CLIENT_ID=${{ secrets.GITHUB_CLIENT_ID }}
+            GITHUB_CLIENT_SECRET=${{ secrets.GITHUB_CLIENT_SECRET }}
+            GITHUB_ALLOWED_USERS=${{ secrets.GITHUB_ALLOWED_USERS }}
