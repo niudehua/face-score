@@ -6,7 +6,7 @@ function generateSessionId() {
 // 处理GitHub回调
 export async function onRequestGet(context) {
   const { request, env } = context;
-  const { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_ALLOWED_USERS, SESSION_KV } = env;
+  const { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, ALLOWED_GITHUB_USERS, SESSION_KV } = env;
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
 
@@ -30,7 +30,7 @@ export async function onRequestGet(context) {
     console.log('[DEBUG] 检查环境变量:');
     console.log(`[DEBUG] GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID ? '已设置' : '未设置'}`);
     console.log(`[DEBUG] GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET ? '已设置' : '未设置'}`);
-    console.log(`[DEBUG] GITHUB_ALLOWED_USERS: ${GITHUB_ALLOWED_USERS || '未设置'}`);
+    console.log(`[DEBUG] ALLOWED_GITHUB_USERS: ${ALLOWED_GITHUB_USERS || '未设置'}`);
 
     // 1. 交换授权码获取访问令牌
     console.log('[DEBUG] 交换授权码获取访问令牌');
@@ -201,7 +201,7 @@ export async function onRequestGet(context) {
     }
 
     // 3. 关键：检查用户是否在允许列表中
-    const allowedUsers = (GITHUB_ALLOWED_USERS || '').split(',').map(u => u.trim());
+    const allowedUsers = (ALLOWED_GITHUB_USERS || '').split(',').map(u => u.trim());
     console.log(`[DEBUG] 允许的用户列表: ${allowedUsers.join(', ')}`);
     console.log(`[DEBUG] 当前用户: ${username}`);
 

@@ -35,4 +35,4 @@ jobs:
             ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
             GITHUB_CLIENT_ID=${{ secrets.GITHUB_CLIENT_ID }}
             GITHUB_CLIENT_SECRET=${{ secrets.GITHUB_CLIENT_SECRET }}
-            GITHUB_ALLOWED_USERS=${{ secrets.GITHUB_ALLOWED_USERS }}
+            ALLOWED_GITHUB_USERS=${{ secrets.ALLOWED_GITHUB_USERS }}
