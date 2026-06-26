@@ -7,19 +7,17 @@
  */
 async function calculateImageId(imageBase64) {
   try {
-    // 先将base64转换为二进制数据，再计算哈希
-    const binaryString = atob(imageBase64);
+    const base64Data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
+    const binaryString = atob(base64Data);
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {
       bytes[i] = binaryString.charCodeAt(i);
     }
     
-    // 计算二进制数据的SHA-256哈希
     const hashBuffer = await crypto.subtle.digest('SHA-256', bytes);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     
-    // 返回前32个字符作为图片ID
     return hashHex.substring(0, 32);
   } catch (error) {
     throw new Error(`计算图片ID失败: ${error.message}`);
@@ -35,14 +33,13 @@ async function calculateImageId(imageBase64) {
  */
 async function uploadImage(r2Bucket, imageBase64, md5) {
   try {
-    // 将 Base64 转换为二进制数据
-    const binaryString = atob(imageBase64);
+    const base64Data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
+    const binaryString = atob(base64Data);
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {
       bytes[i] = binaryString.charCodeAt(i);
     }
 
-    // 上传到 R2，使用 MD5 作为文件名
     const key = `images/${md5}.jpg`;
     await r2Bucket.put(key, bytes, {
       httpMetadata: {

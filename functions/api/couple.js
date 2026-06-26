@@ -246,13 +246,13 @@ export async function onRequestPost(context) {
     try {
       const imageIdA = await calculateImageId(imageBase64A);
       md5A = imageIdA;
-      await uploadImage(context.env.FACE_IMAGES, imageBase64A, imageIdA, timestamp);
-      imageUrlA = getImageUrl(context.env.FACE_IMAGES, imageIdA);
+      await uploadImage(context.env.FACE_IMAGES, imageBase64A, imageIdA);
+      imageUrlA = getImageUrl(imageIdA);
 
       const imageIdB = await calculateImageId(imageBase64B);
       md5B = imageIdB;
-      await uploadImage(context.env.FACE_IMAGES, imageBase64B, imageIdB, timestamp);
-      imageUrlB = getImageUrl(context.env.FACE_IMAGES, imageIdB);
+      await uploadImage(context.env.FACE_IMAGES, imageBase64B, imageIdB);
+      imageUrlB = getImageUrl(imageIdB);
     } catch (storageError) {
       logger.warn('图片上传失败', storageError);
     }
