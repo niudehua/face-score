@@ -1,8 +1,8 @@
 # 颜究所 🐱
 
-**科学颜值打分 vs 玄学 AI 看相，一切尽在该小程序！**
+**颜值评分 + 气质解读，探索你的独特魅力！**
 
-本项目基于 [Cloudflare Pages](https://pages.cloudflare.com/) 构建，巧妙融合了 **Face++（旷视）** 的精准视觉能力与 **Cloudflare AI (Llama-3)** 的强大语言理解能力。这不仅仅是一个简单的打分工具，更是一个集娱乐、社交、玄学于一体的 AI 互动实验场。
+本项目基于 [Cloudflare Pages](https://pages.cloudflare.com/) 构建，巧妙融合了 **Face++（旷视）** 的精准视觉能力与 **Cloudflare AI (Llama-3)** 的强大语言理解能力。这不仅仅是一个简单的打分工具，更是一个集颜值分析、气质洞察于一体的 AI 互动实验场。
 
 ---
 
@@ -15,23 +15,28 @@
 
 - **技术点**: Face++ Beauty Score + Llama-3 "Cat Persona" Prompt
 
-### 2. 🔮 AI 看相 (Mystical Mode) [NEW!]
+### 2. ✨ 气质解读 (Temperament Mode)
 
-**"大师亲批，天机泄露"**
-切换到玄学模式，AI 化身 "麻衣神相" 传人。它不看颜值高低，只看面相吉凶！
+**"洞察内在，解读你的独特气质"**
+上传照片，AI 深度分析你的面部特征，解读你的气质类型和性格特质。
 
-- **气色分析**: 结合皮肤状态健康度。
-- **眼神定力**: 分析眼睛闭合度与注视方向。
-- **人缘桃花**: 微表情笑容分析。
-- **技术点**: Face++ Attributes -> Feature Mapping -> Llama-3 "Fortune Teller" Prompt
+- **气质类型**: 高冷御姐、邻家女孩、阳光少年、文艺青年等。
+- **性格特质**: 通过面部特征推断性格倾向。
+- **魅力标签**: 为你打上独特的魅力关键词。
+- **技术点**: Face++ Attributes -> Feature Mapping -> Llama-3 "Temperament Analyst" Prompt
 
 ---
 
-## 🚀 未来计划 (Roadmap)
+## 🚀 即将上线 (Coming Soon)
+
+### 💑 CP 契合度测试
+**"天生一对" 还是 "欢喜冤家"？**
+上传两人合照，AI 将从面部特征、气质匹配度等多个维度分析你们的契合指数，看看是否命中注定！
+
+## 📋 未来计划 (Roadmap)
 
 我们正在酝酿更多新奇功能：
 
-- [ ] **CP 契合度测试**: 两人同框，测测你们是 "天生一对" 还是 "欢喜冤家"。
 - [ ] **前世今生 (Celebrity Twin)**: 测测你撞脸哪位历史人物或当红明星？
 - [ ] **AI 造型师**: 根据脸型推荐最适合的眼镜、发型。
 - [ ] **表情包大作战**: 跟随指令做表情，看谁模仿最像！
@@ -56,8 +61,8 @@ face-score/
 │   └── config/            # 配置文件
 ├── functions/              # Cloudflare Workers 后端代码
 │   ├── api/
-│   │   ├── score.js       # 颜值评分接口
-│   │   └── fortune.js     # [NEW] AI看相接口
+│   │   ├── score.js           # 颜值评分接口
+│   │   └── temperament.js     # 气质解读接口
 │   └── lib/               # 共享工具库
 ├── public/                 # 静态资源
 └── README.md               # 项目说明

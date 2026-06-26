@@ -22,3 +22,6 @@ jobs:
           projectName: "face-score-pages" 
           directory: "public"            
           branch: main
+          env: |
+            PROMPT_SCORE=${{ secrets.PROMPT_SCORE }}
+            PROMPT_TEMPERAMENT=${{ secrets.PROMPT_TEMPERAMENT }}

@@ -7,6 +7,7 @@ import { createSuccessResponse, createErrorResponse } from '../lib/response.js';
 import { createLogger } from '../lib/logger.js';
 import { validateBase64Image } from '../lib/validator.js';
 import { RATE_LIMIT_CONFIG, HTTP_STATUS } from '../lib/constants.js';
+import { getScorePrompt, formatPrompt } from '../lib/prompts.js';
 
 export async function onRequestPost(context) {
   const { FACEPP_KEY, FACEPP_SECRET, TURNSTILE_SECRET_KEY } = context.env;
@@ -214,13 +215,24 @@ export async function onRequestPost(context) {
       const faceQualityValue = facequality.value ?? 0;
 
       // 拼提示词
-      const prompt = `喵喵～检测到一位${genderCn}，大约${age.value}岁，颜值评分${score.toFixed(
-        1
-      )}分！Ta正${smileValue > 50 ? "笑得灿烂" : "表情平静"}，脸部质量分${faceQualityValue.toFixed(
-        2
-      )}，模糊度${blurLevel.toFixed(2)}，情绪主要是${emotionDesc}。头部朝向 yaw:${yaw.toFixed(
-        1
-      )}，pitch:${pitch.toFixed(1)}，roll:${roll.toFixed(1)}。${skinStatusDesc}。${eyeStatusDesc}，${mouthStatusDesc}，${ethnicityDesc}，${eyeGazeDesc}。请用20～50字写一段有趣的中文颜值点评，语言要俏皮、接地气，既能夸得人心花怒放，也能调侃得人忍俊不禁。不许搬数字，要用风趣、形象的词汇来形容颜值，比如“自带美颜Buff”、“长在我笑点上”、“帅得像Bug一样难复现”，要让人一看就嘴角上扬，想转发给朋友笑一笑！`;
+      const promptTemplate = getScorePrompt(context.env);
+      const prompt = formatPrompt(promptTemplate, {
+        gender: genderCn,
+        age: age.value,
+        score: score.toFixed(1),
+        smileStatus: smileValue > 50 ? "笑得灿烂" : "表情平静",
+        faceQuality: faceQualityValue.toFixed(2),
+        blur: blurLevel.toFixed(2),
+        emotion: emotionDesc,
+        yaw: yaw.toFixed(1),
+        pitch: pitch.toFixed(1),
+        roll: roll.toFixed(1),
+        skinStatus: skinStatusDesc,
+        eyeStatus: eyeStatusDesc,
+        mouthStatus: mouthStatusDesc,
+        ethnicity: ethnicityDesc,
+        eyeGaze: eyeGazeDesc
+      });
 
       logger.debug('生成AI点评提示词');
 

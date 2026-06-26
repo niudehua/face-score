@@ -6,6 +6,7 @@ import { createSuccessResponse, createErrorResponse, handleOptionsRequest } from
 import { createLogger } from '../lib/logger.js';
 import { validateBase64Image } from '../lib/validator.js';
 import { RATE_LIMIT_CONFIG, HTTP_STATUS } from '../lib/constants.js';
+import { getTemperamentPrompt, formatPrompt } from '../lib/prompts.js';
 
 export async function onRequestOptions(context) {
   return handleOptionsRequest();
@@ -135,27 +136,18 @@ export async function onRequestPost(context) {
       const specificEmotion = Object.entries(emotion).sort((a, b) => b[1] - a[1])[0][0]; // 取概率最高的情绪
 
       // 构建提示词
-      const prompt = `
-      你是一位资深美学与心理分析师，擅长通过面部特征分析人物的气质、性格魅力和第一印象。
-      请根据以下面部特征数据，为这位${genderText}（约${age.value}岁）生成一份“气质分析报告”：
-      
-      【面部特征数据】
-      1. 气色状态：${healthScore.toFixed(1)}（${qiSe}）
-      2. 眼神特征：${eyeSpirit}
-      3. 情绪状态：${specificEmotion}
-      4. 亲和力（笑容）：${smileValue.toFixed(1)}（${socialLuck}）
-      5. 颜值基础分：${beauty.gender === 'Male' ? beauty.male_score : beauty.female_score} 分
-      
-      【输出要求】
-      请输出一段约100字左右的分析报告，包含：
-      1. 用3-4个词概括整体气质（如“温婉大气”、“干练自信”、“阳光活力”等）。
-      2. 详细解读【性格魅力】和【给人的第一印象】。
-      3. 最后给出一个温暖的“形象建议”或“社交Tip”。
-      
-      语气要专业、温暖、治愈，不仅要夸奖优点，还要给出有建设性的鼓励。避免使用“运势”、“吉凶”、“算命”等玄学术语。
-      **必须全程使用中文回答，不要出现英文。**
-      只需返回报告内容，不要包含其他开场白。
-      `;
+      const promptTemplate = getTemperamentPrompt(context.env);
+      const prompt = formatPrompt(promptTemplate, {
+        gender: genderText,
+        age: age.value,
+        healthScore: healthScore.toFixed(1),
+        qiSe: qiSe,
+        eyeSpirit: eyeSpirit,
+        specificEmotion: specificEmotion,
+        smileValue: smileValue.toFixed(1),
+        socialLuck: socialLuck,
+        beautyScore: beauty.gender === 'Male' ? beauty.male_score : beauty.female_score
+      });
 
       let fortuneReport = "分析师正在生成报告，请稍后再试...";
 
