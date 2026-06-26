@@ -24,15 +24,15 @@ jobs:
           directory: "public"            
           branch: main
           env: |
-            PROMPT_SCORE=${{ secrets.PROMPT_SCORE }}
-            PROMPT_TEMPERAMENT=${{ secrets.PROMPT_TEMPERAMENT }}
-            AI_MODEL_ID=${{ secrets.AI_MODEL_ID }}
-            FACEPP_KEY=${{ secrets.FACEPP_KEY }}
-            FACEPP_SECRET=${{ secrets.FACEPP_SECRET }}
-            TURNSTILE_SECRET_KEY=${{ secrets.TURNSTILE_SECRET_KEY }}
-            TURNSTILE_SITE_KEY=${{ secrets.TURNSTILE_SITE_KEY }}
-            ADMIN_USERNAME=${{ secrets.ADMIN_USERNAME }}
-            ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
-            GITHUB_CLIENT_ID=${{ secrets.GITHUB_CLIENT_ID }}
-            GITHUB_CLIENT_SECRET=${{ secrets.GITHUB_CLIENT_SECRET }}
-            GITHUB_ALLOWED_USERS=${{ secrets.GITHUB_ALLOWED_USERS }}
+            ${{ if secrets.PROMPT_SCORE }}PROMPT_SCORE=${{ secrets.PROMPT_SCORE }}${{ endif }}
+            ${{ if secrets.PROMPT_TEMPERAMENT }}PROMPT_TEMPERAMENT=${{ secrets.PROMPT_TEMPERAMENT }}${{ endif }}
+            ${{ if secrets.AI_MODEL_ID }}AI_MODEL_ID=${{ secrets.AI_MODEL_ID }}${{ endif }}
+            ${{ if secrets.FACEPP_KEY }}FACEPP_KEY=${{ secrets.FACEPP_KEY }}${{ endif }}
+            ${{ if secrets.FACEPP_SECRET }}FACEPP_SECRET=${{ secrets.FACEPP_SECRET }}${{ endif }}
+            ${{ if secrets.TURNSTILE_SECRET_KEY }}TURNSTILE_SECRET_KEY=${{ secrets.TURNSTILE_SECRET_KEY }}${{ endif }}
+            ${{ if secrets.TURNSTILE_SITE_KEY }}TURNSTILE_SITE_KEY=${{ secrets.TURNSTILE_SITE_KEY }}${{ endif }}
+            ${{ if secrets.ADMIN_USERNAME }}ADMIN_USERNAME=${{ secrets.ADMIN_USERNAME }}${{ endif }}
+            ${{ if secrets.ADMIN_PASSWORD }}ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}${{ endif }}
+            ${{ if secrets.GITHUB_CLIENT_ID }}GITHUB_CLIENT_ID=${{ secrets.GITHUB_CLIENT_ID }}${{ endif }}
+            ${{ if secrets.GITHUB_CLIENT_SECRET }}GITHUB_CLIENT_SECRET=${{ secrets.GITHUB_CLIENT_SECRET }}${{ endif }}
+            ${{ if secrets.GITHUB_ALLOWED_USERS }}GITHUB_ALLOWED_USERS=${{ secrets.GITHUB_ALLOWED_USERS }}${{ endif }}
