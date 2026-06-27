@@ -15,7 +15,7 @@ jobs:
       - name: Checkout code 🐾
         uses: actions/checkout@v3
 
-      - name: Deploy Pages �
+      - name: Deploy Pages 🚀
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -23,3 +23,6 @@ jobs:
           projectName: "face-score-pages"
           directory: "public"
           branch: main
+          env: |
+            WECHAT_APP_ID=${{ secrets.WECHAT_APP_ID }}
+            WECHAT_APP_SECRET=${{ secrets.WECHAT_APP_SECRET }}
