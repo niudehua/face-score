@@ -22,8 +22,8 @@ jobs:
           accountId: ${{ secrets.ACCOUNT_ID }}
           command: pages deploy public --project-name=face-score-pages
           secrets: |
-            WECHAT_APP_ID
-            WECHAT_APP_SECRET
+            WECHAT_APPID
+            WECHAT_PRIVATE_KEY
         env:
-          WECHAT_APP_ID: ${{ secrets.WECHAT_APP_ID }}
-          WECHAT_APP_SECRET: ${{ secrets.WECHAT_APP_SECRET }}
+          WECHAT_APPID: ${{ secrets.WECHAT_APPID }}
+          WECHAT_PRIVATE_KEY: ${{ secrets.WECHAT_PRIVATE_KEY }}

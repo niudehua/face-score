@@ -10,7 +10,7 @@ export async function onRequestOptions(context) {
 }
 
 export async function onRequestPost(context) {
-  const { WECHAT_APP_ID, WECHAT_APP_SECRET } = context.env;
+  const { WECHAT_APPID, WECHAT_PRIVATE_KEY } = context.env;
   const logger = createLogger('security-api');
 
   try {
@@ -41,7 +41,7 @@ export async function onRequestPost(context) {
       return createErrorResponse(imageValidation.error || '图片格式无效', { status: HTTP_STATUS.BAD_REQUEST });
     }
 
-    if (!WECHAT_APP_ID || !WECHAT_APP_SECRET) {
+    if (!WECHAT_APPID || !WECHAT_PRIVATE_KEY) {
       logger.error('微信小程序配置未完成，无法进行内容安全检查');
       return createSuccessResponse({ 
         safe: false, 
@@ -51,7 +51,7 @@ export async function onRequestPost(context) {
     }
 
     logger.debug('开始内容安全检查');
-    const securityResult = await checkImageSecurity(imageBase64, WECHAT_APP_ID, WECHAT_APP_SECRET);
+    const securityResult = await checkImageSecurity(imageBase64, WECHAT_APPID, WECHAT_PRIVATE_KEY);
 
     if (!securityResult.safe) {
       logger.warn('内容安全检查未通过:', securityResult.message);
