@@ -70,11 +70,8 @@
   </view>
 
   <view class="buttons-container">
-    <button bindtap="{{mode === 'couple' ? 'clearAllCouple' : 'chooseImage'}}" class="{{mode === 'couple' ? (previewUrlA && previewUrlB ? 'secondary-button' : '') : (previewShow ? 'secondary-button' : '')}}">
-      {{mode === 'couple' ? (previewUrlA && previewUrlB ? '重新上传' : '上传照片') : (previewShow ? '换一张试试' : '上传美照')}}
-    </button>
-    <button bindtap="submitScore" disabled="{{submitting || (mode === 'couple' && (!previewUrlA || !previewUrlB))}}" class="primary-button">
-      {{submitting ? '正在分析...' : (mode === 'score' ? '开始颜值测试' : (mode === 'fortune' ? '生成气质报告' : '测测我们的缘分'))}}
+    <button bindtap="handleMainAction" disabled="{{submitting}}" class="main-button">
+      {{mainButtonText}}
     </button>
   </view>
 

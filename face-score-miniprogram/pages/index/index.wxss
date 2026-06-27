@@ -63,6 +63,29 @@
   box-shadow: 0 2rpx 8rpx rgba(255, 126, 179, 0.1) !important;
 }
 
+.main-button {
+  background: linear-gradient(135deg, #ff7eb3 0%, #ff6ec7 100%) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 44rpx !important;
+  padding: 32rpx 48rpx !important;
+  font-size: 32rpx !important;
+  font-weight: 600 !important;
+  box-shadow: 0 8rpx 28rpx rgba(255, 126, 179, 0.4) !important;
+  transition: all 0.25s ease !important;
+}
+
+.main-button:active {
+  transform: scale(0.98) !important;
+  box-shadow: 0 4rpx 14rpx rgba(255, 126, 179, 0.3) !important;
+}
+
+.main-button:disabled {
+  background: #f0f0f0 !important;
+  color: #ccc !important;
+  box-shadow: none !important;
+}
+
 .utility-buttons {
   display: flex;
   gap: 16rpx;

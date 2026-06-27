@@ -20,7 +20,8 @@ Page({
     securityStatus: '',
     checkingA: false,
     checkingB: false,
-    checking: false
+    checking: false,
+    mainButtonText: '上传美照'
   },
 
   // 切换模式
@@ -40,7 +41,11 @@ Page({
       securityStatus: '',
       checkingA: false,
       checkingB: false,
-      checking: false
+      checking: false,
+      previewShow: false,
+      previewUrl: '',
+      tempFilePath: '',
+      mainButtonText: mode === 'couple' ? '上传我的照片' : '上传美照'
     })
   },
 
@@ -85,13 +90,15 @@ Page({
           }
           
           console.log(`[安全检查][${new Date().toLocaleTimeString()}] ✓ 安全检查通过`)
+          const buttonText = this.data.mode === 'score' ? '开始颜值测试' : '生成气质报告'
           this.setData({
             previewUrl: tempFilePath,
             previewShow: true,
             tempFilePath: tempFilePath,
             result: '',
             securityStatus: 'passed',
-            checking: false
+            checking: false,
+            mainButtonText: buttonText
           })
           this.showToast('安全检查通过，照片选择成功', 'success')
         } catch (err) {
@@ -142,7 +149,8 @@ Page({
             tempFilePathA: tempFilePath,
             result: '',
             securityStatusA: 'passed',
-            checkingA: false
+            checkingA: false,
+            mainButtonText: '上传TA的照片'
           })
           this.showToast('安全检查通过，第一张照片选择成功', 'success')
         } catch (err) {
@@ -193,7 +201,8 @@ Page({
             tempFilePathB: tempFilePath,
             result: '',
             securityStatusB: 'passed',
-            checkingB: false
+            checkingB: false,
+            mainButtonText: '测测我们的缘分'
           })
           this.showToast('安全检查通过，第二张照片选择成功', 'success')
         } catch (err) {
@@ -250,6 +259,45 @@ Page({
       result: ''
     })
     this.showToast('已清空所有照片', 'success')
+  },
+
+  getMainButtonText() {
+    const { mode, previewShow, previewUrlA, previewUrlB } = this.data
+    
+    if (mode === 'couple') {
+      if (!previewUrlA) return '上传我的照片'
+      if (!previewUrlB) return '上传TA的照片'
+      return '测测我们的缘分'
+    }
+    
+    if (!previewShow) return '上传美照'
+    
+    return mode === 'score' ? '开始颜值测试' : '生成气质报告'
+  },
+
+  handleMainAction() {
+    const { mode, previewShow, previewUrlA, previewUrlB, result } = this.data
+    
+    if (mode === 'couple') {
+      if (!previewUrlA) {
+        this.chooseImageA()
+      } else if (!previewUrlB) {
+        this.chooseImageB()
+      } else if (result) {
+        this.clearAllCouple()
+      } else {
+        this.submitScore()
+      }
+      return
+    }
+    
+    if (!previewShow) {
+      this.chooseImage()
+    } else if (result) {
+      this.clearPreview()
+    } else {
+      this.submitScore()
+    }
   },
 
   // 转换图片为Base64
@@ -311,7 +359,10 @@ Page({
           this.setData({ result: '网络信号溜去捉迷藏啦，请检查网络后再试一次喵～' })
         }
       } finally {
-        this.setData({ submitting: false })
+        this.setData({ 
+          submitting: false,
+          mainButtonText: '重新上传'
+        })
       }
       return
     }
@@ -385,8 +436,10 @@ Page({
         this.setData({ result: '网络信号溜去捉迷藏啦，请检查网络后再试一次喵～' })
       }
     } finally {
+      const buttonText = this.data.mode === 'score' ? '开始颜值测试' : '生成气质报告'
       this.setData({
-        submitting: false
+        submitting: false,
+        mainButtonText: buttonText
       })
     }
   },
