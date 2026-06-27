@@ -1,63 +1,66 @@
-/* 页面特定样式 */
-
 .app-logo {
-  width: 140rpx;
-  height: 140rpx;
-  margin-bottom: 20rpx;
+  width: 120rpx;
+  height: 120rpx;
+  margin-bottom: 30rpx;
   border-radius: 50%;
-  box-shadow: none;
-  border: 1rpx solid #f0f0f0;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.15);
+  border: 4rpx solid rgba(255, 255, 255, 0.3);
+  position: relative;
+  z-index: 1;
 }
 
-/* 模式切换器 */
 .mode-selector {
   display: flex;
-  background: #f5f5f5;
-  border-radius: 12rpx;
-  padding: 6rpx;
-  margin: 30rpx 0;
-  box-shadow: none;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16rpx;
+  padding: 8rpx;
+  margin: 60rpx 0 30rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 1;
 }
 
 .mode-item {
   flex: 1;
   text-align: center;
-  padding: 16rpx 0;
-  border-radius: 8rpx;
-  font-size: 26rpx;
+  padding: 20rpx 0;
+  border-radius: 12rpx;
+  font-size: 28rpx;
   color: #666;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  font-weight: 500;
 }
 
 .mode-item.active {
-  background: white;
-  color: #333;
-  font-weight: 500;
-  box-shadow: 0 1rpx 3rpx rgba(0,0,0,0.1);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 4rpx 12rpx rgba(102, 126, 234, 0.4);
+  transform: translateY(-2rpx);
 }
 
-/* 操作按钮容器 */
 .buttons-container {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
-  margin-top: 20rpx;
+  gap: 20rpx;
+  margin-top: 30rpx;
   width: 100%;
+  position: relative;
+  z-index: 1;
 }
 
-/* 次要按钮样式 */
 .secondary-button {
   background: #fff !important;
-  color: #666 !important;
-  border: 1rpx solid #ddd !important;
-  box-shadow: none !important;
+  color: #667eea !important;
+  border: 2rpx solid #667eea !important;
+  box-shadow: 0 4rpx 16rpx rgba(102, 126, 234, 0.15) !important;
 }
 
 .secondary-button:active {
-  background: #f9f9f9 !important;
+  background: #f5f7ff !important;
+  transform: scale(0.96) !important;
 }
 
-/* 功能按钮容器 */
 .utility-buttons {
   display: flex;
   gap: 16rpx;
@@ -72,103 +75,106 @@
   margin-bottom: 0;
 }
 
-/* 预览区域容器 */
 .preview-container {
   position: relative;
-  margin: 20rpx 0;
-  border-radius: 8rpx;
+  margin: 30rpx 0;
+  border-radius: 16rpx;
   overflow: hidden;
-  background: #fafafa;
-  padding: 10rpx;
-  box-shadow: none;
-  border: 1rpx solid #eee;
+  background: #f8f9fa;
+  padding: 16rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
+  border: 1rpx solid #e9ecef;
+  position: relative;
+  z-index: 1;
 }
 
-/* 清空图片按钮 */
 .clear-preview-btn {
   position: absolute;
-  top: 10rpx;
-  right: 10rpx;
-  width: 52rpx;
-  height: 52rpx;
-  background: rgba(255, 255, 255, 0.9);
+  top: 16rpx;
+  right: 16rpx;
+  width: 56rpx;
+  height: 56rpx;
+  background: rgba(255, 255, 255, 0.95);
   color: #999;
-  border: 1rpx solid #ddd;
+  border: none;
   border-radius: 50%;
-  font-size: 28rpx;
+  font-size: 32rpx;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.1);
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15);
   transition: all 0.2s ease;
   z-index: 10;
   padding: 0;
 }
 
 .clear-preview-btn:active {
-  background: #f0f0f0;
+  background: #fff;
   color: #666;
-  transform: scale(0.95);
+  transform: scale(0.9);
 }
 
-/* 结果卡片样式 */
 .result-card {
   background: #fff;
-  border-radius: 12rpx;
-  padding: 30rpx;
-  margin-top: 20rpx;
-  box-shadow: none;
-  border: 1rpx solid #eee;
+  border-radius: 20rpx;
+  padding: 36rpx;
+  margin-top: 30rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
+  border: 1rpx solid #e9ecef;
   animation: fadeIn 0.4s ease-out;
+  position: relative;
+  z-index: 1;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10rpx); }
+  from { opacity: 0; transform: translateY(20rpx); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* 评分数字样式 */
 .score-number {
-  font-size: 48rpx;
-  font-weight: 600;
-  color: #333;
+  font-size: 52rpx;
+  font-weight: 700;
+  color: #667eea;
   margin: 10rpx 0;
 }
 
-/* 结果标题样式 */
 .result-title {
-  font-size: 30rpx;
+  font-size: 32rpx;
   font-weight: 600;
   color: #333;
-  margin-bottom: 10rpx;
+  margin-bottom: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
 }
 
-/* 结果内容样式 */
 .result-content {
   font-size: 28rpx;
-  line-height: 1.6;
+  line-height: 1.8;
   color: #444;
   margin-top: 16rpx;
   white-space: pre-wrap;
   text-align: left;
 }
 
-/* 加载状态样式 */
 .loading-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40rpx;
-  gap: 20rpx;
+  padding: 50rpx;
+  gap: 24rpx;
+  position: relative;
+  z-index: 1;
 }
 
 .loading-spinner {
-  width: 50rpx;
-  height: 50rpx;
-  border: 4rpx solid #eee;
-  border-top: 4rpx solid #333;
+  width: 60rpx;
+  height: 60rpx;
+  border: 4rpx solid #e9ecef;
+  border-top: 4rpx solid #667eea;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -179,72 +185,77 @@
 }
 
 .loading-text {
-  font-size: 26rpx;
+  font-size: 28rpx;
   color: #666;
 }
 
-/* 分享和保存按钮容器 */
 .action-buttons {
   display: flex;
-  gap: 16rpx;
-  margin-top: 24rpx;
+  gap: 20rpx;
+  margin-top: 30rpx;
 }
 
 .action-button {
   flex: 1;
-  background: #f5f5f5;
+  background: #f8f9fa;
   color: #666;
-  font-size: 26rpx;
-  padding: 20rpx;
-  border-radius: 8rpx;
+  font-size: 28rpx;
+  padding: 24rpx;
+  border-radius: 12rpx;
   box-shadow: none;
-  border: 1rpx solid #eee;
+  border: 1rpx solid #e9ecef;
   margin-bottom: 0;
+  font-weight: 500;
 }
 
 .action-button.primary {
-  background: #333;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
-  box-shadow: none;
+  box-shadow: 0 6rpx 20rpx rgba(102, 126, 234, 0.4);
 }
 
 .action-button:active {
   opacity: 0.9;
-  transform: none;
+  transform: scale(0.96);
 }
 
-/* 提示信息样式 */
 .toast {
   background: rgba(0, 0, 0, 0.85);
-  border-radius: 8rpx;
-  box-shadow: none;
+  border-radius: 12rpx;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.2);
 }
 
-/* 空状态样式 */
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60rpx 20rpx;
+  padding: 80rpx 30rpx;
   color: #ccc;
   text-align: center;
+  position: relative;
+  z-index: 1;
 }
 
 .empty-state-icon {
-  font-size: 80rpx;
-  opacity: 0.5;
-  margin-bottom: 20rpx;
+  font-size: 100rpx;
+  opacity: 0.6;
+  margin-bottom: 24rpx;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15rpx); }
 }
 
 .empty-state-text {
-  font-size: 26rpx;
-  line-height: 1.5;
+  font-size: 28rpx;
+  line-height: 1.6;
   color: #999;
 }
 
-/* CP模式操作按钮 */
 .couple-buttons {
   flex-direction: row;
   flex-wrap: wrap;
@@ -255,26 +266,28 @@
   min-width: 45%;
 }
 
-/* CP模式双图片预览容器 */
 .couple-preview-container {
   display: flex;
-  gap: 16rpx;
-  margin: 20rpx 0;
+  gap: 20rpx;
+  margin: 30rpx 0;
+  position: relative;
+  z-index: 1;
 }
 
 .couple-preview-item {
   flex: 1;
   position: relative;
-  border-radius: 8rpx;
+  border-radius: 16rpx;
   overflow: hidden;
-  background: #fafafa;
-  padding: 10rpx;
-  border: 1rpx solid #eee;
+  background: #f8f9fa;
+  padding: 16rpx;
+  border: 1rpx solid #e9ecef;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
 }
 
 .couple-preview-image {
   width: 100%;
-  height: 200rpx;
+  height: 220rpx;
   object-fit: contain;
 }
 
@@ -284,66 +297,89 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40rpx 20rpx;
-  background: #fafafa;
-  border: 2rpx dashed #ddd;
-  border-radius: 8rpx;
+  padding: 50rpx 20rpx;
+  background: #f8f9fa;
+  border: 2rpx dashed #d0d7de;
+  border-radius: 16rpx;
   color: #999;
+  transition: all 0.3s ease;
+}
+
+.couple-empty-item:active {
+  background: #f0f4ff;
+  border-color: #667eea;
+  color: #667eea;
 }
 
 .couple-empty-item .empty-state-icon {
-  font-size: 48rpx;
+  font-size: 56rpx;
   opacity: 0.5;
-  margin-bottom: 10rpx;
+  margin-bottom: 16rpx;
 }
 
 .couple-empty-item .empty-state-text {
-  font-size: 24rpx;
+  font-size: 26rpx;
 }
 
-/* 响应式设计 */
 @media (min-width: 750rpx) {
   .container {
-    max-width: 600rpx;
+    max-width: 640rpx;
     padding: 60rpx 50rpx;
+    margin: 40rpx auto;
   }
 }
 
-/* 深色模式支持 */
 @media (prefers-color-scheme: dark) {
+  page {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  }
+  
   .container {
-    background: #1a1a1a;
-    border: 1rpx solid #333;
+    background: #252545;
+    box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.3);
+  }
+  
+  .container::before {
+    background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
   }
   
   h1 {
-    color: #eee;
+    color: #fff;
   }
   
   p {
-    color: #999;
+    color: rgba(255, 255, 255, 0.7);
+  }
+  
+  button {
+    background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+    box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.3);
+  }
+  
+  button:active {
+    box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.4);
   }
   
   .mode-selector {
-    background: #2a2a2a;
+    background: rgba(255, 255, 255, 0.08);
   }
   
   .mode-item {
-    color: #888;
+    color: #999;
   }
   
   .mode-item.active {
-    background: #444;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: #fff;
   }
   
   .result-card {
-    background: #2a2a2a;
-    border-color: #333;
+    background: #2a2a4a;
+    border-color: #3d3d6d;
   }
   
   .result-title {
-    color: #eee;
+    color: #fff;
   }
   
   .result-content {
@@ -351,31 +387,43 @@
   }
   
   .score-number {
-    color: #fff;
+    color: #a78bfa;
   }
   
   .preview-container {
-    background: #222;
-    border-color: #333;
+    background: #2a2a4a;
+    border-color: #3d3d6d;
   }
   
   .secondary-button {
-    background: #222 !important;
-    color: #ccc !important;
-    border-color: #444 !important;
+    background: #2a2a4a !important;
+    color: #a78bfa !important;
+    border-color: #a78bfa !important;
   }
   
   .action-button {
-    background: #222;
+    background: #2a2a4a;
     color: #ccc;
-    border-color: #444;
-  }
-  
-  button {
-    background: #444;
+    border-color: #3d3d6d;
   }
   
   .action-button.primary {
-    background: #555;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+  
+  .empty-state-text {
+    color: #666;
+  }
+  
+  .couple-empty-item {
+    background: #2a2a4a;
+    border-color: #3d3d6d;
+    color: #666;
+  }
+  
+  #result {
+    background: #2a2a4a;
+    border-color: #3d3d6d;
+    color: #ccc;
   }
 }
