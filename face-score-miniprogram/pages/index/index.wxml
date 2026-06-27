@@ -56,7 +56,7 @@
     </view>
   </view>
 
-  <view class="empty-state" wx:else>
+  <view class="empty-state" wx:if="{{!previewShow && !previewUrlA && !previewUrlB}}">
     <view class="empty-state-icon">{{mode === 'score' ? '💖' : (mode === 'fortune' ? '✨' : '💕')}}</view>
     <view class="empty-state-text">
       {{mode === 'score' ? '上传美照\n看看你的颜值能打多少分~' : (mode === 'fortune' ? '上传照片\n解锁你的专属气质密码✨' : '上传两张照片\n测测你们的甜蜜指数💕')}}
