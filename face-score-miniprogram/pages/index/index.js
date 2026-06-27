@@ -570,7 +570,7 @@ Page({
 
     // 动态文案配置
     const isScoreMode = this.data.mode === 'score'
-    const titleText = isScoreMode ? '颜究所 · 颜值鉴定书' : '颜究所 · 气质解读报告'
+    const titleText = isScoreMode ? '萌牛测颜 · 颜值鉴定书' : '萌牛测颜 · 气质解读报告'
     const sloganText = isScoreMode ? '—— 科学打分 · 发现你的美 ——' : '—— 面相美学 · 探索独特气质 ——'
 
     // 4. 绘制标题

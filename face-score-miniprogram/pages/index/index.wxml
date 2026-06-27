@@ -1,7 +1,7 @@
 <view class="container">
   <!-- 标题区域 -->
   <image class="app-logo" src="/images/logo.png" mode="aspectFit"></image>
-  <h1>颜究所</h1>
+  <h1>萌牛测颜</h1>
   <p>上传照片，获取您的面部气质分析报告</p>
 
   <!-- 模式切换 -->
