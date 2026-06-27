@@ -41,24 +41,42 @@ async function checkImageSecurity(base64Image, appId, appSecret) {
     bytes[i] = binaryString.charCodeAt(i);
   }
 
-  const formData = new FormData();
-  formData.append('media', new Blob([bytes]), 'image.jpg');
+  const boundary = '----WebKitFormBoundary' + Math.random().toString(36).substr(2);
+  const crlf = '\r\n';
+  
+  let body = '';
+  body += '--' + boundary + crlf;
+  body += 'Content-Disposition: form-data; name="media"; filename="image.jpg"' + crlf;
+  body += 'Content-Type: image/jpeg' + crlf;
+  body += crlf;
+  
+  const bodyStart = new TextEncoder().encode(body);
+  const bodyEnd = new TextEncoder().encode(crlf + '--' + boundary + '--' + crlf);
+  const totalLength = bodyStart.length + bytes.length + bodyEnd.length;
+  
+  const result = new Uint8Array(totalLength);
+  result.set(bodyStart, 0);
+  result.set(bytes, bodyStart.length);
+  result.set(bodyEnd, bodyStart.length + bytes.length);
 
   const response = await fetch(
     `${WECHAT_API_URL.IMG_SEC_CHECK}?access_token=${encodeURIComponent(token)}`,
     {
       method: 'POST',
-      body: formData
+      headers: {
+        'Content-Type': 'multipart/form-data; boundary=' + boundary
+      },
+      body: result
     }
   );
 
-  const result = await response.json();
+  const resultJson = await response.json();
 
-  if (result.errcode === 0) {
+  if (resultJson.errcode === 0) {
     return { safe: true, message: '' };
   }
 
-  return { safe: false, message: result.errmsg || '内容安全检查未通过' };
+  return { safe: false, message: resultJson.errmsg || `内容安全检查未通过，错误码: ${resultJson.errcode}` };
 }
 
 async function checkTextSecurity(text, appId, appSecret) {

@@ -50,7 +50,7 @@ export async function onRequestPost(context) {
     const securityResult = await checkImageSecurity(imageBase64, WECHAT_APP_ID, WECHAT_APP_SECRET);
 
     if (!securityResult.safe) {
-      logger.warn('内容安全检查未通过');
+      logger.warn('内容安全检查未通过:', securityResult.message);
       return createSuccessResponse({ safe: false, message: '您发布的内容包含违规信息' });
     }
 
@@ -59,6 +59,6 @@ export async function onRequestPost(context) {
 
   } catch (error) {
     logger.error('内容安全检查异常', error);
-    return createErrorResponse('内容安全检查失败', { status: HTTP_STATUS.INTERNAL_SERVER_ERROR });
+    return createErrorResponse('内容安全检查失败: ' + error.message, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR });
   }
 }
