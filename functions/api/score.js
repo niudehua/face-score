@@ -8,7 +8,6 @@ import { createLogger } from '../lib/logger.js';
 import { validateBase64Image } from '../lib/validator.js';
 import { RATE_LIMIT_CONFIG, HTTP_STATUS, DEFAULT_FACEPP_API_URL } from '../lib/constants.js';
 import { getScorePrompt, formatPrompt } from '../lib/prompts.js';
-import { checkImageSecurity } from '../lib/wechat-security.js';
 
 export async function onRequestPost(context) {
   const { FACEPP_KEY, FACEPP_SECRET, TURNSTILE_SECRET_KEY } = context.env;
@@ -108,33 +107,6 @@ export async function onRequestPost(context) {
       logger.debug('Turnstile 验证成功');
     } else if (!isMiniProgram) {
       logger.debug('Turnstile 密钥未配置，跳过验证');
-    }
-
-    // 5. 内容安全检查（仅小程序请求）
-    if (isMiniProgram) {
-      const { WECHAT_APP_ID, WECHAT_APP_SECRET } = context.env;
-      if (WECHAT_APP_ID && WECHAT_APP_SECRET) {
-        logger.debug('检测到小程序请求，开始内容安全检查');
-        try {
-          const securityResult = await checkImageSecurity(imageBase64, WECHAT_APP_ID, WECHAT_APP_SECRET);
-          if (!securityResult.safe) {
-            logger.warn('内容安全检查未通过');
-            return createErrorResponse('您发布的内容包含违规信息', {
-              status: HTTP_STATUS.FORBIDDEN,
-              rateLimitInfo: rateLimitResult,
-              logs: isDebugMode ? logger.getLogs() : undefined,
-              debug: isDebugMode
-            });
-          }
-          logger.debug('内容安全检查通过');
-        } catch (securityError) {
-          logger.warn('内容安全检查失败，继续执行', securityError);
-        }
-      } else {
-        logger.debug('微信小程序配置未完成，跳过内容安全检查');
-      }
-    } else {
-      logger.debug('非小程序请求，跳过内容安全检查');
     }
 
     const formData = new FormData();
