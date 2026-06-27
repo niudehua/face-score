@@ -222,7 +222,8 @@ Page({
       previewUrl: '',
       previewShow: false,
       tempFilePath: '',
-      result: ''
+      result: '',
+      mainButtonText: '上传美照'
     })
     this.showToast('已清空照片', 'success')
   },
@@ -232,17 +233,20 @@ Page({
     this.setData({
       previewUrlA: '',
       tempFilePathA: '',
-      result: ''
+      result: '',
+      mainButtonText: '上传我的照片'
     })
     this.showToast('已清空第一张照片', 'success')
   },
 
   // 清空预览B（CP模式）
   clearPreviewB() {
+    const buttonText = this.data.previewUrlA ? '上传TA的照片' : '上传我的照片'
     this.setData({
       previewUrlB: '',
       tempFilePathB: '',
-      result: ''
+      result: '',
+      mainButtonText: buttonText
     })
     this.showToast('已清空第二张照片', 'success')
   },

@@ -18,10 +18,6 @@
   <view class="preview-container" wx:if="{{previewShow && mode !== 'couple'}}">
     <image id="preview" class="show" src="{{previewUrl}}" mode="aspectFit"></image>
     <button class="clear-preview-btn" bindtap="clearPreview">×</button>
-    <view class="security-badge {{securityStatus === 'passed' ? 'security-passed' : (securityStatus === 'rejected' ? 'security-rejected' : '')}}" wx:if="{{securityStatus}}">
-      <text class="security-icon">{{securityStatus === 'passed' ? '✓' : '✗'}}</text>
-      <text class="security-text">{{securityStatus === 'passed' ? '安全检查通过' : '内容违规'}}</text>
-    </view>
   </view>
 
   <view class="couple-preview-container" wx:if="{{mode === 'couple'}}">
@@ -39,7 +35,6 @@
         <view class="checking-spinner" wx:if="{{checkingA}}"></view>
       </view>
       <view class="couple-name">我</view>
-      <view class="couple-security-text {{securityStatusA === 'passed' ? 'security-passed' : (securityStatusA === 'rejected' ? 'security-rejected' : '')}}" wx:if="{{securityStatusA}}">{{securityStatusA === 'passed' ? '✓ 安全检查通过' : '✗ 内容违规'}}</view>
     </view>
 
     <view class="couple-heart">💕</view>
@@ -58,7 +53,6 @@
         <view class="checking-spinner" wx:if="{{checkingB}}"></view>
       </view>
       <view class="couple-name">TA</view>
-      <view class="couple-security-text {{securityStatusB === 'passed' ? 'security-passed' : (securityStatusB === 'rejected' ? 'security-rejected' : '')}}" wx:if="{{securityStatusB}}">{{securityStatusB === 'passed' ? '✓ 安全检查通过' : '✗ 内容违规'}}</view>
     </view>
   </view>
 

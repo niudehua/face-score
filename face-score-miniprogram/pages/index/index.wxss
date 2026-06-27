@@ -256,7 +256,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 80rpx 30rpx;
+  padding: 40rpx 30rpx;
   color: #ccc;
   text-align: center;
   position: relative;
@@ -264,21 +264,15 @@
 }
 
 .empty-state-icon {
-  font-size: 100rpx;
-  opacity: 0.6;
-  margin-bottom: 24rpx;
-  animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-15rpx); }
+  font-size: 60rpx;
+  opacity: 0.5;
+  margin-bottom: 16rpx;
 }
 
 .empty-state-text {
-  font-size: 28rpx;
-  line-height: 1.6;
-  color: #999;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: #bbb;
 }
 
 .couple-preview-container {
@@ -286,9 +280,14 @@
   align-items: center;
   justify-content: center;
   gap: 24rpx;
-  margin: 40rpx 0;
+  margin: 30rpx 0;
   position: relative;
   z-index: 1;
+  background: #fff5f7;
+  border-radius: 16rpx;
+  padding: 32rpx 16rpx;
+  box-shadow: 0 4rpx 20rpx rgba(255, 126, 179, 0.1);
+  border: 1rpx solid #ffe4ec;
 }
 
 .couple-card {
@@ -300,8 +299,8 @@
 
 .couple-avatar-wrap {
   position: relative;
-  width: 180rpx;
-  height: 180rpx;
+  width: 200rpx;
+  height: 200rpx;
   border-radius: 50%;
   overflow: hidden;
   box-shadow: 0 8rpx 24rpx rgba(255, 126, 179, 0.2);
@@ -340,8 +339,8 @@
 }
 
 .couple-avatar-placeholder {
-  width: 180rpx;
-  height: 180rpx;
+  width: 200rpx;
+  height: 200rpx;
   border-radius: 50%;
   background: linear-gradient(135deg, #fff5f7 0%, #ffe4ec 100%);
   border: 3rpx dashed #ffc0d0;
@@ -557,6 +556,11 @@
   
   .empty-state-text {
     color: #666;
+  }
+  
+  .couple-preview-container {
+    background: #3d2a3d;
+    border-color: #5c3d5c;
   }
   
   .couple-avatar-placeholder {
