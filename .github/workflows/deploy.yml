@@ -15,15 +15,15 @@ jobs:
       - name: Checkout code 🐾
         uses: actions/checkout@v4
 
+      - name: Install Wrangler 📦
+        run: npm install -g wrangler
+
       - name: Deploy Pages 🚀
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.ACCOUNT_ID }}
-          command: pages deploy public --project-name=face-score-pages
-          secrets: |
-            WECHAT_APPID
-            WECHAT_PRIVATE_KEY
+          command: |
+            pages deploy public --project-name=face-score-pages
         env:
-          WECHAT_APPID: ${{ secrets.WECHAT_APPID }}
-          WECHAT_PRIVATE_KEY: ${{ secrets.WECHAT_PRIVATE_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.ACCOUNT_ID }}

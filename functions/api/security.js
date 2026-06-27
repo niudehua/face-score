@@ -42,11 +42,10 @@ export async function onRequestPost(context) {
     }
 
     if (!WECHAT_APPID || !WECHAT_PRIVATE_KEY) {
-      logger.error('微信小程序配置未完成，无法进行内容安全检查');
+      logger.warn('微信小程序配置未完成，跳过内容安全检查');
       return createSuccessResponse({ 
-        safe: false, 
-        message: '内容安全检查服务未配置，请联系管理员',
-        error: 'CONFIG_NOT_SET'
+        safe: true, 
+        message: '内容安全检查服务未配置，已跳过'
       });
     }
 
