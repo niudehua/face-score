@@ -41,11 +41,18 @@ export async function onRequestPost(context) {
       return createErrorResponse(imageValidation.error || '图片格式无效', { status: HTTP_STATUS.BAD_REQUEST });
     }
 
+    logger.debug('环境变量检查 - WECHAT_APPID:', WECHAT_APPID ? '已配置 (' + WECHAT_APPID.substring(0, 8) + '...)' : '未配置');
+    logger.debug('环境变量检查 - WECHAT_PRIVATE_KEY:', WECHAT_PRIVATE_KEY ? '已配置 (' + WECHAT_PRIVATE_KEY.substring(0, 8) + '...)' : '未配置');
+
     if (!WECHAT_APPID || !WECHAT_PRIVATE_KEY) {
       logger.error('微信小程序配置未完成，拒绝上传');
       return createSuccessResponse({ 
         safe: false, 
-        message: '安全检查服务未配置，无法上传'
+        message: '安全检查服务未配置，无法上传',
+        debug: {
+          wechatAppidConfigured: !!WECHAT_APPID,
+          wechatPrivateKeyConfigured: !!WECHAT_PRIVATE_KEY
+        }
       });
     }
 

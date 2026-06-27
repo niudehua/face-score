@@ -24,9 +24,6 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.ACCOUNT_ID }}
           command: |
-            pages deploy public --project-name=face-score-pages
-          secrets: |
-            WECHAT_APPID
-            WECHAT_PRIVATE_KEY
+            pages deploy public --project-name=face-score-pages --var WECHAT_APPID="${{ secrets.WECHAT_APPID }}" --var WECHAT_PRIVATE_KEY="${{ secrets.WECHAT_PRIVATE_KEY }}"
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.ACCOUNT_ID }}
