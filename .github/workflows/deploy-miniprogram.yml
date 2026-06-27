@@ -35,8 +35,9 @@ jobs:
       - name: 配置私钥
         working-directory: ./face-score-miniprogram
         run: |
-          echo "${{ secrets.WECHAT_PRIVATE_KEY }}" | base64 -d > private.key
+          printf '%s' "${{ secrets.WECHAT_UPLOAD_KEY }}" > private.key
           ls -la private.key
+          cat private.key
 
       # 6. 配置环境变量
       - name: 配置环境变量
