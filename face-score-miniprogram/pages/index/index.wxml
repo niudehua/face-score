@@ -69,18 +69,12 @@
     </view>
   </view>
 
-  <view class="buttons-container" wx:if="{{mode !== 'couple'}}">
-    <button bindtap="chooseImage" class="{{previewShow ? 'secondary-button' : ''}}">
-      {{previewShow ? '换一张试试' : '上传美照'}}
+  <view class="buttons-container">
+    <button bindtap="{{mode === 'couple' ? 'clearAllCouple' : 'chooseImage'}}" class="{{mode === 'couple' ? (previewUrlA && previewUrlB ? 'secondary-button' : '') : (previewShow ? 'secondary-button' : '')}}">
+      {{mode === 'couple' ? (previewUrlA && previewUrlB ? '重新上传' : '上传照片') : (previewShow ? '换一张试试' : '上传美照')}}
     </button>
-    <button bindtap="submitScore" disabled="{{submitting}}" class="primary-button">
-      {{submitting ? '正在分析...' : (mode === 'score' ? '开始颜值测试' : '生成气质报告')}}
-    </button>
-  </view>
-
-  <view class="buttons-container" wx:if="{{mode === 'couple'}}">
-    <button bindtap="submitScore" disabled="{{submitting || !previewUrlA || !previewUrlB}}" class="primary-button">
-      {{submitting ? '正在分析...' : (previewUrlA && previewUrlB ? '测测我们的缘分' : '请上传两张照片')}}
+    <button bindtap="submitScore" disabled="{{submitting || (mode === 'couple' && (!previewUrlA || !previewUrlB))}}" class="primary-button">
+      {{submitting ? '正在分析...' : (mode === 'score' ? '开始颜值测试' : (mode === 'fortune' ? '生成气质报告' : '测测我们的缘分'))}}
     </button>
   </view>
 

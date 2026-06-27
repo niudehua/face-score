@@ -54,11 +54,13 @@
   color: #ff6ec7 !important;
   border: 2rpx solid #ff6ec7 !important;
   box-shadow: 0 4rpx 16rpx rgba(255, 126, 179, 0.15) !important;
+  border-radius: 44rpx !important;
 }
 
 .secondary-button:active {
   background: #fff5f7 !important;
-  transform: scale(0.96) !important;
+  transform: scale(0.98) !important;
+  box-shadow: 0 2rpx 8rpx rgba(255, 126, 179, 0.1) !important;
 }
 
 .utility-buttons {

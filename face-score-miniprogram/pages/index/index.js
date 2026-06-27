@@ -238,6 +238,20 @@ Page({
     this.showToast('已清空第二张照片', 'success')
   },
 
+  // 清空所有照片（CP模式）
+  clearAllCouple() {
+    this.setData({
+      previewUrlA: '',
+      tempFilePathA: '',
+      previewUrlB: '',
+      tempFilePathB: '',
+      securityStatusA: '',
+      securityStatusB: '',
+      result: ''
+    })
+    this.showToast('已清空所有照片', 'success')
+  },
+
   // 转换图片为Base64
   imageToBase64(filePath) {
     return new Promise((resolve, reject) => {
