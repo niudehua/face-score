@@ -14,7 +14,13 @@ Page({
     result: '',
     toastVisible: false,
     toastMessage: '',
-    mode: 'score' // score | fortune | couple
+    mode: 'score',
+    securityStatusA: '',
+    securityStatusB: '',
+    securityStatus: '',
+    checkingA: false,
+    checkingB: false,
+    checking: false
   },
 
   // 切换模式
@@ -28,7 +34,13 @@ Page({
       previewUrlA: '',
       tempFilePathA: '',
       previewUrlB: '',
-      tempFilePathB: ''
+      tempFilePathB: '',
+      securityStatusA: '',
+      securityStatusB: '',
+      securityStatus: '',
+      checkingA: false,
+      checkingB: false,
+      checking: false
     })
   },
 
@@ -50,26 +62,41 @@ Page({
       success: async (res) => {
         const tempFilePath = res.tempFilePaths[0]
         
+        const startTime = Date.now()
+        this.setData({ checking: true })
         wx.showLoading({ title: '安全检查中...', mask: true })
         
         try {
           const base64Data = await this.imageToBase64(tempFilePath)
+          console.log(`[安全检查][${new Date().toLocaleTimeString()}] 开始调用安全API，图片大小: ${base64Data.length / 1024} KB`)
+          
           const securityResult = await this.callSecurityAPI(base64Data)
+          const duration = Date.now() - startTime
+          
+          console.log(`[安全检查][${new Date().toLocaleTimeString()}] 检查完成，耗时: ${duration}ms`)
+          console.log(`[安全检查][${new Date().toLocaleTimeString()}] 检查结果: ${securityResult.safe ? '✓ 通过' : '✗ 未通过'}`)
+          console.log(`[安全检查][${new Date().toLocaleTimeString()}] 详细信息:`, securityResult)
           
           if (!securityResult.safe) {
+            console.error(`[安全检查][${new Date().toLocaleTimeString()}] 内容违规被拦截: ${securityResult.message}`)
+            this.setData({ securityStatus: 'rejected', checking: false })
             this.showToast('您发布的内容包含违规信息', 'none')
             return
           }
           
+          console.log(`[安全检查][${new Date().toLocaleTimeString()}] ✓ 安全检查通过`)
           this.setData({
             previewUrl: tempFilePath,
             previewShow: true,
             tempFilePath: tempFilePath,
-            result: ''
+            result: '',
+            securityStatus: 'passed',
+            checking: false
           })
-          this.showToast('照片选择成功', 'success')
+          this.showToast('安全检查通过，照片选择成功', 'success')
         } catch (err) {
-          console.error('安全检查失败:', err)
+          console.error(`[安全检查][${new Date().toLocaleTimeString()}] ✗ 安全检查异常:`, err)
+          this.setData({ securityStatus: 'error', checking: false })
           this.showToast('安全检查失败，请重试', 'none')
         } finally {
           wx.hideLoading()
@@ -87,25 +114,40 @@ Page({
       success: async (res) => {
         const tempFilePath = res.tempFilePaths[0]
         
+        const startTime = Date.now()
+        this.setData({ checkingA: true })
         wx.showLoading({ title: '安全检查中...', mask: true })
         
         try {
           const base64Data = await this.imageToBase64(tempFilePath)
+          console.log(`[安全检查A][${new Date().toLocaleTimeString()}] 开始调用安全API，图片大小: ${base64Data.length / 1024} KB`)
+          
           const securityResult = await this.callSecurityAPI(base64Data)
+          const duration = Date.now() - startTime
+          
+          console.log(`[安全检查A][${new Date().toLocaleTimeString()}] 检查完成，耗时: ${duration}ms`)
+          console.log(`[安全检查A][${new Date().toLocaleTimeString()}] 检查结果: ${securityResult.safe ? '✓ 通过' : '✗ 未通过'}`)
+          console.log(`[安全检查A][${new Date().toLocaleTimeString()}] 详细信息:`, securityResult)
           
           if (!securityResult.safe) {
+            console.error(`[安全检查A][${new Date().toLocaleTimeString()}] 内容违规被拦截: ${securityResult.message}`)
+            this.setData({ securityStatusA: 'rejected', checkingA: false })
             this.showToast('您发布的内容包含违规信息', 'none')
             return
           }
           
+          console.log(`[安全检查A][${new Date().toLocaleTimeString()}] ✓ 安全检查通过`)
           this.setData({
             previewUrlA: tempFilePath,
             tempFilePathA: tempFilePath,
-            result: ''
+            result: '',
+            securityStatusA: 'passed',
+            checkingA: false
           })
-          this.showToast('第一张照片选择成功', 'success')
+          this.showToast('安全检查通过，第一张照片选择成功', 'success')
         } catch (err) {
-          console.error('安全检查失败:', err)
+          console.error(`[安全检查A][${new Date().toLocaleTimeString()}] ✗ 安全检查异常:`, err)
+          this.setData({ securityStatusA: 'error', checkingA: false })
           this.showToast('安全检查失败，请重试', 'none')
         } finally {
           wx.hideLoading()
@@ -123,25 +165,40 @@ Page({
       success: async (res) => {
         const tempFilePath = res.tempFilePaths[0]
         
+        const startTime = Date.now()
+        this.setData({ checkingB: true })
         wx.showLoading({ title: '安全检查中...', mask: true })
         
         try {
           const base64Data = await this.imageToBase64(tempFilePath)
+          console.log(`[安全检查B][${new Date().toLocaleTimeString()}] 开始调用安全API，图片大小: ${base64Data.length / 1024} KB`)
+          
           const securityResult = await this.callSecurityAPI(base64Data)
+          const duration = Date.now() - startTime
+          
+          console.log(`[安全检查B][${new Date().toLocaleTimeString()}] 检查完成，耗时: ${duration}ms`)
+          console.log(`[安全检查B][${new Date().toLocaleTimeString()}] 检查结果: ${securityResult.safe ? '✓ 通过' : '✗ 未通过'}`)
+          console.log(`[安全检查B][${new Date().toLocaleTimeString()}] 详细信息:`, securityResult)
           
           if (!securityResult.safe) {
+            console.error(`[安全检查B][${new Date().toLocaleTimeString()}] 内容违规被拦截: ${securityResult.message}`)
+            this.setData({ securityStatusB: 'rejected', checkingB: false })
             this.showToast('您发布的内容包含违规信息', 'none')
             return
           }
           
+          console.log(`[安全检查B][${new Date().toLocaleTimeString()}] ✓ 安全检查通过`)
           this.setData({
             previewUrlB: tempFilePath,
             tempFilePathB: tempFilePath,
-            result: ''
+            result: '',
+            securityStatusB: 'passed',
+            checkingB: false
           })
-          this.showToast('第二张照片选择成功', 'success')
+          this.showToast('安全检查通过，第二张照片选择成功', 'success')
         } catch (err) {
-          console.error('安全检查失败:', err)
+          console.error(`[安全检查B][${new Date().toLocaleTimeString()}] ✗ 安全检查异常:`, err)
+          this.setData({ securityStatusB: 'error', checkingB: false })
           this.showToast('安全检查失败，请重试', 'none')
         } finally {
           wx.hideLoading()
