@@ -42,10 +42,10 @@ export async function onRequestPost(context) {
     }
 
     if (!WECHAT_APPID || !WECHAT_PRIVATE_KEY) {
-      logger.warn('微信小程序配置未完成，跳过内容安全检查');
+      logger.error('微信小程序配置未完成，拒绝上传');
       return createSuccessResponse({ 
-        safe: true, 
-        message: '内容安全检查服务未配置，已跳过'
+        safe: false, 
+        message: '安全检查服务未配置，无法上传'
       });
     }
 
