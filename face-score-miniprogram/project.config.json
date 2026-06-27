@@ -16,7 +16,16 @@
     "minifyWXML": true,
     "checkSiteMap": false,
     "urlCheck": false,
-    "enhanceAppConf": true
+    "enhanceAppConf": true,
+    "compileWorklet": false,
+    "uploadWithSourceMap": true,
+    "packNpmManually": false,
+    "minifyWXSS": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "condition": false,
+    "swc": false,
+    "disableSWC": true
   },
   "compileType": "miniprogram",
   "simulatorPluginLibVersion": {},
@@ -26,5 +35,6 @@
   },
   "appid": "wx6bbbcfc7fd1981e2",
   "editorSetting": {},
-  "description": "注意：此文件中的appid仅用于微信开发者工具开发，实际部署时会使用GitHub Secrets中的WECHAT_APPID值"
+  "description": "注意：此文件中的appid仅用于微信开发者工具开发，实际部署时会使用GitHub Secrets中的WECHAT_APPID值",
+  "libVersion": "3.12.0"
 }

@@ -43,7 +43,11 @@ export async function onRequestPost(context) {
 
     if (!WECHAT_APP_ID || !WECHAT_APP_SECRET) {
       logger.error('微信小程序配置未完成，无法进行内容安全检查');
-      return createErrorResponse('内容安全检查服务未配置', { status: HTTP_STATUS.SERVICE_UNAVAILABLE });
+      return createSuccessResponse({ 
+        safe: false, 
+        message: '内容安全检查服务未配置，请联系管理员',
+        error: 'CONFIG_NOT_SET'
+      });
     }
 
     logger.debug('开始内容安全检查');

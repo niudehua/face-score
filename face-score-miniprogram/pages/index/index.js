@@ -57,7 +57,11 @@ Page({
           const securityResult = await this.callSecurityAPI(base64Data)
           
           if (!securityResult.safe) {
-            this.showToast('您发布的内容包含违规信息', 'none')
+            if (securityResult.error === 'CONFIG_NOT_SET') {
+              this.showToast('安全检查服务未配置', 'none')
+            } else {
+              this.showToast('您发布的内容包含违规信息', 'none')
+            }
             return
           }
           
@@ -94,7 +98,11 @@ Page({
           const securityResult = await this.callSecurityAPI(base64Data)
           
           if (!securityResult.safe) {
-            this.showToast('您发布的内容包含违规信息', 'none')
+            if (securityResult.error === 'CONFIG_NOT_SET') {
+              this.showToast('安全检查服务未配置', 'none')
+            } else {
+              this.showToast('您发布的内容包含违规信息', 'none')
+            }
             return
           }
           
@@ -130,7 +138,11 @@ Page({
           const securityResult = await this.callSecurityAPI(base64Data)
           
           if (!securityResult.safe) {
-            this.showToast('您发布的内容包含违规信息', 'none')
+            if (securityResult.error === 'CONFIG_NOT_SET') {
+              this.showToast('安全检查服务未配置', 'none')
+            } else {
+              this.showToast('您发布的内容包含违规信息', 'none')
+            }
             return
           }
           
