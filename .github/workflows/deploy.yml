@@ -13,16 +13,17 @@ jobs:
 
     steps:
       - name: Checkout code 🐾
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Deploy Pages 🚀
-        uses: cloudflare/pages-action@v1
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.ACCOUNT_ID }}
-          projectName: "face-score-pages"
-          directory: "public"
-          branch: main
-          env: |
-            WECHAT_APP_ID=${{ secrets.WECHAT_APP_ID }}
-            WECHAT_APP_SECRET=${{ secrets.WECHAT_APP_SECRET }}
+          command: pages deploy public --project-name=face-score-pages
+          secrets: |
+            WECHAT_APP_ID
+            WECHAT_APP_SECRET
+        env:
+          WECHAT_APP_ID: ${{ secrets.WECHAT_APP_ID }}
+          WECHAT_APP_SECRET: ${{ secrets.WECHAT_APP_SECRET }}
