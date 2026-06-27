@@ -37,6 +37,13 @@ export const BATCH_SIZE = 20;
 // Face++ API 默认地址
 export const DEFAULT_FACEPP_API_URL = "https://api-us.faceplusplus.com/facepp/v3/detect";
 
+// 微信内容安全API地址
+export const WECHAT_API_URL = {
+  TOKEN: 'https://api.weixin.qq.com/cgi-bin/token',
+  IMG_SEC_CHECK: 'https://api.weixin.qq.com/wxa/img_sec_check',
+  MSG_SEC_CHECK: 'https://api.weixin.qq.com/wxa/msg_sec_check'
+};
+
 // 日志级别
 export const LOG_LEVEL = {
   DEBUG: 'DEBUG',

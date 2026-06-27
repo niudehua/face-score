@@ -51,9 +51,22 @@
   </view>
 
   <!-- 操作按钮区域 -->
-  <view class="buttons-container">
+  <view class="buttons-container" wx:if="{{mode !== 'couple'}}">
     <button bindtap="chooseImage" class="{{previewShow ? 'secondary-button' : ''}}">
       {{previewShow ? '重新选择' : '选择照片'}}
+    </button>
+    <button bindtap="submitScore" disabled="{{submitting}}" class="primary-button">
+      {{submitting ? '分析中...' : '生成分析报告'}}
+    </button>
+  </view>
+
+  <!-- CP模式操作按钮区域 -->
+  <view class="buttons-container couple-buttons" wx:if="{{mode === 'couple'}}">
+    <button bindtap="chooseImageA" class="{{previewUrlA ? 'secondary-button' : ''}}">
+      {{previewUrlA ? '重新选择A' : '选择照片A'}}
+    </button>
+    <button bindtap="chooseImageB" class="{{previewUrlB ? 'secondary-button' : ''}}">
+      {{previewUrlB ? '重新选择B' : '选择照片B'}}
     </button>
     <button bindtap="submitScore" disabled="{{submitting}}" class="primary-button">
       {{submitting ? '分析中...' : '生成分析报告'}}

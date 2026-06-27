@@ -179,9 +179,12 @@ Page({
 
       } catch (err) {
         console.error('API请求错误:', err)
-        this.setData({
-          result: '网络信号溜去捉迷藏啦，请检查网络后再试一次喵～'
-        })
+        const errorMsg = err.message || '网络信号溜去捉迷藏啦，请检查网络后再试一次喵～'
+        if (errorMsg.includes('违规')) {
+          this.setData({ result: errorMsg })
+        } else {
+          this.setData({ result: '网络信号溜去捉迷藏啦，请检查网络后再试一次喵～' })
+        }
       } finally {
         this.setData({ submitting: false })
       }
@@ -250,9 +253,12 @@ Page({
 
     } catch (err) {
       console.error('API请求错误:', err)
-      this.setData({
-        result: '网络信号溜去捉迷藏啦，请检查网络后再试一次喵～'
-      })
+      const errorMsg = err.message || '网络信号溜去捉迷藏啦，请检查网络后再试一次喵～'
+      if (errorMsg.includes('违规')) {
+        this.setData({ result: errorMsg })
+      } else {
+        this.setData({ result: '网络信号溜去捉迷藏啦，请检查网络后再试一次喵～' })
+      }
     } finally {
       this.setData({
         submitting: false
@@ -281,7 +287,11 @@ Page({
           app_type: 'miniprogram'
         },
         success: (res) => {
-          resolve(res)
+          if (res.statusCode === 403) {
+            reject(new Error(res.data?.error || res.data?.message || '您发布的内容包含违规信息'))
+          } else {
+            resolve(res)
+          }
         },
         fail: (err) => {
           reject(err)
@@ -311,7 +321,11 @@ Page({
           app_type: 'miniprogram'
         },
         success: (res) => {
-          resolve(res)
+          if (res.statusCode === 403) {
+            reject(new Error(res.data?.error || res.data?.message || '您发布的内容包含违规信息'))
+          } else {
+            resolve(res)
+          }
         },
         fail: (err) => {
           reject(err)

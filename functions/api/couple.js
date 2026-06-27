@@ -7,6 +7,7 @@ import { createLogger } from '../lib/logger.js';
 import { validateBase64Image } from '../lib/validator.js';
 import { RATE_LIMIT_CONFIG, HTTP_STATUS, DEFAULT_FACEPP_API_URL } from '../lib/constants.js';
 import { getCouplePrompt, formatPrompt } from '../lib/prompts.js';
+import { checkImageSecurity } from '../lib/wechat-security.js';
 
 export async function onRequestOptions(context) {
   return handleOptionsRequest();
@@ -70,6 +71,40 @@ export async function onRequestPost(context) {
       if (!isVerified) {
         return createErrorResponse('验证失败，请检查您的请求', { status: HTTP_STATUS.FORBIDDEN });
       }
+    }
+
+    // 内容安全检查（仅小程序请求）
+    if (isMiniProgram) {
+      const { WECHAT_APP_ID, WECHAT_APP_SECRET } = context.env;
+      if (WECHAT_APP_ID && WECHAT_APP_SECRET) {
+        logger.debug('检测到小程序请求，开始内容安全检查');
+        try {
+          const securityResultA = await checkImageSecurity(imageBase64A, WECHAT_APP_ID, WECHAT_APP_SECRET);
+          if (!securityResultA.safe) {
+            logger.warn('图片A内容安全检查未通过');
+            return createErrorResponse('您发布的内容包含违规信息', {
+              status: HTTP_STATUS.FORBIDDEN,
+              rateLimitInfo: rateLimitResult
+            });
+          }
+
+          const securityResultB = await checkImageSecurity(imageBase64B, WECHAT_APP_ID, WECHAT_APP_SECRET);
+          if (!securityResultB.safe) {
+            logger.warn('图片B内容安全检查未通过');
+            return createErrorResponse('您发布的内容包含违规信息', {
+              status: HTTP_STATUS.FORBIDDEN,
+              rateLimitInfo: rateLimitResult
+            });
+          }
+          logger.debug('内容安全检查通过');
+        } catch (securityError) {
+          logger.warn('内容安全检查失败，继续执行', securityError);
+        }
+      } else {
+        logger.debug('微信小程序配置未完成，跳过内容安全检查');
+      }
+    } else {
+      logger.debug('非小程序请求，跳过内容安全检查');
     }
 
     // 带重试的 Face++ 人脸分析函数

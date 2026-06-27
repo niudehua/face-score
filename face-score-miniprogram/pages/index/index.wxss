@@ -89,25 +89,27 @@
   position: absolute;
   top: 10rpx;
   right: 10rpx;
-  width: 44rpx;
-  height: 44rpx;
-  background: rgba(0, 0, 0, 0.5);
-  color: white;
-  border: none;
+  width: 52rpx;
+  height: 52rpx;
+  background: rgba(255, 255, 255, 0.9);
+  color: #999;
+  border: 1rpx solid #ddd;
   border-radius: 50%;
-  font-size: 24rpx;
+  font-size: 28rpx;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: none;
-  transition: all 0.3s ease;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
   z-index: 10;
   padding: 0;
 }
 
 .clear-preview-btn:active {
-  background: rgba(0, 0, 0, 0.7);
+  background: #f0f0f0;
+  color: #666;
+  transform: scale(0.95);
 }
 
 /* 结果卡片样式 */
@@ -240,6 +242,17 @@
   font-size: 26rpx;
   line-height: 1.5;
   color: #999;
+}
+
+/* CP模式操作按钮 */
+.couple-buttons {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.couple-buttons button {
+  flex: 1;
+  min-width: 45%;
 }
 
 /* CP模式双图片预览容器 */
