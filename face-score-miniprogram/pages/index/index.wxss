@@ -3,8 +3,8 @@
   height: 120rpx;
   margin-bottom: 30rpx;
   border-radius: 50%;
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.15);
-  border: 4rpx solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8rpx 24rpx rgba(255, 126, 179, 0.2);
+  border: 4rpx solid rgba(255, 255, 255, 0.4);
   position: relative;
   z-index: 1;
 }
@@ -15,7 +15,7 @@
   border-radius: 16rpx;
   padding: 8rpx;
   margin: 60rpx 0 30rpx;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4rpx 16rpx rgba(255, 126, 179, 0.1);
   position: relative;
   z-index: 1;
 }
@@ -32,10 +32,10 @@
 }
 
 .mode-item.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #ff7eb3 0%, #ff6ec7 100%);
   color: #fff;
   font-weight: 600;
-  box-shadow: 0 4rpx 12rpx rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4rpx 12rpx rgba(255, 126, 179, 0.4);
   transform: translateY(-2rpx);
 }
 
@@ -51,13 +51,13 @@
 
 .secondary-button {
   background: #fff !important;
-  color: #667eea !important;
-  border: 2rpx solid #667eea !important;
-  box-shadow: 0 4rpx 16rpx rgba(102, 126, 234, 0.15) !important;
+  color: #ff6ec7 !important;
+  border: 2rpx solid #ff6ec7 !important;
+  box-shadow: 0 4rpx 16rpx rgba(255, 126, 179, 0.15) !important;
 }
 
 .secondary-button:active {
-  background: #f5f7ff !important;
+  background: #fff5f7 !important;
   transform: scale(0.96) !important;
 }
 
@@ -80,10 +80,10 @@
   margin: 30rpx 0;
   border-radius: 16rpx;
   overflow: hidden;
-  background: #f8f9fa;
+  background: #fff5f7;
   padding: 16rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
-  border: 1rpx solid #e9ecef;
+  box-shadow: 0 4rpx 20rpx rgba(255, 126, 179, 0.1);
+  border: 1rpx solid #ffe4ec;
   position: relative;
   z-index: 1;
 }
@@ -103,7 +103,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4rpx 12rpx rgba(255, 126, 179, 0.15);
   transition: all 0.2s ease;
   z-index: 10;
   padding: 0;
@@ -120,8 +120,8 @@
   border-radius: 20rpx;
   padding: 36rpx;
   margin-top: 30rpx;
-  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
-  border: 1rpx solid #e9ecef;
+  box-shadow: 0 8rpx 32rpx rgba(255, 126, 179, 0.1);
+  border: 1rpx solid #ffe4ec;
   animation: fadeIn 0.4s ease-out;
   position: relative;
   z-index: 1;
@@ -135,7 +135,7 @@
 .score-number {
   font-size: 52rpx;
   font-weight: 700;
-  color: #667eea;
+  color: #ff6ec7;
   margin: 10rpx 0;
 }
 
@@ -173,8 +173,8 @@
 .loading-spinner {
   width: 60rpx;
   height: 60rpx;
-  border: 4rpx solid #e9ecef;
-  border-top: 4rpx solid #667eea;
+  border: 4rpx solid #ffe4ec;
+  border-top: 4rpx solid #ff6ec7;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -197,22 +197,22 @@
 
 .action-button {
   flex: 1;
-  background: #f8f9fa;
+  background: #fff5f7;
   color: #666;
   font-size: 28rpx;
   padding: 24rpx;
   border-radius: 12rpx;
   box-shadow: none;
-  border: 1rpx solid #e9ecef;
+  border: 1rpx solid #ffe4ec;
   margin-bottom: 0;
   font-weight: 500;
 }
 
 .action-button.primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #ff7eb3 0%, #ff6ec7 100%);
   color: white;
   border: none;
-  box-shadow: 0 6rpx 20rpx rgba(102, 126, 234, 0.4);
+  box-shadow: 0 6rpx 20rpx rgba(255, 126, 179, 0.4);
 }
 
 .action-button:active {
@@ -279,10 +279,10 @@
   position: relative;
   border-radius: 16rpx;
   overflow: hidden;
-  background: #f8f9fa;
+  background: #fff5f7;
   padding: 16rpx;
-  border: 1rpx solid #e9ecef;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+  border: 1rpx solid #ffe4ec;
+  box-shadow: 0 4rpx 16rpx rgba(255, 126, 179, 0.1);
 }
 
 .couple-preview-image {
@@ -298,17 +298,17 @@
   align-items: center;
   justify-content: center;
   padding: 50rpx 20rpx;
-  background: #f8f9fa;
-  border: 2rpx dashed #d0d7de;
+  background: #fff5f7;
+  border: 2rpx dashed #ffc0d0;
   border-radius: 16rpx;
   color: #999;
   transition: all 0.3s ease;
 }
 
 .couple-empty-item:active {
-  background: #f0f4ff;
-  border-color: #667eea;
-  color: #667eea;
+  background: #ffe4ec;
+  border-color: #ff6ec7;
+  color: #ff6ec7;
 }
 
 .couple-empty-item .empty-state-icon {
@@ -331,16 +331,16 @@
 
 @media (prefers-color-scheme: dark) {
   page {
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    background: linear-gradient(135deg, #2d1f2d 0%, #2a1a2a 100%);
   }
   
   .container {
-    background: #252545;
+    background: #3d2a3d;
     box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.3);
   }
   
   .container::before {
-    background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+    background: linear-gradient(135deg, #cc5c8a 0%, #b35075 100%);
   }
   
   h1 {
@@ -352,7 +352,7 @@
   }
   
   button {
-    background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+    background: linear-gradient(135deg, #cc5c8a 0%, #b35075 100%);
     box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.3);
   }
   
@@ -369,13 +369,13 @@
   }
   
   .mode-item.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #ff7eb3 0%, #ff6ec7 100%);
     color: #fff;
   }
   
   .result-card {
-    background: #2a2a4a;
-    border-color: #3d3d6d;
+    background: #3d2a3d;
+    border-color: #5c3d5c;
   }
   
   .result-title {
@@ -387,28 +387,28 @@
   }
   
   .score-number {
-    color: #a78bfa;
+    color: #ff9fbd;
   }
   
   .preview-container {
-    background: #2a2a4a;
-    border-color: #3d3d6d;
+    background: #3d2a3d;
+    border-color: #5c3d5c;
   }
   
   .secondary-button {
-    background: #2a2a4a !important;
-    color: #a78bfa !important;
-    border-color: #a78bfa !important;
+    background: #3d2a3d !important;
+    color: #ff9fbd !important;
+    border-color: #ff9fbd !important;
   }
   
   .action-button {
-    background: #2a2a4a;
+    background: #3d2a3d;
     color: #ccc;
-    border-color: #3d3d6d;
+    border-color: #5c3d5c;
   }
   
   .action-button.primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #ff7eb3 0%, #ff6ec7 100%);
   }
   
   .empty-state-text {
@@ -416,14 +416,14 @@
   }
   
   .couple-empty-item {
-    background: #2a2a4a;
-    border-color: #3d3d6d;
+    background: #3d2a3d;
+    border-color: #5c3d5c;
     color: #666;
   }
   
   #result {
-    background: #2a2a4a;
-    border-color: #3d3d6d;
+    background: #3d2a3d;
+    border-color: #5c3d5c;
     color: #ccc;
   }
 }

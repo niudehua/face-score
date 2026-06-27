@@ -1,37 +1,33 @@
 <view class="container">
-  <!-- 标题区域 -->
   <image class="app-logo" src="/images/logo.png" mode="aspectFit"></image>
   <h1>萌牛测颜</h1>
-  <p>上传照片，获取您的面部气质分析报告</p>
+  <p>🌸 上传照片，发现你的美丽秘密 🌸</p>
 
-  <!-- 模式切换 -->
   <view class="mode-selector">
     <view class="mode-item {{mode === 'score' ? 'active' : ''}}" bindtap="switchMode" data-mode="score">
-      颜值评分
+      💖 颜值评分
     </view>
     <view class="mode-item {{mode === 'fortune' ? 'active' : ''}}" bindtap="switchMode" data-mode="fortune">
-      气质解读
+      ✨ 气质解读
     </view>
     <view class="mode-item {{mode === 'couple' ? 'active' : ''}}" bindtap="switchMode" data-mode="couple">
-      CP契合度
+      💕 CP匹配度
     </view>
   </view>
 
-  <!-- 单人模式预览区域 -->
   <view class="preview-container" wx:if="{{previewShow && mode !== 'couple'}}">
     <image id="preview" class="show" src="{{previewUrl}}" mode="aspectFit"></image>
     <button class="clear-preview-btn" bindtap="clearPreview">×</button>
   </view>
 
-  <!-- CP模式双图片预览区域 -->
   <view class="couple-preview-container" wx:if="{{mode === 'couple'}}">
     <view class="couple-preview-item" wx:if="{{previewUrlA}}">
       <image class="couple-preview-image" src="{{previewUrlA}}" mode="aspectFit"></image>
       <button class="clear-preview-btn" bindtap="clearPreviewA">×</button>
     </view>
     <view class="couple-empty-item" wx:else bindtap="chooseImageA">
-      <view class="empty-state-icon">👤</view>
-      <view class="empty-state-text">选择第一张照片</view>
+      <view class="empty-state-icon">👧</view>
+      <view class="empty-state-text">选择我的照片</view>
     </view>
 
     <view class="couple-preview-item" wx:if="{{previewUrlB}}">
@@ -39,57 +35,52 @@
       <button class="clear-preview-btn" bindtap="clearPreviewB">×</button>
     </view>
     <view class="couple-empty-item" wx:else bindtap="chooseImageB">
-      <view class="empty-state-icon">👤</view>
-      <view class="empty-state-text">选择第二张照片</view>
+      <view class="empty-state-icon">👦</view>
+      <view class="empty-state-text">选择TA的照片</view>
     </view>
   </view>
 
-  <!-- 空状态 -->
   <view class="empty-state" wx:else>
-    <view class="empty-state-icon">{{mode === 'score' ? '📷' : '✨'}}</view>
-    <view class="empty-state-text">{{mode === 'score' ? '请选择一张照片' : '请上传清晰面部照片\n生成气质分析报告'}}</view>
+    <view class="empty-state-icon">{{mode === 'score' ? '💖' : (mode === 'fortune' ? '✨' : '💕')}}</view>
+    <view class="empty-state-text">
+      {{mode === 'score' ? '上传美照\n看看你的颜值能打多少分~' : (mode === 'fortune' ? '上传照片\n解锁你的专属气质密码✨' : '上传两张照片\n测测你们的甜蜜指数💕')}}
+    </view>
   </view>
 
-  <!-- 操作按钮区域 -->
   <view class="buttons-container" wx:if="{{mode !== 'couple'}}">
     <button bindtap="chooseImage" class="{{previewShow ? 'secondary-button' : ''}}">
-      {{previewShow ? '重新选择' : '选择照片'}}
+      {{previewShow ? '换一张试试' : '上传美照'}}
     </button>
     <button bindtap="submitScore" disabled="{{submitting}}" class="primary-button">
-      {{submitting ? '分析中...' : '生成分析报告'}}
+      {{submitting ? '正在分析...' : (mode === 'score' ? '开始颜值测试' : '生成气质报告')}}
     </button>
   </view>
 
-  <!-- CP模式操作按钮区域 -->
   <view class="buttons-container couple-buttons" wx:if="{{mode === 'couple'}}">
     <button bindtap="chooseImageA" class="{{previewUrlA ? 'secondary-button' : ''}}">
-      {{previewUrlA ? '重新选择A' : '选择照片A'}}
+      {{previewUrlA ? '重新选我' : '选我的照片'}}
     </button>
     <button bindtap="chooseImageB" class="{{previewUrlB ? 'secondary-button' : ''}}">
-      {{previewUrlB ? '重新选择B' : '选择照片B'}}
+      {{previewUrlB ? '重新选TA' : '选TA的照片'}}
     </button>
     <button bindtap="submitScore" disabled="{{submitting}}" class="primary-button">
-      {{submitting ? '分析中...' : '生成分析报告'}}
+      {{submitting ? '正在分析...' : '测测我们的缘分'}}
     </button>
   </view>
 
-  <!-- 加载状态 -->
   <view class="loading-container" wx:if="{{submitting}}">
     <view class="loading-spinner"></view>
-    <view class="loading-text">正在分析面部特征...</view>
+    <view class="loading-text">{{mode === 'couple' ? '正在计算缘分指数...' : '正在分析面部特征...'}}</view>
   </view>
 
-  <!-- 结果显示区域 -->
   <view wx:if="{{result && !submitting}}" class="result-card">
-    <view class="result-title">评分结果</view>
+    <view class="result-title">{{mode === 'score' ? '💖 颜值评分报告' : (mode === 'fortune' ? '✨ 气质分析报告' : '💕 缘分匹配报告')}}</view>
     <view class="result-content" id="result">{{result}}</view>
     
-    <!-- 操作按钮 -->
     <view class="action-buttons">
-      <button class="action-button" bindtap="shareResult">分享结果</button>
+      <button class="action-button" bindtap="shareResult">分享给好友</button>
       <button class="action-button primary" bindtap="saveResult">保存报告</button>
     </view>
   </view>
-  <!-- 用于生成分享图的 Canvas (隐藏) -->
   <canvas type="2d" id="shareCanvas" style="position: fixed; left: -9999px; top: 0; width: 375px; height: 600px;"></canvas>
 </view>

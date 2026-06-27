@@ -29,7 +29,7 @@ view, text, button, image, input, textarea, swiper, swiper-item {
 
 page {
   font-family: "PingFang SC", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+  background: linear-gradient(135deg, #fff5f7 0%, #ffe4ec 100%);
   color: #333;
   min-height: 100vh;
   padding: 0;
@@ -39,7 +39,7 @@ page {
   background: #FFFFFF;
   padding: 50rpx 40rpx;
   border-radius: 24rpx;
-  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8rpx 32rpx rgba(255, 126, 179, 0.15);
   text-align: center;
   max-width: 680rpx;
   margin: 30rpx auto;
@@ -55,7 +55,7 @@ page {
   left: 0;
   right: 0;
   height: 200rpx;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #ff7eb3 0%, #ff6ec7 100%);
   border-radius: 24rpx 24rpx 0 0;
   z-index: 0;
 }
@@ -77,7 +77,7 @@ h1 {
 p {
   margin: 0 0 50rpx;
   font-size: 28rpx;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.9);
   line-height: 1.6;
   font-weight: 400;
   position: relative;
@@ -85,7 +85,7 @@ p {
 }
 
 button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #ff7eb3 0%, #ff6ec7 100%);
   color: white;
   border: none;
   padding: 28rpx 48rpx;
@@ -95,7 +95,7 @@ button {
   cursor: pointer;
   width: 100%;
   margin-bottom: 20rpx;
-  box-shadow: 0 8rpx 24rpx rgba(102, 126, 234, 0.4);
+  box-shadow: 0 8rpx 24rpx rgba(255, 126, 179, 0.4);
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
@@ -114,7 +114,7 @@ button::before {
 
 button:active {
   transform: scale(0.96);
-  box-shadow: 0 4rpx 12rpx rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4rpx 12rpx rgba(255, 126, 179, 0.3);
 }
 
 button:active::before {
@@ -133,7 +133,7 @@ button:disabled {
   max-height: 320rpx;
   margin: 24rpx auto;
   border-radius: 16rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4rpx 20rpx rgba(255, 126, 179, 0.15);
   object-fit: cover;
   display: none;
   border: 4rpx solid #fff;
@@ -153,10 +153,10 @@ button:disabled {
   white-space: pre-wrap;
   text-align: left;
   padding: 30rpx;
-  background: #f8f9fa;
+  background: #fff5f7;
   border-radius: 16rpx;
-  box-shadow: inset 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
-  border: 1rpx solid #e9ecef;
+  box-shadow: inset 0 2rpx 8rpx rgba(255, 126, 179, 0.08);
+  border: 1rpx solid #ffe4ec;
   line-height: 1.7;
 }
 
