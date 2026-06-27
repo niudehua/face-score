@@ -21,22 +21,30 @@
   </view>
 
   <view class="couple-preview-container" wx:if="{{mode === 'couple'}}">
-    <view class="couple-preview-item" wx:if="{{previewUrlA}}">
-      <image class="couple-preview-image" src="{{previewUrlA}}" mode="aspectFit"></image>
-      <button class="clear-preview-btn" bindtap="clearPreviewA">×</button>
-    </view>
-    <view class="couple-empty-item" wx:else bindtap="chooseImageA">
-      <view class="empty-state-icon">👧</view>
-      <view class="empty-state-text">选择我的照片</view>
+    <view class="couple-card">
+      <view class="couple-avatar-wrap" wx:if="{{previewUrlA}}">
+        <image class="couple-avatar" src="{{previewUrlA}}" mode="aspectFill"></image>
+        <button class="couple-clear-btn" bindtap="clearPreviewA">×</button>
+      </view>
+      <view class="couple-avatar-placeholder" wx:else bindtap="chooseImageA">
+        <view class="avatar-icon">👧</view>
+        <view class="avatar-label">我的照片</view>
+      </view>
+      <view class="couple-name">我</view>
     </view>
 
-    <view class="couple-preview-item" wx:if="{{previewUrlB}}">
-      <image class="couple-preview-image" src="{{previewUrlB}}" mode="aspectFit"></image>
-      <button class="clear-preview-btn" bindtap="clearPreviewB">×</button>
-    </view>
-    <view class="couple-empty-item" wx:else bindtap="chooseImageB">
-      <view class="empty-state-icon">👦</view>
-      <view class="empty-state-text">选择TA的照片</view>
+    <view class="couple-heart">💕</view>
+
+    <view class="couple-card">
+      <view class="couple-avatar-wrap" wx:if="{{previewUrlB}}">
+        <image class="couple-avatar" src="{{previewUrlB}}" mode="aspectFill"></image>
+        <button class="couple-clear-btn" bindtap="clearPreviewB">×</button>
+      </view>
+      <view class="couple-avatar-placeholder" wx:else bindtap="chooseImageB">
+        <view class="avatar-icon">👦</view>
+        <view class="avatar-label">TA的照片</view>
+      </view>
+      <view class="couple-name">TA</view>
     </view>
   </view>
 
@@ -56,15 +64,9 @@
     </button>
   </view>
 
-  <view class="buttons-container couple-buttons" wx:if="{{mode === 'couple'}}">
-    <button bindtap="chooseImageA" class="{{previewUrlA ? 'secondary-button' : ''}}">
-      {{previewUrlA ? '重新选我' : '选我的照片'}}
-    </button>
-    <button bindtap="chooseImageB" class="{{previewUrlB ? 'secondary-button' : ''}}">
-      {{previewUrlB ? '重新选TA' : '选TA的照片'}}
-    </button>
-    <button bindtap="submitScore" disabled="{{submitting}}" class="primary-button">
-      {{submitting ? '正在分析...' : '测测我们的缘分'}}
+  <view class="buttons-container" wx:if="{{mode === 'couple'}}">
+    <button bindtap="submitScore" disabled="{{submitting || !previewUrlA || !previewUrlB}}" class="primary-button">
+      {{submitting ? '正在分析...' : (previewUrlA && previewUrlB ? '测测我们的缘分' : '请上传两张照片')}}
     </button>
   </view>
 
