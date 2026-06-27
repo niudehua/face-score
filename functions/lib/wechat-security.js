@@ -33,16 +33,22 @@ async function checkImageSecurity(base64Image, appId, appSecret) {
   const token = await getAccessToken(appId, appSecret);
 
   const base64Data = base64Image.includes(',') ? base64Image.split(',')[1] : base64Image;
-  const buffer = Buffer.from(base64Data, 'base64');
+  
+  const binaryString = atob(base64Data);
+  const length = binaryString.length;
+  const bytes = new Uint8Array(length);
+  for (let i = 0; i < length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+
+  const formData = new FormData();
+  formData.append('media', new Blob([bytes]), 'image.jpg');
 
   const response = await fetch(
     `${WECHAT_API_URL.IMG_SEC_CHECK}?access_token=${encodeURIComponent(token)}`,
     {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/octet-stream'
-      },
-      body: buffer
+      body: formData
     }
   );
 
