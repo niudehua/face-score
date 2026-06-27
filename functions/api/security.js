@@ -42,8 +42,8 @@ export async function onRequestPost(context) {
     }
 
     if (!WECHAT_APP_ID || !WECHAT_APP_SECRET) {
-      logger.debug('微信小程序配置未完成，跳过内容安全检查');
-      return createSuccessResponse({ safe: true, message: '配置未完成，跳过检查' });
+      logger.error('微信小程序配置未完成，无法进行内容安全检查');
+      return createErrorResponse('内容安全检查服务未配置', { status: HTTP_STATUS.SERVICE_UNAVAILABLE });
     }
 
     logger.debug('开始内容安全检查');

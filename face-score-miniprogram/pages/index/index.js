@@ -70,13 +70,7 @@ Page({
           this.showToast('照片选择成功', 'success')
         } catch (err) {
           console.error('安全检查失败:', err)
-          this.setData({
-            previewUrl: tempFilePath,
-            previewShow: true,
-            tempFilePath: tempFilePath,
-            result: ''
-          })
-          this.showToast('照片选择成功', 'success')
+          this.showToast('安全检查失败，请重试', 'none')
         } finally {
           wx.hideLoading()
         }
@@ -112,12 +106,7 @@ Page({
           this.showToast('第一张照片选择成功', 'success')
         } catch (err) {
           console.error('安全检查失败:', err)
-          this.setData({
-            previewUrlA: tempFilePath,
-            tempFilePathA: tempFilePath,
-            result: ''
-          })
-          this.showToast('第一张照片选择成功', 'success')
+          this.showToast('安全检查失败，请重试', 'none')
         } finally {
           wx.hideLoading()
         }
@@ -153,12 +142,7 @@ Page({
           this.showToast('第二张照片选择成功', 'success')
         } catch (err) {
           console.error('安全检查失败:', err)
-          this.setData({
-            previewUrlB: tempFilePath,
-            tempFilePathB: tempFilePath,
-            result: ''
-          })
-          this.showToast('第二张照片选择成功', 'success')
+          this.showToast('安全检查失败，请重试', 'none')
         } finally {
           wx.hideLoading()
         }
