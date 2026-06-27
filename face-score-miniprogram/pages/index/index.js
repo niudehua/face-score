@@ -42,56 +42,126 @@ Page({
   },
 
   // 选择图片（单人模式）
-  chooseImage() {
+  async chooseImage() {
     wx.chooseImage({
       count: 1,
       sizeType: ['compressed'],
       sourceType: ['album', 'camera'],
-      success: (res) => {
+      success: async (res) => {
         const tempFilePath = res.tempFilePaths[0]
-        this.setData({
-          previewUrl: tempFilePath,
-          previewShow: true,
-          tempFilePath: tempFilePath,
-          result: ''
-        })
-        this.showToast('照片选择成功', 'success')
+        
+        wx.showLoading({ title: '安全检查中...', mask: true })
+        
+        try {
+          const base64Data = await this.imageToBase64(tempFilePath)
+          const securityResult = await this.callSecurityAPI(base64Data)
+          
+          if (!securityResult.safe) {
+            this.showToast('您发布的内容包含违规信息', 'none')
+            return
+          }
+          
+          this.setData({
+            previewUrl: tempFilePath,
+            previewShow: true,
+            tempFilePath: tempFilePath,
+            result: ''
+          })
+          this.showToast('照片选择成功', 'success')
+        } catch (err) {
+          console.error('安全检查失败:', err)
+          this.setData({
+            previewUrl: tempFilePath,
+            previewShow: true,
+            tempFilePath: tempFilePath,
+            result: ''
+          })
+          this.showToast('照片选择成功', 'success')
+        } finally {
+          wx.hideLoading()
+        }
       }
     })
   },
 
   // 选择图片A（CP模式）
-  chooseImageA() {
+  async chooseImageA() {
     wx.chooseImage({
       count: 1,
       sizeType: ['compressed'],
       sourceType: ['album', 'camera'],
-      success: (res) => {
+      success: async (res) => {
         const tempFilePath = res.tempFilePaths[0]
-        this.setData({
-          previewUrlA: tempFilePath,
-          tempFilePathA: tempFilePath,
-          result: ''
-        })
-        this.showToast('第一张照片选择成功', 'success')
+        
+        wx.showLoading({ title: '安全检查中...', mask: true })
+        
+        try {
+          const base64Data = await this.imageToBase64(tempFilePath)
+          const securityResult = await this.callSecurityAPI(base64Data)
+          
+          if (!securityResult.safe) {
+            this.showToast('您发布的内容包含违规信息', 'none')
+            return
+          }
+          
+          this.setData({
+            previewUrlA: tempFilePath,
+            tempFilePathA: tempFilePath,
+            result: ''
+          })
+          this.showToast('第一张照片选择成功', 'success')
+        } catch (err) {
+          console.error('安全检查失败:', err)
+          this.setData({
+            previewUrlA: tempFilePath,
+            tempFilePathA: tempFilePath,
+            result: ''
+          })
+          this.showToast('第一张照片选择成功', 'success')
+        } finally {
+          wx.hideLoading()
+        }
       }
     })
   },
 
   // 选择图片B（CP模式）
-  chooseImageB() {
+  async chooseImageB() {
     wx.chooseImage({
       count: 1,
       sizeType: ['compressed'],
       sourceType: ['album', 'camera'],
-      success: (res) => {
+      success: async (res) => {
         const tempFilePath = res.tempFilePaths[0]
-        this.setData({
-          previewUrlB: tempFilePath,
-          tempFilePathB: tempFilePath,
-          result: ''
-        })
-        this.showToast('第二张照片选择成功', 'success')
+        
+        wx.showLoading({ title: '安全检查中...', mask: true })
+        
+        try {
+          const base64Data = await this.imageToBase64(tempFilePath)
+          const securityResult = await this.callSecurityAPI(base64Data)
+          
+          if (!securityResult.safe) {
+            this.showToast('您发布的内容包含违规信息', 'none')
+            return
+          }
+          
+          this.setData({
+            previewUrlB: tempFilePath,
+            tempFilePathB: tempFilePath,
+            result: ''
+          })
+          this.showToast('第二张照片选择成功', 'success')
+        } catch (err) {
+          console.error('安全检查失败:', err)
+          this.setData({
+            previewUrlB: tempFilePath,
+            tempFilePathB: tempFilePath,
+            result: ''
+          })
+          this.showToast('第二张照片选择成功', 'success')
+        } finally {
+          wx.hideLoading()
+        }
       }
     })
   },
@@ -325,6 +395,37 @@ Page({
             reject(new Error(res.data?.error || res.data?.message || '您发布的内容包含违规信息'))
           } else {
             resolve(res)
+          }
+        },
+        fail: (err) => {
+          reject(err)
+        }
+      })
+    })
+  },
+
+  // 调用安全检查API
+  callSecurityAPI(base64Data) {
+    return new Promise((resolve, reject) => {
+      let url = app.globalData.apiUrl;
+      url = url.replace(/\/$/, '') + '/api/security';
+
+      wx.request({
+        url: url,
+        method: 'POST',
+        header: {
+          'Content-Type': 'application/json',
+          'X-App-Type': 'miniprogram'
+        },
+        data: {
+          image: base64Data,
+          app_type: 'miniprogram'
+        },
+        success: (res) => {
+          if (res.statusCode === 200 && res.data) {
+            resolve(res.data)
+          } else {
+            reject(new Error('安全检查失败'))
           }
         },
         fail: (err) => {
