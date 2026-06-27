@@ -7,6 +7,8 @@ bucket = "./public"
 entry-point = "./functions"
 
 [vars]
+WECHAT_APPID = "${WECHAT_APPID}"
+WECHAT_PRIVATE_KEY = "${WECHAT_PRIVATE_KEY}"
 
 [env.production]
 name = "face-score-pages"
