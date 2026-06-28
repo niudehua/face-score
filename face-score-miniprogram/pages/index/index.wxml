@@ -79,8 +79,7 @@
     <view class="result-content" id="result">{{result}}</view>
     
     <view class="action-buttons">
-      <button class="action-button" bindtap="shareResult">分享给好友</button>
-      <button class="action-button primary" bindtap="saveResult">保存报告</button>
+      <button class="action-button primary" bindtap="saveResult">生成分享图片</button>
     </view>
   </view>
   <canvas type="2d" id="shareCanvas" style="position: fixed; left: -9999px; top: 0; width: 375px; height: 600px;"></canvas>

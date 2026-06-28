@@ -307,16 +307,41 @@ Page({
   // 转换图片为Base64
   imageToBase64(filePath) {
     return new Promise((resolve, reject) => {
-      wx.getFileSystemManager().readFile({
-        filePath: filePath,
-        encoding: 'base64',
-        success: (res) => {
-          resolve(res.data)
-        },
-        fail: (err) => {
-          reject(err)
-        }
-      })
+      if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+        wx.downloadFile({
+          url: filePath,
+          success: (downloadRes) => {
+            if (downloadRes.statusCode === 200) {
+              wx.getFileSystemManager().readFile({
+                filePath: downloadRes.tempFilePath,
+                encoding: 'base64',
+                success: (readRes) => {
+                  resolve(readRes.data)
+                },
+                fail: (err) => {
+                  reject(err)
+                }
+              })
+            } else {
+              reject(new Error('下载图片失败'))
+            }
+          },
+          fail: (err) => {
+            reject(err)
+          }
+        })
+      } else {
+        wx.getFileSystemManager().readFile({
+          filePath: filePath,
+          encoding: 'base64',
+          success: (res) => {
+            resolve(res.data)
+          },
+          fail: (err) => {
+            reject(err)
+          }
+        })
+      }
     })
   },
 
@@ -547,15 +572,6 @@ Page({
     })
   },
 
-  // 分享结果
-  shareResult() {
-    wx.showShareMenu({
-      withShareTicket: true,
-      menus: ['shareAppMessage', 'shareTimeline']
-    })
-    this.showToast('分享功能已打开', 'success')
-  },
-
   // 计算文本所需高度
   calculateTextHeight(ctx, text, maxWidth, lineHeight) {
     const words = text.split('')
@@ -770,7 +786,7 @@ Page({
       filePath: filePath,
       success: () => {
         wx.hideLoading()
-        this.showToast('报告已保存到相册', 'success')
+        this.showToast('已保存到相册', 'success')
       },
       fail: (err) => {
         wx.hideLoading()
@@ -801,24 +817,5 @@ Page({
         }
       }
     })
-  },
-
-  // 分享给朋友
-  onShareAppMessage() {
-    return {
-      title: '快来试试面部气质测评！',
-      path: '/pages/index/index',
-      imageUrl: this.data.previewUrl || '/favicon.png',
-      desc: '颜值评分 & 气质解读，快来测测吧！'
-    }
-  },
-
-  // 分享到朋友圈
-  onShareTimeline() {
-    return {
-      title: '快来试试面部气质测评！',
-      query: '',
-      imageUrl: this.data.previewUrl || '/favicon.png'
-    }
   }
 })
