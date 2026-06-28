@@ -307,14 +307,53 @@ Page({
   // 转换图片为Base64
   imageToBase64(filePath) {
     return new Promise((resolve, reject) => {
-      wx.getFileSystemManager().readFile({
+      wx.getLocalImgData({
         filePath: filePath,
-        encoding: 'base64',
         success: (res) => {
-          resolve(res.data)
+          let base64Data = res.data
+          if (base64Data.startsWith('data:image')) {
+            base64Data = base64Data.substring(base64Data.indexOf(',') + 1)
+          }
+          resolve(base64Data)
         },
         fail: (err) => {
-          reject(err)
+          let actualPath = filePath
+          
+          if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+            const httpPrefix = filePath.startsWith('https://') ? 'https://' : 'http://'
+            const hostPath = filePath.substring(httpPrefix.length)
+            const slashIndex = hostPath.indexOf('/')
+            
+            if (slashIndex > -1) {
+              let hostname = hostPath.substring(0, slashIndex)
+              const colonIndex = hostname.indexOf(':')
+              if (colonIndex > -1) {
+                hostname = hostname.substring(0, colonIndex)
+              }
+              const pathname = hostPath.substring(slashIndex)
+              
+              if (hostname === '127.0.0.1' || hostname === 'localhost' || hostname === '0.0.0.0') {
+                actualPath = pathname
+                if (actualPath.startsWith('/')) {
+                  actualPath = actualPath.substring(1)
+                }
+              } else {
+                reject(new Error('非本地图片无法读取'))
+                return
+              }
+            }
+          }
+          
+          wx.getFileSystemManager().readFile({
+            filePath: actualPath,
+            encoding: 'base64',
+            success: (res) => {
+              resolve(res.data)
+            },
+            fail: (err2) => {
+              reject(err2)
+            }
+          })
         }
       })
     })
