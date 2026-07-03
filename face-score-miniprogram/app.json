@@ -4,15 +4,10 @@
   ],
   "window": {
     "backgroundTextStyle": "light",
-    "navigationBarBackgroundColor": "#FFFFFF",
+    "navigationBarBackgroundColor": "#ff6ec7",
     "navigationBarTitleText": "萌牛测颜",
-    "navigationBarTextStyle": "black"
+    "navigationBarTextStyle": "white"
   },
   "style": "v2",
-  "sitemapLocation": "sitemap.json",
-  "permission": {
-    "scope.writePhotosAlbum": {
-      "desc": "为了将精美的分析报告保存到您的相册，请允许保存权限喵～"
-    }
-  }
+  "sitemapLocation": "sitemap.json"
 }

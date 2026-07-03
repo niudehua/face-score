@@ -1,32 +1,39 @@
 <view class="container">
-  <image class="app-logo" src="/images/logo.png" mode="aspectFit"></image>
-  <h1>萌牛测颜</h1>
-  <p>🌸 上传照片，发现你的美丽秘密 🌸</p>
+  <view class="header">
+    <view class="logo-wrap">
+      <image class="app-logo" src="/images/logo.png" mode="aspectFit"></image>
+    </view>
+    <view class="app-title">萌牛测颜</view>
+    <view class="app-subtitle">上传照片，发现你的美丽秘密</view>
+  </view>
 
   <view class="mode-selector">
     <view class="mode-item {{mode === 'score' ? 'active' : ''}}" bindtap="switchMode" data-mode="score">
-      💖 颜值评分
+      <view class="mode-icon">💖</view>
+      <view class="mode-text">颜值评分</view>
     </view>
     <view class="mode-item {{mode === 'fortune' ? 'active' : ''}}" bindtap="switchMode" data-mode="fortune">
-      ✨ 气质解读
+      <view class="mode-icon">✨</view>
+      <view class="mode-text">气质解读</view>
     </view>
     <view class="mode-item {{mode === 'couple' ? 'active' : ''}}" bindtap="switchMode" data-mode="couple">
-      💕 CP匹配度
+      <view class="mode-icon">💕</view>
+      <view class="mode-text">CP匹配度</view>
     </view>
   </view>
 
   <view class="preview-container" wx:if="{{previewShow && mode !== 'couple'}}">
-    <image id="preview" class="show" src="{{previewUrl}}" mode="aspectFit"></image>
-    <button class="clear-preview-btn" bindtap="clearPreview">×</button>
+    <image class="preview-image" src="{{previewUrl}}" mode="aspectFit"></image>
+    <view class="clear-preview-btn" bindtap="clearPreview">×</view>
   </view>
 
   <view class="couple-preview-container" wx:if="{{mode === 'couple'}}">
     <view class="couple-card">
       <view class="couple-avatar-wrap" wx:if="{{previewUrlA}}">
         <image class="couple-avatar" src="{{previewUrlA}}" mode="aspectFill"></image>
-        <button class="couple-clear-btn" bindtap="clearPreviewA">×</button>
+        <view class="couple-clear-btn" bindtap="clearPreviewA">×</view>
         <view class="couple-security-badge {{securityStatusA === 'passed' ? 'security-passed' : (securityStatusA === 'rejected' ? 'security-rejected' : '')}}" wx:if="{{securityStatusA}}">
-          <text class="security-icon">{{securityStatusA === 'passed' ? '✓' : '✗'}}</text>
+          <text>{{securityStatusA === 'passed' ? '✓' : '✗'}}</text>
         </view>
       </view>
       <view class="couple-avatar-placeholder" wx:else bindtap="chooseImageA">
@@ -42,9 +49,9 @@
     <view class="couple-card">
       <view class="couple-avatar-wrap" wx:if="{{previewUrlB}}">
         <image class="couple-avatar" src="{{previewUrlB}}" mode="aspectFill"></image>
-        <button class="couple-clear-btn" bindtap="clearPreviewB">×</button>
+        <view class="couple-clear-btn" bindtap="clearPreviewB">×</view>
         <view class="couple-security-badge {{securityStatusB === 'passed' ? 'security-passed' : (securityStatusB === 'rejected' ? 'security-rejected' : '')}}" wx:if="{{securityStatusB}}">
-          <text class="security-icon">{{securityStatusB === 'passed' ? '✓' : '✗'}}</text>
+          <text>{{securityStatusB === 'passed' ? '✓' : '✗'}}</text>
         </view>
       </view>
       <view class="couple-avatar-placeholder" wx:else bindtap="chooseImageB">
@@ -59,14 +66,14 @@
   <view class="empty-state" wx:if="{{!previewShow && !previewUrlA && !previewUrlB}}">
     <view class="empty-state-icon">{{mode === 'score' ? '💖' : (mode === 'fortune' ? '✨' : '💕')}}</view>
     <view class="empty-state-text">
-      {{mode === 'score' ? '上传美照\n看看你的颜值能打多少分~' : (mode === 'fortune' ? '上传照片\n解锁你的专属气质密码✨' : '上传两张照片\n测测你们的甜蜜指数💕')}}
+      {{mode === 'score' ? '上传美照\n看看你的颜值能打多少分' : (mode === 'fortune' ? '上传照片\n解锁你的专属气质密码' : '上传两张照片\n测测你们的甜蜜指数')}}
     </view>
   </view>
 
-  <view class="buttons-container">
-    <button bindtap="handleMainAction" disabled="{{submitting}}" class="main-button">
+  <view class="main-action">
+    <view bindtap="handleMainAction" class="main-button" disabled="{{submitting}}">
       {{mainButtonText}}
-    </button>
+    </view>
   </view>
 
   <view class="loading-container" wx:if="{{submitting}}">
@@ -75,12 +82,15 @@
   </view>
 
   <view wx:if="{{result && !submitting}}" class="result-card">
-    <view class="result-title">{{mode === 'score' ? '💖 颜值评分报告' : (mode === 'fortune' ? '✨ 气质分析报告' : '💕 缘分匹配报告')}}</view>
-    <view class="result-content" id="result">{{result}}</view>
+    <view class="result-header">
+      <view class="result-title">{{mode === 'score' ? '💖 颜值评分报告' : (mode === 'fortune' ? '✨ 气质分析报告' : '💕 缘分匹配报告')}}</view>
+    </view>
+    <view class="result-content">{{result}}</view>
     
     <view class="action-buttons">
-      <button class="action-button primary" bindtap="saveResult">生成分享图片</button>
+      <view class="action-button primary" bindtap="saveResult">生成分享图片</view>
     </view>
   </view>
+
   <canvas type="2d" id="shareCanvas" style="position: fixed; left: -9999px; top: 0; width: 375px; height: 600px;"></canvas>
 </view>
