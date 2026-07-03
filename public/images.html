@@ -3,21 +3,17 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" href="/favicon.png" type="image/png">
-  <title>颜值档案</title>
+  <link rel="icon" href="/logo.png" type="image/png">
+  <title>颜值档案 - 萌牛测颜</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"
-    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
 </head>
 
 <body class="images-page">
   <div class="app-layout">
-
-    <!-- Minimalist Sticky Header -->
     <header class="app-header">
       <div class="header-left">
         <a href="/" class="nav-btn">
@@ -37,14 +33,12 @@
       </div>
     </header>
 
-    <!-- Content Area -->
     <main id="image-grid" class="image-grid minimalist-grid">
-      <!-- Cards injected by JS -->
     </main>
 
-    <!-- Loading / Empty States -->
     <div id="loading" class="state-container">
       <div class="spinner"></div>
+      <p>正在加载照片...</p>
     </div>
 
     <div id="empty" class="state-container" style="display: none;">
@@ -58,7 +52,6 @@
 
     <div id="load-more-trigger"></div>
 
-    <!-- Floating Bottom Action Bar (Hidden by default) -->
     <div id="bottom-bar" class="bottom-action-bar">
       <div class="bar-content">
         <span id="selection-count">已选择 0 张</span>

@@ -15,18 +15,27 @@
 
 <body>
   <div class="container">
-    <header>
-      <div class="logo">
-        <img src="/logo.png" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;">
+    <header class="home-header">
+      <div class="home-logo">
+        <img src="/logo.png" alt="Logo">
       </div>
-      <h1>萌牛测颜</h1>
-      <p>上传一张照片，获取您的颜值分数与气质分析报告</p>
+      <h1 class="home-title">萌牛测颜</h1>
+      <p class="home-subtitle">上传一张照片，获取您的颜值分数与气质分析报告</p>
     </header>
 
     <div class="mode-selector">
-      <div class="mode-item active" onclick="switchMode('score')" id="mode-score">颜值评分</div>
-      <div class="mode-item" onclick="switchMode('fortune')" id="mode-fortune">气质解读</div>
-      <div class="mode-item" onclick="switchMode('couple')" id="mode-couple">CP契合度</div>
+      <div class="mode-item active" onclick="switchMode('score')" id="mode-score">
+        <span class="mode-icon">💖</span>
+        <span>颜值评分</span>
+      </div>
+      <div class="mode-item" onclick="switchMode('fortune')" id="mode-fortune">
+        <span class="mode-icon">✨</span>
+        <span>气质解读</span>
+      </div>
+      <div class="mode-item" onclick="switchMode('couple')" id="mode-couple">
+        <span class="mode-icon">💕</span>
+        <span>CP契合度</span>
+      </div>
     </div>
 
     <div class="file-upload-wrapper" id="uploadWrapper">
@@ -65,7 +74,7 @@
       <div id="turnstile-widget" data-theme="light"></div>
     </div>
 
-    <button id="submitBtn">生成分析报告</button>
+    <button id="submitBtn" class="btn-primary">生成分析报告</button>
 
     <div id="result"></div>
 
@@ -74,7 +83,6 @@
   </div>
 
   <script>
-    // 文件选择后立即预览
     document.getElementById("fileInput").onchange = function () {
       const fileInput = this;
       const previewImg = document.getElementById("preview");
@@ -96,7 +104,6 @@
       reader.readAsDataURL(file);
     };
 
-    // 第二张照片选择后预览
     document.getElementById("fileInputB").onchange = function () {
       const fileInput = this;
       const previewImg = document.getElementById("previewB");
@@ -118,8 +125,7 @@
       reader.readAsDataURL(file);
     };
 
-    // 模式切换逻辑
-    let currentMode = 'score'; // 'score' | 'fortune' | 'couple'
+    let currentMode = 'score';
     let imageBase64A = '';
     let imageBase64B = '';
 
@@ -127,11 +133,9 @@
       if (currentMode === mode) return;
       currentMode = mode;
 
-      // 更新 Tab 样式
       document.querySelectorAll('.mode-item').forEach(el => el.classList.remove('active'));
       document.getElementById(`mode-${mode}`).classList.add('active');
 
-      // 更新按钮文字
       const btn = document.getElementById('submitBtn');
       const uploadText = document.getElementById('uploadText');
       const uploadWrapperB = document.getElementById('uploadWrapperB');
@@ -150,16 +154,13 @@
         uploadWrapperB.style.display = 'block';
       }
 
-      // 隐藏结果区域
       const resultDiv = document.getElementById('result');
       resultDiv.style.display = 'none';
-      resultDiv.innerText = '';
+      resultDiv.innerHTML = '';
     }
 
-    // Turnstile 状态标记（未配置则跳过）
     let turnstileEnabled = false;
 
-    // 动态初始化 Turnstile 组件，若未配置则隐藏控件
     async function initTurnstile() {
       const widgetContainer = document.querySelector('.turnstile-container');
       try {
@@ -184,12 +185,9 @@
       }
     }
 
-    // 页面加载完成后初始化事件监听
     document.addEventListener('DOMContentLoaded', () => {
-      // 初始化 Turnstile 组件
       initTurnstile();
 
-      // 添加查看所有图片按钮的点击事件
       const imagesBtn = document.getElementById('imagesBtn');
       if (imagesBtn) {
         imagesBtn.addEventListener('click', () => {
@@ -197,7 +195,6 @@
         });
       }
 
-      // 检查登录状态并显示相应按钮
       async function checkLoginStatus() {
         try {
           const response = await fetch('/api/auth', { credentials: 'include' });
@@ -207,34 +204,28 @@
           const imagesBtn = document.getElementById('imagesBtn');
 
           if (data.success) {
-            // 已登录，显示登出和图片按钮，隐藏登录按钮
             logoutBtn.style.display = 'block';
             imagesBtn.style.display = 'block';
           } else {
-            // 未登录，隐藏管理入口按钮，仅保留后门触发
             logoutBtn.style.display = 'none';
             imagesBtn.style.display = 'none';
           }
         } catch (error) {
           console.error('检查登录状态失败:', error);
-          // 出错时隐藏所有按钮
           document.getElementById('logoutBtn').style.display = 'none';
           document.getElementById('imagesBtn').style.display = 'none';
         }
       }
 
-      // 页面加载时检查登录状态
       checkLoginStatus();
     });
 
-    // 登出函数
     async function handleLogout() {
       try {
         await fetch('/api/auth', {
           method: 'DELETE',
           credentials: 'include'
         });
-        // 登出成功，刷新页面
         window.location.reload();
       } catch (error) {
         console.error('登出失败:', error);
@@ -242,35 +233,28 @@
       }
     }
 
-    // 标题点击计数器
     let clickCount = 0;
-    const titleElement = document.querySelector('h1');
+    const titleElement = document.querySelector('.home-title');
 
-    // 点击事件处理
     if (titleElement) {
       titleElement.addEventListener('click', async () => {
         clickCount++;
 
-        // 点击5次触发后门
         if (clickCount === 5) {
           try {
             const response = await fetch('/api/auth', { credentials: 'include' });
             const data = await response.json();
 
             if (data.success) {
-              // 已登录或后门开启，直接进入图片列表
               window.location.href = '/images';
             } else {
-              // 未登录，跳转到GitHub登录
               window.location.href = '/api/auth/github';
             }
           } catch (error) {
             console.error('检查登录状态失败:', error);
-            // 出错时直接跳转到登录
             window.location.href = '/api/auth/github';
           }
 
-          // 重置计数器
           clickCount = 0;
         }
       });
@@ -287,7 +271,7 @@
           return;
         }
 
-        resultDiv.innerText = "正在分析两人的契合度...";
+        resultDiv.innerHTML = '<div class="loading-spinner"></div><div class="loading-text">正在分析两人的契合度...</div>';
         resultDiv.style.display = 'block';
 
         try {
@@ -308,7 +292,7 @@
           if (turnstileEnabled && typeof turnstile !== 'undefined' && typeof turnstile.getResponse === 'function') {
             token = turnstile.getResponse();
             if (!token) {
-              resultDiv.innerText = "验证失败，请完成验证码喵～";
+              resultDiv.innerHTML = '<div style="text-align: center; padding: 20px;">验证失败，请完成验证码喵～</div>';
               return;
             }
           }
@@ -354,7 +338,8 @@
       const reader = new FileReader();
       reader.onload = async function () {
         const base64 = reader.result.split(",")[1];
-        resultDiv.innerText = currentMode === 'score' ? "正在分析五官特征..." : "美学分析师正在解读气质...";
+        resultDiv.innerHTML = '<div class="loading-spinner"></div><div class="loading-text">' + 
+          (currentMode === 'score' ? '正在分析五官特征...' : '美学分析师正在解读气质...') + '</div>';
         resultDiv.style.display = 'block';
 
         try {
@@ -362,7 +347,7 @@
           if (turnstileEnabled && typeof turnstile !== 'undefined' && typeof turnstile.getResponse === 'function') {
             token = turnstile.getResponse();
             if (!token) {
-              resultDiv.innerText = "验证失败，请完成验证码喵～";
+              resultDiv.innerHTML = '<div style="text-align: center; padding: 20px;">验证失败，请完成验证码喵～</div>';
               return;
             }
           }
@@ -419,7 +404,6 @@
           resultDiv.innerText = "网络信号溜去捉迷藏啦，请检查网络后再试一次喵～";
           console.error("评分请求错误:", e);
         } finally {
-          // 重置 Turnstile 验证码，防止 token 重用导致 invalid (Error 600010)
           if (turnstileEnabled && typeof turnstile !== 'undefined' && typeof turnstile.reset === 'function') {
             turnstile.reset('#turnstile-widget');
           }
