@@ -14,104 +14,91 @@
 </head>
 
 <body>
-  <div class="app-container">
-    <div class="bg-decoration">
-      <div class="bg-blob blob-1"></div>
-      <div class="bg-blob blob-2"></div>
-      <div class="bg-blob blob-3"></div>
-      <div class="bg-blob blob-4"></div>
-    </div>
+  <div class="page">
+    <header class="header">
+      <div class="logo-area">
+        <img src="/logo.png" alt="萌牛测颜" class="logo" />
+      </div>
+      <h1 class="title">萌牛测颜</h1>
+      <p class="subtitle">上传照片，发现你的独特魅力</p>
+    </header>
 
-    <div class="main-wrapper">
-      <section class="hero-section">
-        <div class="hero-inner">
-          <div class="logo-wrapper">
-            <div class="logo-ring ring-1"></div>
-            <div class="logo-ring ring-2"></div>
-            <img src="/logo.png" alt="萌牛测颜" class="main-logo" />
-          </div>
-          <h1 class="app-title">萌牛测颜</h1>
-          <p class="app-subtitle">上传照片，发现你的独特魅力</p>
-        </div>
-      </section>
-
-      <section class="content-section">
-        <div class="mode-tabs">
-          <button class="mode-tab active" data-mode="score" id="mode-score">
-            <span class="tab-icon">💖</span>
-            <span class="tab-label">颜值评分</span>
-          </button>
-          <button class="mode-tab" data-mode="fortune" id="mode-fortune">
-            <span class="tab-icon">✨</span>
-            <span class="tab-label">气质解读</span>
-          </button>
-          <button class="mode-tab" data-mode="couple" id="mode-couple">
-            <span class="tab-icon">💕</span>
-            <span class="tab-label">CP契合度</span>
-          </button>
-        </div>
-
-        <div class="upload-area-wrapper">
-          <div class="upload-card" id="uploadCard">
-            <input type="file" id="fileInput" accept="image/*" />
-            <label for="fileInput" class="upload-zone" id="uploadZone">
-              <div class="upload-icon-box">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                </svg>
-              </div>
-              <span class="upload-hint-text" id="uploadHint">点击选择照片</span>
-              <span class="upload-detail">支持 JPG、PNG 格式</span>
-              <img id="preview" class="preview-image" alt="预览" />
-            </label>
-          </div>
-
-          <div class="upload-card couple-card" id="uploadCardB" style="display: none;">
-            <input type="file" id="fileInputB" accept="image/*" />
-            <label for="fileInputB" class="upload-zone" id="uploadZoneB">
-              <div class="upload-icon-box">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                </svg>
-              </div>
-              <span class="upload-hint-text" id="uploadHintB">点击选择第二张照片</span>
-              <span class="upload-detail">TA 的照片</span>
-              <img id="previewB" class="preview-image" alt="预览" />
-            </label>
-          </div>
-        </div>
-
-        <div class="captcha-section" id="captchaSection">
-          <div id="turnstile-widget"></div>
-        </div>
-
-        <button id="submitBtn" class="action-button">
-          <span class="btn-text">开始颜值评分</span>
-          <span class="btn-icon">→</span>
+    <main class="main">
+      <div class="tabs">
+        <button class="tab active" data-mode="score" id="mode-score">
+          <span class="tab-emoji">💖</span>
+          <span class="tab-text">颜值评分</span>
         </button>
+        <button class="tab" data-mode="fortune" id="mode-fortune">
+          <span class="tab-emoji">✨</span>
+          <span class="tab-text">气质解读</span>
+        </button>
+        <button class="tab" data-mode="couple" id="mode-couple">
+          <span class="tab-emoji">💕</span>
+          <span class="tab-text">CP契合度</span>
+        </button>
+      </div>
 
-        <div id="resultCard" class="result-card"></div>
-
-        <div class="account-section" id="accountSection">
-          <button id="imagesBtn" class="account-btn" style="display: none;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <div class="upload-wrapper">
+        <label class="upload-box" for="fileInput" id="uploadZone">
+          <input type="file" id="fileInput" accept="image/*" />
+          <div class="upload-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
             </svg>
-            <span>浏览颜值照片</span>
-          </button>
-          <button id="logoutBtn" class="account-btn" onclick="handleLogout()" style="display: none;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-            </svg>
-            <span>退出登录</span>
-          </button>
-        </div>
-      </section>
+          </div>
+          <div class="upload-text">
+            <span class="upload-hint" id="uploadHint">点击选择照片</span>
+            <span class="upload-desc">支持 JPG、PNG 格式</span>
+          </div>
+          <img id="preview" class="preview" alt="预览" />
+        </label>
 
-      <footer class="app-footer">
-        <p>萌牛测颜 · 仅供娱乐</p>
-      </footer>
-    </div>
+        <label class="upload-box" for="fileInputB" id="uploadZoneB" style="display: none;">
+          <input type="file" id="fileInputB" accept="image/*" />
+          <div class="upload-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+          <div class="upload-text">
+            <span class="upload-hint" id="uploadHintB">点击选择第二张照片</span>
+            <span class="upload-desc">TA 的照片</span>
+          </div>
+          <img id="previewB" class="preview" alt="预览" />
+        </label>
+      </div>
+
+      <div class="captcha" id="captchaSection">
+        <div id="turnstile-widget"></div>
+      </div>
+
+      <button id="submitBtn" class="btn">
+        <span class="btn-text">开始颜值评分</span>
+        <span class="btn-arrow">→</span>
+      </button>
+
+      <div id="resultCard" class="result"></div>
+
+      <div class="account" id="accountSection">
+        <button id="imagesBtn" class="account-btn" style="display: none;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+          <span>浏览颜值照片</span>
+        </button>
+        <button id="logoutBtn" class="account-btn" onclick="handleLogout()" style="display: none;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+          </svg>
+          <span>退出登录</span>
+        </button>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <p>萌牛测颜 · 仅供娱乐</p>
+    </footer>
 
     <canvas id="shareCanvas" style="display: none;"></canvas>
   </div>
@@ -165,26 +152,26 @@
       if (currentMode === mode) return;
       currentMode = mode;
 
-      document.querySelectorAll('.mode-tab').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
       document.getElementById(`mode-${mode}`).classList.add('active');
 
       const btn = document.getElementById('submitBtn');
       const btnText = btn.querySelector('.btn-text');
       const uploadHint = document.getElementById('uploadHint');
-      const uploadCardB = document.getElementById('uploadCardB');
+      const uploadZoneB = document.getElementById('uploadZoneB');
 
       if (mode === 'score') {
         btnText.innerText = '开始颜值评分';
         uploadHint.innerText = '点击选择照片';
-        uploadCardB.style.display = 'none';
+        uploadZoneB.style.display = 'none';
       } else if (mode === 'fortune') {
         btnText.innerText = '生成气质分析';
         uploadHint.innerText = '上传照片，测测你的气质';
-        uploadCardB.style.display = 'none';
+        uploadZoneB.style.display = 'none';
       } else {
         btnText.innerText = '开始CP契合度测试';
         uploadHint.innerText = '点击选择第一张照片';
-        uploadCardB.style.display = 'block';
+        uploadZoneB.style.display = 'block';
       }
 
       const resultCard = document.getElementById('resultCard');
@@ -192,7 +179,7 @@
       resultCard.innerHTML = '';
     }
 
-    document.querySelectorAll('.mode-tab').forEach(tab => {
+    document.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', () => switchMode(tab.dataset.mode));
     });
 
@@ -267,7 +254,7 @@
     }
 
     let clickCount = 0;
-    const titleElement = document.querySelector('.app-title');
+    const titleElement = document.querySelector('.title');
 
     if (titleElement) {
       titleElement.addEventListener('click', async () => {
@@ -303,7 +290,7 @@
           return;
         }
 
-        resultCard.innerHTML = '<div class="loading-overlay"><div class="loading-ring"></div><div class="loading-text">正在分析两人的契合度...</div></div>';
+        resultCard.innerHTML = '<div class="loading"><div class="loader"></div><div class="loading-text">正在分析两人的契合度...</div></div>';
         resultCard.style.display = 'block';
 
         try {
@@ -324,7 +311,7 @@
           if (turnstileEnabled && typeof turnstile !== 'undefined' && typeof turnstile.getResponse === 'function') {
             token = turnstile.getResponse();
             if (!token) {
-              resultCard.innerHTML = '<div class="error-box">验证失败，请完成验证码喵～</div>';
+              resultCard.innerHTML = '<div class="error">验证失败，请完成验证码喵～</div>';
               return;
             }
           }
@@ -370,7 +357,7 @@
       const reader = new FileReader();
       reader.onload = async function () {
         const base64 = reader.result.split(",")[1];
-        resultCard.innerHTML = '<div class="loading-overlay"><div class="loading-ring"></div><div class="loading-text">' +
+        resultCard.innerHTML = '<div class="loading"><div class="loader"></div><div class="loading-text">' +
           (currentMode === 'score' ? '正在分析五官特征...' : '美学分析师正在解读气质...') + '</div></div>';
         resultCard.style.display = 'block';
 
@@ -379,7 +366,7 @@
           if (turnstileEnabled && typeof turnstile !== 'undefined' && typeof turnstile.getResponse === 'function') {
             token = turnstile.getResponse();
             if (!token) {
-              resultCard.innerHTML = '<div class="error-box">验证失败，请完成验证码喵～</div>';
+              resultCard.innerHTML = '<div class="error">验证失败，请完成验证码喵～</div>';
               return;
             }
           }

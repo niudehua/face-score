@@ -101,7 +101,7 @@ async function loadImages(page = 1, isAppend = false) {
     empty.style.display = 'none';
     loadMoreTrigger.style.display = 'none';
   } else {
-    loadMoreStatus.style.display = 'flex';
+    loadMoreStatus.style.display = 'block';
   }
 
   try {
@@ -155,8 +155,8 @@ function renderImages(images) {
     card.innerHTML = `
       <div class="image-wrapper">
         <img src="${img.image_url}" loading="lazy">
-        <div class="selection-overlay"></div>
       </div>
+      <div class="selection-overlay"></div>
     `;
 
     card.addEventListener('click', () => handleCardClick(img));
@@ -204,12 +204,6 @@ function toggleManageMode() {
 function updateSelectionUI() {
   selectionCountDisplay.textContent = `已选择 ${selectedImages.size} 张`;
   deleteBtn.disabled = selectedImages.size === 0;
-
-  if (selectedImages.size > 0) {
-    deleteBtn.style.opacity = '1';
-  } else {
-    deleteBtn.style.opacity = '0.5';
-  }
 }
 
 async function handleDelete() {

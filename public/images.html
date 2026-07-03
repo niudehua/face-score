@@ -6,9 +6,6 @@
   <link rel="icon" href="/logo.png" type="image/png">
   <title>颜值档案 - 萌牛测颜</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
 </head>
 
@@ -22,12 +19,10 @@
           </svg>
         </a>
       </div>
-
       <div class="header-center">
         <h1 class="images-title">颜值档案</h1>
         <span id="total-count" class="images-count">加载中...</span>
       </div>
-
       <div class="header-right">
         <button id="manage-btn" class="manage-btn">管理</button>
       </div>
@@ -42,13 +37,13 @@
       </div>
 
       <div id="empty" class="state-container" style="display: none;">
-        <div style="font-size: 3.5rem; margin-bottom: 1rem; opacity: 0.4;">📷</div>
+        <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">📷</div>
         <p>暂无照片</p>
         <a href="/" class="empty-action">去上传一张</a>
       </div>
 
-      <div id="load-more-status" class="state-container compact" style="display: none;">
-        <div class="spinner small"></div>
+      <div id="load-more-status" class="state-container" style="display: none;">
+        <div class="spinner"></div>
       </div>
 
       <div id="load-more-trigger"></div>
@@ -58,7 +53,7 @@
       <div class="bar-content">
         <span id="selection-count">已选择 0 张</span>
         <button id="delete-btn" class="action-btn delete-btn" disabled>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"
               stroke-linecap="round" stroke-linejoin="round" />
           </svg>
@@ -72,7 +67,7 @@
     <div class="preview-backdrop" onclick="closePreview()"></div>
     <div class="preview-content">
       <button class="preview-close" onclick="closePreview()">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </button>
