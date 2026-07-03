@@ -14,83 +14,117 @@
 </head>
 
 <body>
-  <div class="container">
-    <header class="home-header">
-      <div class="home-logo">
-        <img src="/logo.png" alt="Logo">
-      </div>
-      <h1 class="home-title">萌牛测颜</h1>
-      <p class="home-subtitle">上传一张照片，获取您的颜值分数与气质分析报告</p>
-    </header>
-
-    <div class="mode-selector">
-      <div class="mode-item active" onclick="switchMode('score')" id="mode-score">
-        <span class="mode-icon">💖</span>
-        <span>颜值评分</span>
-      </div>
-      <div class="mode-item" onclick="switchMode('fortune')" id="mode-fortune">
-        <span class="mode-icon">✨</span>
-        <span>气质解读</span>
-      </div>
-      <div class="mode-item" onclick="switchMode('couple')" id="mode-couple">
-        <span class="mode-icon">💕</span>
-        <span>CP契合度</span>
-      </div>
+  <div class="app-container">
+    <div class="bg-decoration">
+      <div class="bg-blob blob-1"></div>
+      <div class="bg-blob blob-2"></div>
+      <div class="bg-blob blob-3"></div>
+      <div class="bg-blob blob-4"></div>
     </div>
 
-    <div class="file-upload-wrapper" id="uploadWrapper">
-      <input type="file" id="fileInput" accept="image/*" />
-      <label for="fileInput" class="file-upload-label" id="uploadLabel">
-        <div class="upload-placeholder">
-          <svg class="file-upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
-            </path>
-          </svg>
-          <span class="file-upload-text" id="uploadText">点击选择照片</span>
+    <div class="main-wrapper">
+      <section class="hero-section">
+        <div class="hero-inner">
+          <div class="logo-wrapper">
+            <div class="logo-ring ring-1"></div>
+            <div class="logo-ring ring-2"></div>
+            <img src="/logo.png" alt="萌牛测颜" class="main-logo" />
+          </div>
+          <h1 class="app-title">萌牛测颜</h1>
+          <p class="app-subtitle">上传照片，发现你的独特魅力</p>
         </div>
-        <img id="preview" class="upload-preview" alt="Preview" />
-      </label>
-    </div>
+      </section>
 
-    <div class="file-upload-wrapper couple-upload" id="uploadWrapperB" style="display: none;">
-      <input type="file" id="fileInputB" accept="image/*" />
-      <label for="fileInputB" class="file-upload-label" id="uploadLabelB">
-        <div class="upload-placeholder">
-          <svg class="file-upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
-            </path>
-          </svg>
-          <span class="file-upload-text" id="uploadTextB">点击选择第二张照片</span>
+      <section class="content-section">
+        <div class="mode-tabs">
+          <button class="mode-tab active" data-mode="score" id="mode-score">
+            <span class="tab-icon">💖</span>
+            <span class="tab-label">颜值评分</span>
+          </button>
+          <button class="mode-tab" data-mode="fortune" id="mode-fortune">
+            <span class="tab-icon">✨</span>
+            <span class="tab-label">气质解读</span>
+          </button>
+          <button class="mode-tab" data-mode="couple" id="mode-couple">
+            <span class="tab-icon">💕</span>
+            <span class="tab-label">CP契合度</span>
+          </button>
         </div>
-        <img id="previewB" class="upload-preview" alt="Preview B" />
-      </label>
+
+        <div class="upload-area-wrapper">
+          <div class="upload-card" id="uploadCard">
+            <input type="file" id="fileInput" accept="image/*" />
+            <label for="fileInput" class="upload-zone" id="uploadZone">
+              <div class="upload-icon-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+              </div>
+              <span class="upload-hint-text" id="uploadHint">点击选择照片</span>
+              <span class="upload-detail">支持 JPG、PNG 格式</span>
+              <img id="preview" class="preview-image" alt="预览" />
+            </label>
+          </div>
+
+          <div class="upload-card couple-card" id="uploadCardB" style="display: none;">
+            <input type="file" id="fileInputB" accept="image/*" />
+            <label for="fileInputB" class="upload-zone" id="uploadZoneB">
+              <div class="upload-icon-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+              </div>
+              <span class="upload-hint-text" id="uploadHintB">点击选择第二张照片</span>
+              <span class="upload-detail">TA 的照片</span>
+              <img id="previewB" class="preview-image" alt="预览" />
+            </label>
+          </div>
+        </div>
+
+        <div class="captcha-section" id="captchaSection">
+          <div id="turnstile-widget"></div>
+        </div>
+
+        <button id="submitBtn" class="action-button">
+          <span class="btn-text">开始颜值评分</span>
+          <span class="btn-icon">→</span>
+        </button>
+
+        <div id="resultCard" class="result-card"></div>
+
+        <div class="account-section" id="accountSection">
+          <button id="imagesBtn" class="account-btn" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            <span>浏览颜值照片</span>
+          </button>
+          <button id="logoutBtn" class="account-btn" onclick="handleLogout()" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+            </svg>
+            <span>退出登录</span>
+          </button>
+        </div>
+      </section>
+
+      <footer class="app-footer">
+        <p>萌牛测颜 · 仅供娱乐</p>
+      </footer>
     </div>
 
-    <div class="turnstile-container">
-      <div id="turnstile-widget" data-theme="light"></div>
-    </div>
-
-    <button id="submitBtn" class="btn-primary">生成分析报告</button>
-
-    <div id="result"></div>
-
-    <button id="imagesBtn" class="secondary-btn" style="display: none;">浏览所有颜值照片</button>
-    <button id="logoutBtn" class="secondary-btn" onclick="handleLogout()" style="display: none;">退出登录</button>
+    <canvas id="shareCanvas" style="display: none;"></canvas>
   </div>
 
   <script>
     document.getElementById("fileInput").onchange = function () {
       const fileInput = this;
       const previewImg = document.getElementById("preview");
-      const uploadLabel = document.getElementById("uploadLabel");
+      const uploadZone = document.getElementById("uploadZone");
 
       if (!fileInput.files.length) {
         previewImg.classList.remove("show");
-        uploadLabel.classList.remove("has-image");
+        uploadZone.classList.remove("has-image");
         return;
       }
 
@@ -99,7 +133,7 @@
       reader.onload = function () {
         previewImg.src = reader.result;
         previewImg.classList.add("show");
-        uploadLabel.classList.add("has-image");
+        uploadZone.classList.add("has-image");
       };
       reader.readAsDataURL(file);
     };
@@ -107,11 +141,11 @@
     document.getElementById("fileInputB").onchange = function () {
       const fileInput = this;
       const previewImg = document.getElementById("previewB");
-      const uploadLabel = document.getElementById("uploadLabelB");
+      const uploadZone = document.getElementById("uploadZoneB");
 
       if (!fileInput.files.length) {
         previewImg.classList.remove("show");
-        uploadLabel.classList.remove("has-image");
+        uploadZone.classList.remove("has-image");
         return;
       }
 
@@ -120,49 +154,52 @@
       reader.onload = function () {
         previewImg.src = reader.result;
         previewImg.classList.add("show");
-        uploadLabel.classList.add("has-image");
+        uploadZone.classList.add("has-image");
       };
       reader.readAsDataURL(file);
     };
 
     let currentMode = 'score';
-    let imageBase64A = '';
-    let imageBase64B = '';
 
     function switchMode(mode) {
       if (currentMode === mode) return;
       currentMode = mode;
 
-      document.querySelectorAll('.mode-item').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.mode-tab').forEach(el => el.classList.remove('active'));
       document.getElementById(`mode-${mode}`).classList.add('active');
 
       const btn = document.getElementById('submitBtn');
-      const uploadText = document.getElementById('uploadText');
-      const uploadWrapperB = document.getElementById('uploadWrapperB');
+      const btnText = btn.querySelector('.btn-text');
+      const uploadHint = document.getElementById('uploadHint');
+      const uploadCardB = document.getElementById('uploadCardB');
 
       if (mode === 'score') {
-        btn.innerText = '开始颜值评分';
-        uploadText.innerText = '点击选择照片';
-        uploadWrapperB.style.display = 'none';
+        btnText.innerText = '开始颜值评分';
+        uploadHint.innerText = '点击选择照片';
+        uploadCardB.style.display = 'none';
       } else if (mode === 'fortune') {
-        btn.innerText = '生成气质分析';
-        uploadText.innerText = '上传照片，测测你的气质';
-        uploadWrapperB.style.display = 'none';
+        btnText.innerText = '生成气质分析';
+        uploadHint.innerText = '上传照片，测测你的气质';
+        uploadCardB.style.display = 'none';
       } else {
-        btn.innerText = '开始CP契合度测试';
-        uploadText.innerText = '点击选择第一张照片';
-        uploadWrapperB.style.display = 'block';
+        btnText.innerText = '开始CP契合度测试';
+        uploadHint.innerText = '点击选择第一张照片';
+        uploadCardB.style.display = 'block';
       }
 
-      const resultDiv = document.getElementById('result');
-      resultDiv.style.display = 'none';
-      resultDiv.innerHTML = '';
+      const resultCard = document.getElementById('resultCard');
+      resultCard.style.display = 'none';
+      resultCard.innerHTML = '';
     }
+
+    document.querySelectorAll('.mode-tab').forEach(tab => {
+      tab.addEventListener('click', () => switchMode(tab.dataset.mode));
+    });
 
     let turnstileEnabled = false;
 
     async function initTurnstile() {
-      const widgetContainer = document.querySelector('.turnstile-container');
+      const container = document.getElementById('captchaSection');
       try {
         const res = await fetch('/api/turnstile');
         const data = await res.json();
@@ -175,13 +212,11 @@
           });
         } else {
           turnstileEnabled = false;
-          console.warn('Turnstile site key not configured, skip captcha');
-          if (widgetContainer) widgetContainer.style.display = 'none';
+          if (container) container.style.display = 'none';
         }
       } catch (error) {
         turnstileEnabled = false;
-        console.error('Failed to initialize Turnstile, skip captcha:', error);
-        if (widgetContainer) widgetContainer.style.display = 'none';
+        if (container) container.style.display = 'none';
       }
     }
 
@@ -204,14 +239,13 @@
           const imagesBtn = document.getElementById('imagesBtn');
 
           if (data.success) {
-            logoutBtn.style.display = 'block';
-            imagesBtn.style.display = 'block';
+            logoutBtn.style.display = 'flex';
+            imagesBtn.style.display = 'flex';
           } else {
             logoutBtn.style.display = 'none';
             imagesBtn.style.display = 'none';
           }
         } catch (error) {
-          console.error('检查登录状态失败:', error);
           document.getElementById('logoutBtn').style.display = 'none';
           document.getElementById('imagesBtn').style.display = 'none';
         }
@@ -228,13 +262,12 @@
         });
         window.location.reload();
       } catch (error) {
-        console.error('登出失败:', error);
         alert('登出失败，请稍后重试');
       }
     }
 
     let clickCount = 0;
-    const titleElement = document.querySelector('.home-title');
+    const titleElement = document.querySelector('.app-title');
 
     if (titleElement) {
       titleElement.addEventListener('click', async () => {
@@ -251,7 +284,6 @@
               window.location.href = '/api/auth/github';
             }
           } catch (error) {
-            console.error('检查登录状态失败:', error);
             window.location.href = '/api/auth/github';
           }
 
@@ -263,7 +295,7 @@
     document.getElementById("submitBtn").onclick = async function () {
       const fileInput = document.getElementById("fileInput");
       const fileInputB = document.getElementById("fileInputB");
-      const resultDiv = document.getElementById("result");
+      const resultCard = document.getElementById("resultCard");
 
       if (currentMode === 'couple') {
         if (!fileInput.files.length || !fileInputB.files.length) {
@@ -271,8 +303,8 @@
           return;
         }
 
-        resultDiv.innerHTML = '<div class="loading-spinner"></div><div class="loading-text">正在分析两人的契合度...</div>';
-        resultDiv.style.display = 'block';
+        resultCard.innerHTML = '<div class="loading-overlay"><div class="loading-ring"></div><div class="loading-text">正在分析两人的契合度...</div></div>';
+        resultCard.style.display = 'block';
 
         try {
           const readerA = new FileReader();
@@ -292,7 +324,7 @@
           if (turnstileEnabled && typeof turnstile !== 'undefined' && typeof turnstile.getResponse === 'function') {
             token = turnstile.getResponse();
             if (!token) {
-              resultDiv.innerHTML = '<div style="text-align: center; padding: 20px;">验证失败，请完成验证码喵～</div>';
+              resultCard.innerHTML = '<div class="error-box">验证失败，请完成验证码喵～</div>';
               return;
             }
           }
@@ -316,12 +348,12 @@
             if (data.highlights) msg += `匹配亮点：${data.highlights}\n\n`;
             if (data.notes) msg += `需要注意：${data.notes}\n\n`;
             if (data.tags) msg += `标签：${data.tags}`;
-            resultDiv.innerText = msg;
+            resultCard.innerText = msg;
           } else {
-            resultDiv.innerText = "分析失败，请重试。";
+            resultCard.innerText = "分析失败，请重试。";
           }
         } catch (e) {
-          resultDiv.innerText = "网络信号溜去捉迷藏啦，请检查网络后再试一次喵～";
+          resultCard.innerText = "网络信号溜去捉迷藏啦，请检查网络后再试一次喵～";
         } finally {
           if (turnstileEnabled && typeof turnstile !== 'undefined' && typeof turnstile.reset === 'function') {
             turnstile.reset('#turnstile-widget');
@@ -338,16 +370,16 @@
       const reader = new FileReader();
       reader.onload = async function () {
         const base64 = reader.result.split(",")[1];
-        resultDiv.innerHTML = '<div class="loading-spinner"></div><div class="loading-text">' + 
-          (currentMode === 'score' ? '正在分析五官特征...' : '美学分析师正在解读气质...') + '</div>';
-        resultDiv.style.display = 'block';
+        resultCard.innerHTML = '<div class="loading-overlay"><div class="loading-ring"></div><div class="loading-text">' +
+          (currentMode === 'score' ? '正在分析五官特征...' : '美学分析师正在解读气质...') + '</div></div>';
+        resultCard.style.display = 'block';
 
         try {
           let token = null;
           if (turnstileEnabled && typeof turnstile !== 'undefined' && typeof turnstile.getResponse === 'function') {
             token = turnstile.getResponse();
             if (!token) {
-              resultDiv.innerHTML = '<div style="text-align: center; padding: 20px;">验证失败，请完成验证码喵～</div>';
+              resultCard.innerHTML = '<div class="error-box">验证失败，请完成验证码喵～</div>';
               return;
             }
           }
@@ -365,9 +397,7 @@
           if (!res.ok) throw new Error("接口请求失败");
           const data = await res.json();
 
-
           if ((data.score !== undefined && data.score !== null) || data.type === 'fortune') {
-
             if (currentMode === 'score') {
               if (data.score !== undefined) {
                 const score = Number(data.score.toFixed(1));
@@ -383,26 +413,24 @@
                   else if (score < 80) msg += "🌟 超棒！你走在街上绝对是回头率超高的小猫猫！";
                   else msg += "🔥 绝绝子！你的颜值突破天际，令人惊艳！";
                 }
-                resultDiv.innerText = msg;
+                resultCard.innerText = msg;
               } else {
-                resultDiv.innerText = "评分数据缺失，请重试。";
+                resultCard.innerText = "评分数据缺失，请重试。";
               }
-
             } else {
               if (data.title && data.comment) {
-                resultDiv.innerHTML = `<strong>${data.title}</strong>\n\n${data.comment}`;
+                resultCard.innerHTML = `<strong>${data.title}</strong>\n\n${data.comment}`;
               } else if (data.comment) {
-                resultDiv.innerText = data.comment;
+                resultCard.innerText = data.comment;
               } else {
-                resultDiv.innerText = "分析完成，但未生成解读内容。";
+                resultCard.innerText = "分析完成，但未生成解读内容。";
               }
             }
           } else {
-            resultDiv.innerText = "检测失败，喵呜～换张更清晰的照片试试吧？";
+            resultCard.innerText = "检测失败，喵呜～换张更清晰的照片试试吧？";
           }
         } catch (e) {
-          resultDiv.innerText = "网络信号溜去捉迷藏啦，请检查网络后再试一次喵～";
-          console.error("评分请求错误:", e);
+          resultCard.innerText = "网络信号溜去捉迷藏啦，请检查网络后再试一次喵～";
         } finally {
           if (turnstileEnabled && typeof turnstile !== 'undefined' && typeof turnstile.reset === 'function') {
             turnstile.reset('#turnstile-widget');

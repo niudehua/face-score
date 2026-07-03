@@ -13,8 +13,8 @@
 </head>
 
 <body class="images-page">
-  <div class="app-layout">
-    <header class="app-header">
+  <div class="images-container">
+    <header class="images-header">
       <div class="header-left">
         <a href="/" class="nav-btn">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -24,38 +24,40 @@
       </div>
 
       <div class="header-center">
-        <h1 class="app-title">颜值档案</h1>
-        <span id="total-count" class="subtitle-count">加载中...</span>
+        <h1 class="images-title">颜值档案</h1>
+        <span id="total-count" class="images-count">加载中...</span>
       </div>
 
       <div class="header-right">
-        <button id="manage-btn" class="text-btn">管理</button>
+        <button id="manage-btn" class="manage-btn">管理</button>
       </div>
     </header>
 
-    <main id="image-grid" class="image-grid minimalist-grid">
+    <main class="images-content">
+      <div id="image-grid" class="images-grid"></div>
+
+      <div id="loading" class="state-container">
+        <div class="spinner"></div>
+        <p>正在加载照片...</p>
+      </div>
+
+      <div id="empty" class="state-container" style="display: none;">
+        <div style="font-size: 3.5rem; margin-bottom: 1rem; opacity: 0.4;">📷</div>
+        <p>暂无照片</p>
+        <a href="/" class="empty-action">去上传一张</a>
+      </div>
+
+      <div id="load-more-status" class="state-container compact" style="display: none;">
+        <div class="spinner small"></div>
+      </div>
+
+      <div id="load-more-trigger"></div>
     </main>
-
-    <div id="loading" class="state-container">
-      <div class="spinner"></div>
-      <p>正在加载照片...</p>
-    </div>
-
-    <div id="empty" class="state-container" style="display: none;">
-      <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">📷</div>
-      <p>暂无照片</p>
-    </div>
-
-    <div id="load-more-status" class="state-container compact" style="display: none;">
-      <div class="spinner small"></div>
-    </div>
-
-    <div id="load-more-trigger"></div>
 
     <div id="bottom-bar" class="bottom-action-bar">
       <div class="bar-content">
         <span id="selection-count">已选择 0 张</span>
-        <button id="delete-btn" class="action-btn delete" disabled>
+        <button id="delete-btn" class="action-btn delete-btn" disabled>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"
               stroke-linecap="round" stroke-linejoin="round" />
@@ -64,7 +66,23 @@
         </button>
       </div>
     </div>
+  </div>
 
+  <div id="preview-modal" class="preview-modal" style="display: none;">
+    <div class="preview-backdrop" onclick="closePreview()"></div>
+    <div class="preview-content">
+      <button class="preview-close" onclick="closePreview()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
+      <img id="preview-image" src="" alt="Preview" class="preview-img" />
+      <div class="preview-info">
+        <div class="preview-score">0.0</div>
+        <div class="preview-date">时间</div>
+        <p id="preview-comment" class="preview-comment"></p>
+      </div>
+    </div>
   </div>
 
   <script src="/images.js"></script>

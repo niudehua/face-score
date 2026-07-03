@@ -1,15 +1,11 @@
-// images.js - Minimalist Version
-
-// State
 let currentPage = 1;
-let limit = 30; // Higher density
+let limit = 30;
 let hasMore = true;
 let isLoading = false;
 let deleteMode = false;
 let selectedImages = new Set();
 let totalCount = 0;
 
-// DOM Elements
 const imageGrid = document.getElementById('image-grid');
 const loading = document.getElementById('loading');
 const empty = document.getElementById('empty');
@@ -21,9 +17,13 @@ const bottomBar = document.getElementById('bottom-bar');
 const selectionCountDisplay = document.getElementById('selection-count');
 const deleteBtn = document.getElementById('delete-btn');
 
-// Init
+const previewModal = document.getElementById('preview-modal');
+const previewImage = document.getElementById('preview-image');
+const previewScore = document.querySelector('.preview-score');
+const previewDate = document.querySelector('.preview-date');
+const previewComment = document.getElementById('preview-comment');
+
 document.addEventListener('DOMContentLoaded', async () => {
-  // Auth Check
   const isLoggedIn = await verifyLogin();
   if (!isLoggedIn) return;
 
@@ -32,29 +32,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadImages();
 });
 
-// Event Listeners
 function initEventListeners() {
   manageBtn.addEventListener('click', toggleManageMode);
   deleteBtn.addEventListener('click', handleDelete);
 }
 
-// Auth
 async function verifyLogin() {
-  // Check for redirect loop
   const MAX_RETRIES = 3;
-  const WINDOW_MS = 30000; // 30 seconds
+  const WINDOW_MS = 30000;
 
   const now = Date.now();
   let authState = JSON.parse(sessionStorage.getItem('auth_state') || '{"count": 0, "start": 0}');
 
-  // Reset window if expired
   if (now - authState.start > WINDOW_MS) {
     authState = { count: 0, start: now };
   }
 
   if (authState.count >= MAX_RETRIES) {
     console.error('Too many auth redirects detected, stopping loop.');
-    // Show error UI instead of redirecting
     document.body.innerHTML = `
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#333;padding:20px;text-align:center;">
         <h2 style="margin-bottom:10px;">认证重试次数过多</h2>
@@ -71,18 +66,15 @@ async function verifyLogin() {
 
     if (res.status === 429) {
       console.warn('Auth check rate limited');
-      // Don't count as a failed auth attempt that triggers redirect, just wait
       return false;
     }
 
     const data = await res.json();
     if (data.success) {
-      // Login successful, clear counter
       sessionStorage.removeItem('auth_state');
       return true;
     }
 
-    // Auth failed
     authState.count++;
     sessionStorage.setItem('auth_state', JSON.stringify(authState));
 
@@ -90,7 +82,6 @@ async function verifyLogin() {
     return false;
   } catch (e) {
     console.error('Auth verification error:', e);
-    // Network error or other issue
     authState.count++;
     sessionStorage.setItem('auth_state', JSON.stringify(authState));
 
@@ -99,14 +90,12 @@ async function verifyLogin() {
   }
 }
 
-// Data Loading
 async function loadImages(page = 1, isAppend = false) {
   if (isLoading) return;
   if (isAppend && !hasMore) return;
 
   isLoading = true;
   if (!isAppend) {
-    // Reset
     imageGrid.innerHTML = '';
     loading.style.display = 'block';
     empty.style.display = 'none';
@@ -116,7 +105,6 @@ async function loadImages(page = 1, isAppend = false) {
   }
 
   try {
-    // Simplified URL (Sort by timestamp desc default)
     const res = await fetch(`/api/images?page=${page}&limit=${limit}&sort_by=timestamp&order=desc`, {
       credentials: 'include'
     });
@@ -124,8 +112,7 @@ async function loadImages(page = 1, isAppend = false) {
 
     if (data.data) {
       totalCount = data.pagination.total;
-      // Update counts
-      totalCountDisplay.textContent = `${totalCount} 张照片`; // Simple count display
+      totalCountDisplay.textContent = `${totalCount} 张照片`;
 
       if (data.data.length === 0 && !isAppend) {
         loading.style.display = 'none';
@@ -133,7 +120,6 @@ async function loadImages(page = 1, isAppend = false) {
       } else {
         renderImages(data.data);
 
-        // Pagination Logic
         if (data.data.length < limit) {
           hasMore = false;
           loadMoreTrigger.style.display = 'none';
@@ -155,7 +141,6 @@ async function loadImages(page = 1, isAppend = false) {
   }
 }
 
-// Rendering
 function renderImages(images) {
   const fragment = document.createDocumentFragment();
 
@@ -168,11 +153,11 @@ function renderImages(images) {
     card.dataset.id = img.id;
 
     card.innerHTML = `
-            <div class="image-wrapper">
-                <img src="${img.image_url}" loading="lazy">
-                <div class="selection-overlay"></div>
-            </div>
-        `;
+      <div class="image-wrapper">
+        <img src="${img.image_url}" loading="lazy">
+        <div class="selection-overlay"></div>
+      </div>
+    `;
 
     card.addEventListener('click', () => handleCardClick(img));
     fragment.appendChild(card);
@@ -181,10 +166,8 @@ function renderImages(images) {
   imageGrid.appendChild(fragment);
 }
 
-// Interaction
 function handleCardClick(img) {
   if (deleteMode) {
-    // Selection Logic
     const card = document.querySelector(`.image-card[data-id="${img.id}"]`);
     if (selectedImages.has(img.id)) {
       selectedImages.delete(img.id);
@@ -195,12 +178,10 @@ function handleCardClick(img) {
     }
     updateSelectionUI();
   } else {
-    // Preview Logic (Simplified Modal)
     showPreview(img);
   }
 }
 
-// Manage Mode
 function toggleManageMode() {
   deleteMode = !deleteMode;
 
@@ -224,7 +205,6 @@ function updateSelectionUI() {
   selectionCountDisplay.textContent = `已选择 ${selectedImages.size} 张`;
   deleteBtn.disabled = selectedImages.size === 0;
 
-  // Update button text style based on state
   if (selectedImages.size > 0) {
     deleteBtn.style.opacity = '1';
   } else {
@@ -232,7 +212,6 @@ function updateSelectionUI() {
   }
 }
 
-// Delete Logic
 async function handleDelete() {
   if (selectedImages.size === 0) return;
 
@@ -252,16 +231,13 @@ async function handleDelete() {
     const data = await res.json();
 
     if (data.success) {
-      // Remove from UI immediately for snapiness
       selectedImages.forEach(id => {
         const card = document.querySelector(`.image-card[data-id="${id}"]`);
         if (card) card.remove();
       });
 
-      toggleManageMode(); // Exit mode
+      toggleManageMode();
 
-      // Reload to sync (optional, or just update count)
-      // loadImages(1); 
       totalCount -= count;
       totalCountDisplay.textContent = `${totalCount} 张照片`;
 
@@ -269,7 +245,7 @@ async function handleDelete() {
         empty.style.display = 'block';
       }
 
-      alert(`成功删除 ${count} 张照片`); // Use simple alert or toast
+      alert(`成功删除 ${count} 张照片`);
     } else {
       alert('删除失败: ' + data.error);
     }
@@ -281,31 +257,20 @@ async function handleDelete() {
   }
 }
 
-// Preview (Reusing the modal style but injecting dynamically)
 function showPreview(img) {
-  const modal = document.createElement('div');
-  modal.style.cssText = `
-        position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000;
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        animation: fadeIn 0.2s ease;
-    `;
-
-  modal.innerHTML = `
-        <img src="${img.image_url}" style="max-width:100%; max-height:80vh; object-fit:contain;">
-        <div style="margin-top: 20px; color: white; text-align: center;">
-            <div style="font-size: 24px; font-weight: bold; color: #ff6b81;">${img.score.toFixed(1)}</div>
-            <div style="font-size: 14px; opacity: 0.8; margin-top: 5px;">${new Date(img.timestamp).toLocaleString()}</div>
-            <p style="margin-top: 15px; max-width: 80%; line-height: 1.5; font-size: 15px;">${img.comment || ''}</p>
-        </div>
-        <button style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.2); 
-            border: none; color: white; width: 32px; height: 32px; border-radius: 50%; font-size: 18px;">✕</button>
-    `;
-
-  modal.onclick = () => modal.remove();
-  document.body.appendChild(modal);
+  previewImage.src = img.image_url;
+  previewScore.textContent = img.score ? img.score.toFixed(1) : '0.0';
+  previewDate.textContent = new Date(img.timestamp).toLocaleString();
+  previewComment.textContent = img.comment || '';
+  previewModal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
 }
 
-// Infinite Scroll
+window.closePreview = function() {
+  previewModal.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
 function initInfiniteScroll() {
   const observer = new IntersectionObserver((entries) => {
     if (entries[0].isIntersecting && hasMore && !isLoading) {
