@@ -1559,12 +1559,12 @@ input[type="file"] {
   font-family: inherit;
 }
 
-.action-btn.delete {
+.action-btn.delete-btn {
   background: #fff5f5;
   color: #e03131;
 }
 
-.action-btn.delete:hover {
+.action-btn.delete-btn:hover {
   background: #ffe0e0;
   transform: translateY(-1px);
 }
