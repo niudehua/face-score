@@ -5,10 +5,7 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/png" href="/logo.png">
   <title>萌牛测颜 - 科学打分 & 气质分析</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <link rel="stylesheet" href="/style.css">
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>
 </head>
@@ -35,38 +32,56 @@
         </button>
         <button class="tab" data-mode="couple" id="mode-couple">
           <span class="tab-emoji">💕</span>
-          <span class="tab-text">CP契合度</span>
+          <span class="tab-text">CP匹配度</span>
         </button>
       </div>
 
-      <div class="upload-wrapper">
-        <label class="upload-box" for="fileInput" id="uploadZone">
-          <input type="file" id="fileInput" accept="image/*" />
-          <div class="upload-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-            </svg>
-          </div>
-          <div class="upload-text">
-            <span class="upload-hint" id="uploadHint">点击选择照片</span>
-            <span class="upload-desc">支持 JPG、PNG 格式</span>
-          </div>
-          <img id="preview" class="preview" alt="预览" />
-        </label>
+      <div class="preview-area">
+        <div class="single-preview" id="singlePreview">
+          <label class="preview-box" for="fileInput">
+            <input type="file" id="fileInput" accept="image/*" />
+            <div class="preview-inner">
+              <div class="preview-placeholder">
+                <span class="placeholder-emoji">💖</span>
+                <span class="placeholder-text" id="placeholderText">点击上传照片</span>
+              </div>
+              <img id="preview" class="preview-img" alt="预览" />
+              <button class="preview-clear" id="previewClear" style="display: none;">×</button>
+            </div>
+          </label>
+        </div>
 
-        <label class="upload-box" for="fileInputB" id="uploadZoneB" style="display: none;">
-          <input type="file" id="fileInputB" accept="image/*" />
-          <div class="upload-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-            </svg>
+        <div class="couple-preview" id="couplePreview" style="display: none;">
+          <div class="couple-row">
+            <label class="couple-card" for="fileInputA">
+              <input type="file" id="fileInputA" accept="image/*" />
+              <div class="couple-inner">
+                <div class="couple-placeholder" id="placeholderA">
+                  <span class="placeholder-emoji">👧</span>
+                  <span class="placeholder-text">我的照片</span>
+                </div>
+                <img id="previewA" class="couple-img" alt="我的照片" />
+                <button class="couple-clear" id="clearA" style="display: none;">×</button>
+              </div>
+              <span class="couple-name">我</span>
+            </label>
+
+            <div class="couple-heart">💕</div>
+
+            <label class="couple-card" for="fileInputB">
+              <input type="file" id="fileInputB" accept="image/*" />
+              <div class="couple-inner">
+                <div class="couple-placeholder" id="placeholderB">
+                  <span class="placeholder-emoji">👦</span>
+                  <span class="placeholder-text">TA的照片</span>
+                </div>
+                <img id="previewB" class="couple-img" alt="TA的照片" />
+                <button class="couple-clear" id="clearB" style="display: none;">×</button>
+              </div>
+              <span class="couple-name">TA</span>
+            </label>
           </div>
-          <div class="upload-text">
-            <span class="upload-hint" id="uploadHintB">点击选择第二张照片</span>
-            <span class="upload-desc">TA 的照片</span>
-          </div>
-          <img id="previewB" class="preview" alt="预览" />
-        </label>
+        </div>
       </div>
 
       <div class="captcha" id="captchaSection">
@@ -104,49 +119,108 @@
   </div>
 
   <script>
-    document.getElementById("fileInput").onchange = function () {
-      const fileInput = this;
-      const previewImg = document.getElementById("preview");
-      const uploadZone = document.getElementById("uploadZone");
-
-      if (!fileInput.files.length) {
-        previewImg.classList.remove("show");
-        uploadZone.classList.remove("has-image");
-        return;
-      }
-
-      const file = fileInput.files[0];
-      const reader = new FileReader();
-      reader.onload = function () {
-        previewImg.src = reader.result;
-        previewImg.classList.add("show");
-        uploadZone.classList.add("has-image");
-      };
-      reader.readAsDataURL(file);
-    };
-
-    document.getElementById("fileInputB").onchange = function () {
-      const fileInput = this;
-      const previewImg = document.getElementById("previewB");
-      const uploadZone = document.getElementById("uploadZoneB");
-
-      if (!fileInput.files.length) {
-        previewImg.classList.remove("show");
-        uploadZone.classList.remove("has-image");
-        return;
-      }
-
-      const file = fileInput.files[0];
-      const reader = new FileReader();
-      reader.onload = function () {
-        previewImg.src = reader.result;
-        previewImg.classList.add("show");
-        uploadZone.classList.add("has-image");
-      };
-      reader.readAsDataURL(file);
-    };
-
     let currentMode = 'score';
+    let turnstileEnabled = false;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initTurnstile();
+      initEventListeners();
+      checkLoginStatus();
+    });
+
+    function initEventListeners() {
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => switchMode(tab.dataset.mode));
+      });
+
+      document.getElementById('fileInput').addEventListener('change', handleSingleFileSelect);
+      document.getElementById('fileInputA').addEventListener('change', (e) => handleCoupleFileSelect(e, 'A'));
+      document.getElementById('fileInputB').addEventListener('change', (e) => handleCoupleFileSelect(e, 'B'));
+
+      document.getElementById('previewClear').addEventListener('click', clearSinglePreview);
+      document.getElementById('clearA').addEventListener('click', (e) => {
+        e.stopPropagation();
+        clearCouplePreview('A');
+      });
+      document.getElementById('clearB').addEventListener('click', (e) => {
+        e.stopPropagation();
+        clearCouplePreview('B');
+      });
+
+      document.getElementById('submitBtn').addEventListener('click', handleSubmit);
+    }
+
+    function handleSingleFileSelect() {
+      const fileInput = document.getElementById('fileInput');
+      const previewImg = document.getElementById('preview');
+      const placeholder = document.querySelector('#singlePreview .preview-placeholder');
+      const clearBtn = document.getElementById('previewClear');
+
+      if (!fileInput.files.length) {
+        previewImg.classList.remove('show');
+        placeholder.style.display = 'flex';
+        clearBtn.style.display = 'none';
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+      reader.onload = function () {
+        previewImg.src = reader.result;
+        previewImg.classList.add('show');
+        placeholder.style.display = 'none';
+        clearBtn.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function handleCoupleFileSelect(e, side) {
+      const fileInput = document.getElementById(`fileInput${side}`);
+      const previewImg = document.getElementById(`preview${side}`);
+      const placeholder = document.getElementById(`placeholder${side}`);
+      const clearBtn = document.getElementById(`clear${side}`);
+
+      if (!fileInput.files.length) {
+        previewImg.classList.remove('show');
+        placeholder.style.display = 'flex';
+        clearBtn.style.display = 'none';
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+      reader.onload = function () {
+        previewImg.src = reader.result;
+        previewImg.classList.add('show');
+        placeholder.style.display = 'none';
+        clearBtn.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearSinglePreview() {
+      const fileInput = document.getElementById('fileInput');
+      const previewImg = document.getElementById('preview');
+      const placeholder = document.querySelector('#singlePreview .preview-placeholder');
+      const clearBtn = document.getElementById('previewClear');
+
+      fileInput.value = '';
+      previewImg.classList.remove('show');
+      placeholder.style.display = 'flex';
+      clearBtn.style.display = 'none';
+    }
+
+    function clearCouplePreview(side) {
+      const fileInput = document.getElementById(`fileInput${side}`);
+      const previewImg = document.getElementById(`preview${side}`);
+      const placeholder = document.getElementById(`placeholder${side}`);
+      const clearBtn = document.getElementById(`clear${side}`);
+
+      fileInput.value = '';
+      previewImg.classList.remove('show');
+      placeholder.style.display = 'flex';
+      clearBtn.style.display = 'none';
+    }
 
     function switchMode(mode) {
       if (currentMode === mode) return;
@@ -157,33 +231,33 @@
 
       const btn = document.getElementById('submitBtn');
       const btnText = btn.querySelector('.btn-text');
-      const uploadHint = document.getElementById('uploadHint');
-      const uploadZoneB = document.getElementById('uploadZoneB');
+      const singlePreview = document.getElementById('singlePreview');
+      const couplePreview = document.getElementById('couplePreview');
+      const placeholderText = document.getElementById('placeholderText');
+      const placeholderEmoji = document.querySelector('#singlePreview .placeholder-emoji');
 
       if (mode === 'score') {
         btnText.innerText = '开始颜值评分';
-        uploadHint.innerText = '点击选择照片';
-        uploadZoneB.style.display = 'none';
+        singlePreview.style.display = 'block';
+        couplePreview.style.display = 'none';
+        placeholderText.innerText = '点击上传照片';
+        placeholderEmoji.innerText = '💖';
       } else if (mode === 'fortune') {
         btnText.innerText = '生成气质分析';
-        uploadHint.innerText = '上传照片，测测你的气质';
-        uploadZoneB.style.display = 'none';
+        singlePreview.style.display = 'block';
+        couplePreview.style.display = 'none';
+        placeholderText.innerText = '上传照片，测测气质';
+        placeholderEmoji.innerText = '✨';
       } else {
-        btnText.innerText = '开始CP契合度测试';
-        uploadHint.innerText = '点击选择第一张照片';
-        uploadZoneB.style.display = 'block';
+        btnText.innerText = '开始CP匹配度测试';
+        singlePreview.style.display = 'none';
+        couplePreview.style.display = 'block';
       }
 
       const resultCard = document.getElementById('resultCard');
       resultCard.style.display = 'none';
       resultCard.innerHTML = '';
     }
-
-    document.querySelectorAll('.tab').forEach(tab => {
-      tab.addEventListener('click', () => switchMode(tab.dataset.mode));
-    });
-
-    let turnstileEnabled = false;
 
     async function initTurnstile() {
       const container = document.getElementById('captchaSection');
@@ -207,39 +281,26 @@
       }
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      initTurnstile();
+    async function checkLoginStatus() {
+      try {
+        const response = await fetch('/api/auth', { credentials: 'include' });
+        const data = await response.json();
 
-      const imagesBtn = document.getElementById('imagesBtn');
-      if (imagesBtn) {
-        imagesBtn.addEventListener('click', () => {
-          window.location.href = '/images';
-        });
-      }
+        const logoutBtn = document.getElementById('logoutBtn');
+        const imagesBtn = document.getElementById('imagesBtn');
 
-      async function checkLoginStatus() {
-        try {
-          const response = await fetch('/api/auth', { credentials: 'include' });
-          const data = await response.json();
-
-          const logoutBtn = document.getElementById('logoutBtn');
-          const imagesBtn = document.getElementById('imagesBtn');
-
-          if (data.success) {
-            logoutBtn.style.display = 'flex';
-            imagesBtn.style.display = 'flex';
-          } else {
-            logoutBtn.style.display = 'none';
-            imagesBtn.style.display = 'none';
-          }
-        } catch (error) {
-          document.getElementById('logoutBtn').style.display = 'none';
-          document.getElementById('imagesBtn').style.display = 'none';
+        if (data.success) {
+          logoutBtn.style.display = 'flex';
+          imagesBtn.style.display = 'flex';
+        } else {
+          logoutBtn.style.display = 'none';
+          imagesBtn.style.display = 'none';
         }
+      } catch (error) {
+        document.getElementById('logoutBtn').style.display = 'none';
+        document.getElementById('imagesBtn').style.display = 'none';
       }
-
-      checkLoginStatus();
-    });
+    }
 
     async function handleLogout() {
       try {
@@ -255,16 +316,13 @@
 
     let clickCount = 0;
     const titleElement = document.querySelector('.title');
-
     if (titleElement) {
       titleElement.addEventListener('click', async () => {
         clickCount++;
-
         if (clickCount === 5) {
           try {
             const response = await fetch('/api/auth', { credentials: 'include' });
             const data = await response.json();
-
             if (data.success) {
               window.location.href = '/images';
             } else {
@@ -273,24 +331,24 @@
           } catch (error) {
             window.location.href = '/api/auth/github';
           }
-
           clickCount = 0;
         }
       });
     }
 
-    document.getElementById("submitBtn").onclick = async function () {
-      const fileInput = document.getElementById("fileInput");
-      const fileInputB = document.getElementById("fileInputB");
-      const resultCard = document.getElementById("resultCard");
+    async function handleSubmit() {
+      const fileInput = document.getElementById('fileInput');
+      const fileInputA = document.getElementById('fileInputA');
+      const fileInputB = document.getElementById('fileInputB');
+      const resultCard = document.getElementById('resultCard');
 
       if (currentMode === 'couple') {
-        if (!fileInput.files.length || !fileInputB.files.length) {
-          alert("喵～请选择两张照片才能测试CP契合度哦！");
+        if (!fileInputA.files.length || !fileInputB.files.length) {
+          alert("喵～请选择两张照片才能测试CP匹配度哦！");
           return;
         }
 
-        resultCard.innerHTML = '<div class="loading"><div class="loader"></div><div class="loading-text">正在分析两人的契合度...</div></div>';
+        resultCard.innerHTML = '<div class="loading"><div class="loader"></div><div class="loading-text">正在计算缘分指数...</div></div>';
         resultCard.style.display = 'block';
 
         try {
@@ -299,7 +357,7 @@
 
           const base64A = await new Promise((resolve) => {
             readerA.onload = () => resolve(readerA.result.split(",")[1]);
-            readerA.readAsDataURL(fileInput.files[0]);
+            readerA.readAsDataURL(fileInputA.files[0]);
           });
 
           const base64B = await new Promise((resolve) => {
@@ -330,7 +388,7 @@
 
           if (data.score !== undefined && data.score !== null) {
             const score = Number(data.score.toFixed(1));
-            let msg = `💕 CP契合度：${score} / 100\n\n`;
+            let msg = `💕 CP匹配度：${score} / 100\n\n`;
             msg += `等级：${data.grade || '待评估'}\n\n`;
             if (data.highlights) msg += `匹配亮点：${data.highlights}\n\n`;
             if (data.notes) msg += `需要注意：${data.notes}\n\n`;
@@ -353,6 +411,7 @@
         alert("喵～先选张照片才能评分哦！");
         return;
       }
+
       const file = fileInput.files[0];
       const reader = new FileReader();
       reader.onload = async function () {
@@ -425,7 +484,7 @@
         }
       };
       reader.readAsDataURL(file);
-    };
+    }
   </script>
 </body>
 
