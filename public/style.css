@@ -149,7 +149,7 @@ body {
   height: 100%;
   opacity: 0;
   cursor: pointer;
-  z-index: 10;
+  z-index: 100;
 }
 
 .upload-content {
@@ -200,7 +200,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 20;
+  z-index: 200;
 }
 
 .couple-section {
@@ -242,7 +242,7 @@ body {
   height: 100%;
   opacity: 0;
   cursor: pointer;
-  z-index: 10;
+  z-index: 100;
 }
 
 .couple-content {
@@ -286,7 +286,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 20;
+  z-index: 200;
 }
 
 .couple-connector {
