@@ -140,6 +140,10 @@
       document.getElementById('fileInputA').addEventListener('change', (e) => handleCoupleFileSelect(e, 'A'));
       document.getElementById('fileInputB').addEventListener('change', (e) => handleCoupleFileSelect(e, 'B'));
 
+      document.getElementById('imagesBtn').addEventListener('click', () => {
+        window.location.href = '/images';
+      });
+
       document.getElementById('previewClear').addEventListener('click', clearSinglePreview);
       document.getElementById('clearA').addEventListener('click', (e) => {
         e.stopPropagation();
