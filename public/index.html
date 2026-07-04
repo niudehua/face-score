@@ -37,7 +37,7 @@
       </div>
 
       <div class="upload-section">
-        <div class="upload-box" id="uploadBox">
+        <label class="upload-box" for="fileInput" id="uploadBox">
           <input type="file" id="fileInput" accept="image/*" class="upload-input" />
           <div class="upload-content">
             <div class="upload-icon">
@@ -49,12 +49,12 @@
             <div class="upload-hint">支持 JPG、PNG 格式</div>
           </div>
           <img id="preview" class="upload-preview" alt="预览" style="display: none;" />
-          <button class="upload-clear" id="previewClear" style="display: none;">×</button>
-        </div>
+          <button class="upload-clear" id="previewClear" style="display: none;" onclick="event.preventDefault(); event.stopPropagation(); clearSinglePreview();">×</button>
+        </label>
 
         <div class="couple-section" id="coupleSection" style="display: none;">
           <div class="couple-container">
-            <div class="couple-box" id="coupleBoxA">
+            <label class="couple-box" for="fileInputA" id="coupleBoxA">
               <input type="file" id="fileInputA" accept="image/*" class="couple-input" />
               <div class="couple-content">
                 <div class="couple-icon">
@@ -65,12 +65,12 @@
                 <div class="couple-label">我的照片</div>
               </div>
               <img id="previewA" class="couple-preview" alt="我的照片" style="display: none;" />
-              <button class="couple-clear-btn" id="clearA" style="display: none;">×</button>
-            </div>
+              <button class="couple-clear-btn" id="clearA" style="display: none;" onclick="event.preventDefault(); event.stopPropagation(); clearCouplePreview('A');">×</button>
+            </label>
 
             <div class="couple-connector">💕</div>
 
-            <div class="couple-box" id="coupleBoxB">
+            <label class="couple-box" for="fileInputB" id="coupleBoxB">
               <input type="file" id="fileInputB" accept="image/*" class="couple-input" />
               <div class="couple-content">
                 <div class="couple-icon">
@@ -81,8 +81,8 @@
                 <div class="couple-label">TA的照片</div>
               </div>
               <img id="previewB" class="couple-preview" alt="TA的照片" style="display: none;" />
-              <button class="couple-clear-btn" id="clearB" style="display: none;">×</button>
-            </div>
+              <button class="couple-clear-btn" id="clearB" style="display: none;" onclick="event.preventDefault(); event.stopPropagation(); clearCouplePreview('B');">×</button>
+            </label>
           </div>
         </div>
       </div>
