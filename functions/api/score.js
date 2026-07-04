@@ -80,7 +80,7 @@ export async function onRequestPost(context) {
       });
     }
 
-    // 4. Turnstile 验证（小程序请求和前端验证跳过）
+    // 4. Turnstile 验证（小程序请求跳过）
     let isMiniProgram = false;
     
     // 检查请求是否来自小程序
@@ -89,13 +89,7 @@ export async function onRequestPost(context) {
       logger.debug('检测到小程序请求，跳过 Turnstile 验证');
     }
     
-    // 检查前端是否已验证
-    const frontendVerified = body.frontend_verified === true;
-    if (frontendVerified) {
-      logger.debug('检测到前端已验证，跳过 Turnstile 验证');
-    }
-    
-    if (hasTurnstileSecret && !isMiniProgram && !frontendVerified) {
+    if (hasTurnstileSecret && !isMiniProgram) {
       // 从请求体中直接获取令牌，避免重复读取请求体
       const turnstileToken = body.turnstile_response;
       const isVerified = await verifyTurnstile(turnstileToken, TURNSTILE_SECRET_KEY);
@@ -111,7 +105,7 @@ export async function onRequestPost(context) {
       }
       
       logger.debug('Turnstile 验证成功');
-    } else if (!isMiniProgram && !frontendVerified) {
+    } else if (!isMiniProgram) {
       logger.debug('Turnstile 密钥未配置，跳过验证');
     }
 

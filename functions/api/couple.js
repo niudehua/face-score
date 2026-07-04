@@ -64,9 +64,7 @@ export async function onRequestPost(context) {
       isMiniProgram = true;
     }
 
-    const frontendVerified = body.frontend_verified === true;
-
-    if (hasTurnstileSecret && !isMiniProgram && !frontendVerified) {
+    if (hasTurnstileSecret && !isMiniProgram) {
       const turnstileToken = body.turnstile_response;
       const isVerified = await verifyTurnstile(turnstileToken, TURNSTILE_SECRET_KEY);
       if (!isVerified) {
