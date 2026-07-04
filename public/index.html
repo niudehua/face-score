@@ -7,7 +7,6 @@
   <title>萌牛测颜 - 科学打分 & 气质分析</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <link rel="stylesheet" href="/style.css">
-  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>
 </head>
 
 <body>
@@ -84,8 +83,15 @@
         </div>
       </div>
 
-      <div class="captcha" id="captchaSection">
-        <div id="turnstile-widget"></div>
+      <div class="verify-section" id="verifySection">
+        <div class="verify-box" id="verifyBox">
+          <span class="verify-icon">👀</span>
+          <span class="verify-text">我不是机器人</span>
+        </div>
+        <div class="verify-success" id="verifySuccess" style="display: none;">
+          <span class="verify-icon">✅</span>
+          <span class="verify-text">验证通过</span>
+        </div>
       </div>
 
       <button id="submitBtn" class="btn">
@@ -120,10 +126,9 @@
 
   <script>
     let currentMode = 'score';
-    let turnstileEnabled = false;
+    let isVerified = false;
 
     document.addEventListener('DOMContentLoaded', () => {
-      initTurnstile();
       initEventListeners();
       checkLoginStatus();
     });
@@ -147,6 +152,7 @@
         clearCouplePreview('B');
       });
 
+      document.getElementById('verifyBox').addEventListener('click', handleVerify);
       document.getElementById('submitBtn').addEventListener('click', handleSubmit);
     }
 
@@ -257,28 +263,19 @@
       const resultCard = document.getElementById('resultCard');
       resultCard.style.display = 'none';
       resultCard.innerHTML = '';
+      resetVerify();
     }
 
-    async function initTurnstile() {
-      const container = document.getElementById('captchaSection');
-      try {
-        const res = await fetch('/api/turnstile');
-        const data = await res.json();
+    function handleVerify() {
+      isVerified = true;
+      document.getElementById('verifyBox').style.display = 'none';
+      document.getElementById('verifySuccess').style.display = 'flex';
+    }
 
-        if (data.site_key && typeof data.site_key === 'string' && data.site_key.trim()) {
-          turnstileEnabled = true;
-          turnstile.render('#turnstile-widget', {
-            sitekey: data.site_key,
-            theme: 'light'
-          });
-        } else {
-          turnstileEnabled = false;
-          if (container) container.style.display = 'none';
-        }
-      } catch (error) {
-        turnstileEnabled = false;
-        if (container) container.style.display = 'none';
-      }
+    function resetVerify() {
+      isVerified = false;
+      document.getElementById('verifyBox').style.display = 'flex';
+      document.getElementById('verifySuccess').style.display = 'none';
     }
 
     async function checkLoginStatus() {
@@ -337,6 +334,11 @@
     }
 
     async function handleSubmit() {
+      if (!isVerified) {
+        alert("喵～请先点击验证按钮证明你不是机器人哦！");
+        return;
+      }
+
       const fileInput = document.getElementById('fileInput');
       const fileInputA = document.getElementById('fileInputA');
       const fileInputB = document.getElementById('fileInputB');
@@ -365,22 +367,13 @@
             readerB.readAsDataURL(fileInputB.files[0]);
           });
 
-          let token = null;
-          if (turnstileEnabled && typeof turnstile !== 'undefined' && typeof turnstile.getResponse === 'function') {
-            token = turnstile.getResponse();
-            if (!token) {
-              resultCard.innerHTML = '<div class="error">验证失败，请完成验证码喵～</div>';
-              return;
-            }
-          }
-
           const res = await fetch("/api/couple", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               imageA: base64A,
               imageB: base64B,
-              ...(token ? { turnstile_response: token } : {})
+              frontend_verified: true
             }),
           });
           if (!res.ok) throw new Error("接口请求失败");
@@ -400,9 +393,7 @@
         } catch (e) {
           resultCard.innerText = "网络信号溜去捉迷藏啦，请检查网络后再试一次喵～";
         } finally {
-          if (turnstileEnabled && typeof turnstile !== 'undefined' && typeof turnstile.reset === 'function') {
-            turnstile.reset('#turnstile-widget');
-          }
+          resetVerify();
         }
         return;
       }
@@ -421,15 +412,6 @@
         resultCard.style.display = 'block';
 
         try {
-          let token = null;
-          if (turnstileEnabled && typeof turnstile !== 'undefined' && typeof turnstile.getResponse === 'function') {
-            token = turnstile.getResponse();
-            if (!token) {
-              resultCard.innerHTML = '<div class="error">验证失败，请完成验证码喵～</div>';
-              return;
-            }
-          }
-
           const apiEndpoint = currentMode === 'score' ? "/api/score" : "/api/fortune";
 
           const res = await fetch(apiEndpoint, {
@@ -437,7 +419,7 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               image: base64,
-              ...(token ? { turnstile_response: token } : {})
+              frontend_verified: true
             }),
           });
           if (!res.ok) throw new Error("接口请求失败");
@@ -478,9 +460,7 @@
         } catch (e) {
           resultCard.innerText = "网络信号溜去捉迷藏啦，请检查网络后再试一次喵～";
         } finally {
-          if (turnstileEnabled && typeof turnstile !== 'undefined' && typeof turnstile.reset === 'function') {
-            turnstile.reset('#turnstile-widget');
-          }
+          resetVerify();
         }
       };
       reader.readAsDataURL(file);
