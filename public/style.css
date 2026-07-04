@@ -118,82 +118,74 @@ body {
   color: var(--primary);
 }
 
-.preview-area {
+.upload-section {
   margin-bottom: 16px;
-  width: 100%;
 }
 
-.single-preview {
-  display: block;
-  width: 100%;
-}
-
-.preview-box {
-  display: block;
-  cursor: pointer;
-  width: 100%;
-}
-
-.preview-inner {
+.upload-box {
   position: relative;
   background: #ffffff;
   border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 2px 12px rgba(255, 110, 199, 0.15);
-  width: 100%;
-  min-height: 200px;
-  height: 200px;
-  border: 2px dashed rgba(255, 110, 199, 0.2);
+  border: 2px dashed #ffb6c1;
+  padding: 32px 16px;
+  cursor: pointer;
   transition: all 0.25s ease;
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.preview-inner:hover {
-  border-color: rgba(255, 110, 199, 0.4);
-  box-shadow: 0 4px 20px rgba(255, 110, 199, 0.25);
+.upload-box:hover {
+  border-color: #ff6ec7;
+  background: #fff5f8;
 }
 
-.preview-placeholder {
+.upload-input {
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.upload-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   color: #999999;
-  z-index: 1;
 }
 
-.placeholder-emoji {
-  font-size: 36px;
-  margin-bottom: 8px;
+.upload-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
 }
 
-.placeholder-text {
-  font-size: 14px;
+.upload-text {
+  font-size: 15px;
+  font-weight: 500;
+  margin-bottom: 4px;
 }
 
-.preview-img {
+.upload-hint {
+  font-size: 12px;
+  color: #cccccc;
+}
+
+.upload-preview {
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0;
-  transition: opacity 0.25s ease;
-  z-index: 2;
+  border-radius: 16px;
 }
 
-.preview-img.show {
-  opacity: 1;
-}
-
-.preview-clear {
+.upload-clear {
   position: absolute;
   top: 8px;
   right: 8px;
@@ -208,83 +200,78 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 3;
-  transition: all 0.2s ease;
+  z-index: 20;
 }
 
-.preview-clear:hover {
-  background: rgba(0, 0, 0, 0.7);
-}
-
-.couple-preview {
+.couple-section {
   display: none;
 }
 
-.couple-row {
+.couple-container {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
-.couple-card {
+.couple-box {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  cursor: pointer;
-}
-
-.couple-inner {
   position: relative;
   background: #ffffff;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 2px 12px rgba(255, 110, 199, 0.15);
-  width: 100%;
-  min-height: 180px;
-  height: 180px;
-  border: 2px dashed rgba(255, 110, 199, 0.2);
+  border-radius: 12px;
+  border: 2px dashed #ffb6c1;
+  padding: 20px 10px;
+  cursor: pointer;
   transition: all 0.25s ease;
+  min-height: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.couple-inner:hover {
-  border-color: rgba(255, 110, 199, 0.4);
-  box-shadow: 0 4px 20px rgba(255, 110, 199, 0.25);
+.couple-box:hover {
+  border-color: #ff6ec7;
+  background: #fff5f8;
 }
 
-.couple-placeholder {
+.couple-input {
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.couple-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   color: #999999;
-  z-index: 1;
 }
 
-.couple-img {
+.couple-icon {
+  font-size: 28px;
+  margin-bottom: 6px;
+}
+
+.couple-label {
+  font-size: 13px;
+}
+
+.couple-preview {
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0;
-  transition: opacity 0.25s ease;
-  z-index: 2;
+  border-radius: 12px;
 }
 
-.couple-img.show {
-  opacity: 1;
-}
-
-.couple-clear {
+.couple-clear-btn {
   position: absolute;
   top: 6px;
   right: 6px;
@@ -299,36 +286,17 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 3;
-  transition: all 0.2s ease;
+  z-index: 20;
 }
 
-.couple-clear:hover {
-  background: rgba(0, 0, 0, 0.7);
-}
-
-.couple-heart {
-  font-size: 28px;
+.couple-connector {
+  font-size: 24px;
   animation: heartbeat 1.5s ease-in-out infinite;
 }
 
 @keyframes heartbeat {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.2); }
-}
-
-.captcha {
-  margin-bottom: 16px;
-  display: flex;
-  justify-content: center;
-}
-
-.couple-name {
-  text-align: center;
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin-top: 8px;
-  font-weight: 500;
 }
 
 .captcha {

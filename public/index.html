@@ -36,50 +36,41 @@
         </button>
       </div>
 
-      <div class="preview-area">
-        <div class="single-preview" id="singlePreview">
-          <label class="preview-box" for="fileInput">
-            <input type="file" id="fileInput" accept="image/*" />
-            <div class="preview-inner">
-              <div class="preview-placeholder">
-                <span class="placeholder-emoji">💖</span>
-                <span class="placeholder-text" id="placeholderText">点击上传照片</span>
-              </div>
-              <img id="preview" class="preview-img" alt="预览" />
-              <button class="preview-clear" id="previewClear" style="display: none;">×</button>
-            </div>
-          </label>
+      <div class="upload-section">
+        <div class="upload-box" id="uploadBox">
+          <input type="file" id="fileInput" accept="image/*" class="upload-input" />
+          <div class="upload-content">
+            <div class="upload-icon">�</div>
+            <div class="upload-text" id="uploadText">点击上传照片</div>
+            <div class="upload-hint">支持 JPG、PNG 格式</div>
+          </div>
+          <img id="preview" class="upload-preview" alt="预览" style="display: none;" />
+          <button class="upload-clear" id="previewClear" style="display: none;">×</button>
         </div>
 
-        <div class="couple-preview" id="couplePreview" style="display: none;">
-          <div class="couple-row">
-            <label class="couple-card" for="fileInputA">
-              <input type="file" id="fileInputA" accept="image/*" />
-              <div class="couple-inner">
-                <div class="couple-placeholder" id="placeholderA">
-                  <span class="placeholder-emoji">👧</span>
-                  <span class="placeholder-text">我的照片</span>
-                </div>
-                <img id="previewA" class="couple-img" alt="我的照片" />
-                <button class="couple-clear" id="clearA" style="display: none;">×</button>
+        <div class="couple-section" id="coupleSection" style="display: none;">
+          <div class="couple-container">
+            <div class="couple-box" id="coupleBoxA">
+              <input type="file" id="fileInputA" accept="image/*" class="couple-input" />
+              <div class="couple-content">
+                <div class="couple-icon">👧</div>
+                <div class="couple-label">我的照片</div>
               </div>
-              <span class="couple-name">我</span>
-            </label>
+              <img id="previewA" class="couple-preview" alt="我的照片" style="display: none;" />
+              <button class="couple-clear-btn" id="clearA" style="display: none;">×</button>
+            </div>
 
-            <div class="couple-heart">💕</div>
+            <div class="couple-connector">💕</div>
 
-            <label class="couple-card" for="fileInputB">
-              <input type="file" id="fileInputB" accept="image/*" />
-              <div class="couple-inner">
-                <div class="couple-placeholder" id="placeholderB">
-                  <span class="placeholder-emoji">👦</span>
-                  <span class="placeholder-text">TA的照片</span>
-                </div>
-                <img id="previewB" class="couple-img" alt="TA的照片" />
-                <button class="couple-clear" id="clearB" style="display: none;">×</button>
+            <div class="couple-box" id="coupleBoxB">
+              <input type="file" id="fileInputB" accept="image/*" class="couple-input" />
+              <div class="couple-content">
+                <div class="couple-icon">👦</div>
+                <div class="couple-label">TA的照片</div>
               </div>
-              <span class="couple-name">TA</span>
-            </label>
+              <img id="previewB" class="couple-preview" alt="TA的照片" style="display: none;" />
+              <button class="couple-clear-btn" id="clearB" style="display: none;">×</button>
+            </div>
           </div>
         </div>
       </div>
@@ -153,12 +144,12 @@
     function handleSingleFileSelect() {
       const fileInput = document.getElementById('fileInput');
       const previewImg = document.getElementById('preview');
-      const placeholder = document.querySelector('#singlePreview .preview-placeholder');
+      const uploadContent = document.querySelector('#uploadBox .upload-content');
       const clearBtn = document.getElementById('previewClear');
 
       if (!fileInput.files.length) {
-        previewImg.classList.remove('show');
-        placeholder.style.display = 'flex';
+        previewImg.style.display = 'none';
+        uploadContent.style.display = 'flex';
         clearBtn.style.display = 'none';
         return;
       }
@@ -167,8 +158,8 @@
       const reader = new FileReader();
       reader.onload = function () {
         previewImg.src = reader.result;
-        previewImg.classList.add('show');
-        placeholder.style.display = 'none';
+        previewImg.style.display = 'block';
+        uploadContent.style.display = 'none';
         clearBtn.style.display = 'block';
       };
       reader.readAsDataURL(file);
@@ -177,12 +168,12 @@
     function handleCoupleFileSelect(e, side) {
       const fileInput = document.getElementById(`fileInput${side}`);
       const previewImg = document.getElementById(`preview${side}`);
-      const placeholder = document.getElementById(`placeholder${side}`);
+      const coupleContent = document.querySelector(`#coupleBox${side} .couple-content`);
       const clearBtn = document.getElementById(`clear${side}`);
 
       if (!fileInput.files.length) {
-        previewImg.classList.remove('show');
-        placeholder.style.display = 'flex';
+        previewImg.style.display = 'none';
+        coupleContent.style.display = 'flex';
         clearBtn.style.display = 'none';
         return;
       }
@@ -191,8 +182,8 @@
       const reader = new FileReader();
       reader.onload = function () {
         previewImg.src = reader.result;
-        previewImg.classList.add('show');
-        placeholder.style.display = 'none';
+        previewImg.style.display = 'block';
+        coupleContent.style.display = 'none';
         clearBtn.style.display = 'block';
       };
       reader.readAsDataURL(file);
@@ -201,24 +192,24 @@
     function clearSinglePreview() {
       const fileInput = document.getElementById('fileInput');
       const previewImg = document.getElementById('preview');
-      const placeholder = document.querySelector('#singlePreview .preview-placeholder');
+      const uploadContent = document.querySelector('#uploadBox .upload-content');
       const clearBtn = document.getElementById('previewClear');
 
       fileInput.value = '';
-      previewImg.classList.remove('show');
-      placeholder.style.display = 'flex';
+      previewImg.style.display = 'none';
+      uploadContent.style.display = 'flex';
       clearBtn.style.display = 'none';
     }
 
     function clearCouplePreview(side) {
       const fileInput = document.getElementById(`fileInput${side}`);
       const previewImg = document.getElementById(`preview${side}`);
-      const placeholder = document.getElementById(`placeholder${side}`);
+      const coupleContent = document.querySelector(`#coupleBox${side} .couple-content`);
       const clearBtn = document.getElementById(`clear${side}`);
 
       fileInput.value = '';
-      previewImg.classList.remove('show');
-      placeholder.style.display = 'flex';
+      previewImg.style.display = 'none';
+      coupleContent.style.display = 'flex';
       clearBtn.style.display = 'none';
     }
 
@@ -231,27 +222,24 @@
 
       const btn = document.getElementById('submitBtn');
       const btnText = btn.querySelector('.btn-text');
-      const singlePreview = document.getElementById('singlePreview');
-      const couplePreview = document.getElementById('couplePreview');
-      const placeholderText = document.getElementById('placeholderText');
-      const placeholderEmoji = document.querySelector('#singlePreview .placeholder-emoji');
+      const uploadBox = document.getElementById('uploadBox');
+      const coupleSection = document.getElementById('coupleSection');
+      const uploadText = document.getElementById('uploadText');
 
       if (mode === 'score') {
         btnText.innerText = '开始颜值评分';
-        singlePreview.style.display = 'block';
-        couplePreview.style.display = 'none';
-        placeholderText.innerText = '点击上传照片';
-        placeholderEmoji.innerText = '💖';
+        uploadBox.style.display = 'block';
+        coupleSection.style.display = 'none';
+        uploadText.innerText = '点击上传照片';
       } else if (mode === 'fortune') {
         btnText.innerText = '生成气质分析';
-        singlePreview.style.display = 'block';
-        couplePreview.style.display = 'none';
-        placeholderText.innerText = '上传照片，测测气质';
-        placeholderEmoji.innerText = '✨';
+        uploadBox.style.display = 'block';
+        coupleSection.style.display = 'none';
+        uploadText.innerText = '上传照片，测测气质';
       } else {
         btnText.innerText = '开始CP匹配度测试';
-        singlePreview.style.display = 'none';
-        couplePreview.style.display = 'block';
+        uploadBox.style.display = 'none';
+        coupleSection.style.display = 'block';
       }
 
       const resultCard = document.getElementById('resultCard');
