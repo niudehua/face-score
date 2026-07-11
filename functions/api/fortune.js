@@ -1,5 +1,6 @@
 // 导入模块
 import { calculateImageId, uploadImage, getImageUrl } from '../lib/storage.js';
+import { insertOrUpdateScore } from '../lib/db.js';
 import { verifyTurnstile } from '../lib/turnstile.js';
 import { rateLimit } from '../lib/rate-limit.js';
 import { createSuccessResponse, createErrorResponse, handleOptionsRequest } from '../lib/response.js';
@@ -167,29 +168,71 @@ export async function onRequestPost(context) {
         logger.error('AI 调用失败', e);
       }
 
-      // 存储逻辑 (可选：如果想单独存看相记录，可以改表名，这里暂时复用或跳过)
-      // 为简单起见，这里我们只利用 R2 存图，D1 数据可以存入同样的表，但在 comment 里标记是“看相”
-
-      // ... (省略存储逻辑，为了快速上线先不存，或者后续再加上)
-
-      // 如果需要返回图片URL，还是需要上传R2
+      let storedKey = null;
       let imageUrl = null;
-      if (context.env.FACE_IMAGES) {
+      const d1 = context.env.FACE_SCORE_DB;
+      const r2 = context.env.FACE_IMAGES;
+
+      if (r2) {
+        logger.debug('R2已绑定，准备存储图片');
         try {
           const imageId = await calculateImageId(imageBase64);
-          await uploadImage(context.env.FACE_IMAGES, imageBase64, imageId);
+          const id = `face_${imageId}`;
+          logger.debug(`图片ID生成: ${imageId}`);
+
+          const r2Key = await uploadImage(r2, imageBase64, imageId);
           imageUrl = getImageUrl(imageId);
-        } catch (e) {
-          logger.warn("图片存储失败", e);
+          logger.debug(`图片已成功上传到R2: ${r2Key}`);
+
+          if (isDebugMode) {
+            const imageSize = new Blob([atob(imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64)]).size;
+            logger.debug('图片存储详情', { imageId, size: `${(imageSize / 1024).toFixed(2)}KB`, r2Key });
+          }
+
+          const timestamp = new Date().toISOString();
+          const scoreData = {
+            id,
+            score: parseFloat(beauty.gender === 'Male' ? beauty.male_score : beauty.female_score),
+            comment: `【气质分析】${fortuneReport}`,
+            gender: genderText === '男施主' ? '帅气小哥哥' : '漂亮小姐姐',
+            age: age.value,
+            timestamp,
+            image_url: imageUrl,
+            md5: imageId
+          };
+
+          if (d1) {
+            logger.debug('D1已绑定，准备存储元数据');
+            try {
+              const d1Result = await insertOrUpdateScore(d1, scoreData);
+              storedKey = scoreData.id;
+              logger.debug('数据已成功存储到D1', { id: scoreData.id, changes: d1Result.changes || 0 });
+            } catch (d1Error) {
+              if (d1Error.message.includes('duration')) {
+                logger.warn('遇到Cloudflare内部D1错误（duration），这是本地开发环境bug');
+              } else if (d1Error.message.includes('no such table')) {
+                logger.warn('表不存在，可能创建失败', { error: d1Error.message });
+              } else {
+                logger.error('D1存储错误', d1Error);
+              }
+            }
+          } else {
+            logger.warn('D1未绑定，跳过元数据存储');
+          }
+        } catch (storageError) {
+          logger.error('存储错误', storageError);
         }
+      } else {
+        logger.warn('R2未绑定，跳过图片存储');
+        if (d1) logger.warn('由于R2未绑定，跳过D1存储');
       }
 
       return createSuccessResponse({
-        type: 'fortune', // 保持 type 不变以兼容前端
+        type: 'fortune',
         title: '气质分析报告',
         comment: fortuneReport,
         image_url: imageUrl,
-        // 返回一些原始特征供前端做特效（可选）
+        key: storedKey,
         traits: {
           gender: genderText,
           age: age.value,
@@ -197,6 +240,7 @@ export async function onRequestPost(context) {
         }
       }, {
         rateLimitInfo: rateLimitResult,
+        logs: isDebugMode ? logger.getLogs() : undefined,
         debug: isDebugMode
       });
 
