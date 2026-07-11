@@ -1,5 +1,5 @@
 import { calculateImageId, uploadImage, getImageUrl } from '../lib/storage.js';
-import { insertOrUpdateCoupleMatch } from '../lib/db.js';
+import { insertOrUpdateScore, insertOrUpdateCoupleMatch } from '../lib/db.js';
 import { verifyTurnstile } from '../lib/turnstile.js';
 import { rateLimit } from '../lib/rate-limit.js';
 import { createSuccessResponse, createErrorResponse, handleOptionsRequest } from '../lib/response.js';
@@ -263,45 +263,92 @@ export async function onRequestPost(context) {
     let imageUrlB = '';
     let md5A = '';
     let md5B = '';
+    const d1 = FACE_SCORE_DB;
+    const r2 = context.env.FACE_IMAGES;
 
-    try {
-      const imageIdA = await calculateImageId(imageBase64A);
-      md5A = imageIdA;
-      await uploadImage(context.env.FACE_IMAGES, imageBase64A, imageIdA);
-      imageUrlA = getImageUrl(imageIdA);
-
-      const imageIdB = await calculateImageId(imageBase64B);
-      md5B = imageIdB;
-      await uploadImage(context.env.FACE_IMAGES, imageBase64B, imageIdB);
-      imageUrlB = getImageUrl(imageIdB);
-    } catch (storageError) {
-      logger.warn('图片上传失败', storageError);
-    }
-
-    if (FACE_SCORE_DB) {
+    if (r2) {
+      logger.debug('R2已绑定，准备存储图片');
       try {
-        await insertOrUpdateCoupleMatch(FACE_SCORE_DB, {
-          id: matchId,
-          score: matchScore,
-          grade,
-          highlights,
-          notes,
-          tags,
-          genderA,
-          ageA,
-          scoreA,
-          genderB,
-          ageB,
-          scoreB,
-          timestamp,
-          image_url_a: imageUrlA,
-          image_url_b: imageUrlB,
-          md5_a: md5A,
-          md5_b: md5B
-        });
-      } catch (dbError) {
-        logger.warn('数据库保存失败', dbError);
+        const imageIdA = await calculateImageId(imageBase64A);
+        md5A = imageIdA;
+        await uploadImage(r2, imageBase64A, imageIdA);
+        imageUrlA = getImageUrl(imageIdA);
+        logger.debug(`图片A已成功上传到R2: ${imageUrlA}`);
+
+        const imageIdB = await calculateImageId(imageBase64B);
+        md5B = imageIdB;
+        await uploadImage(r2, imageBase64B, imageIdB);
+        imageUrlB = getImageUrl(imageIdB);
+        logger.debug(`图片B已成功上传到R2: ${imageUrlB}`);
+
+        if (d1) {
+          logger.debug('D1已绑定，准备存储元数据');
+          try {
+            await insertOrUpdateCoupleMatch(d1, {
+              id: matchId,
+              score: matchScore,
+              grade,
+              highlights,
+              notes,
+              tags,
+              genderA,
+              ageA,
+              scoreA,
+              genderB,
+              ageB,
+              scoreB,
+              timestamp,
+              image_url_a: imageUrlA,
+              image_url_b: imageUrlB,
+              md5_a: md5A,
+              md5_b: md5B
+            });
+            logger.debug('CP匹配数据已成功存储到couple_matches');
+
+            const genderACn = genderA === '男' ? '帅气小哥哥' : '漂亮小姐姐';
+            const genderBCn = genderB === '男' ? '帅气小哥哥' : '漂亮小姐姐';
+
+            await insertOrUpdateScore(d1, {
+              id: `face_${imageIdA}`,
+              score: scoreA,
+              comment: `【CP匹配】与${genderBCn}匹配度${matchScore}分`,
+              gender: genderACn,
+              age: ageA,
+              timestamp,
+              image_url: imageUrlA,
+              md5: imageIdA
+            });
+            logger.debug('图片A元数据已成功存储到face_scores');
+
+            await insertOrUpdateScore(d1, {
+              id: `face_${imageIdB}`,
+              score: scoreB,
+              comment: `【CP匹配】与${genderACn}匹配度${matchScore}分`,
+              gender: genderBCn,
+              age: ageB,
+              timestamp,
+              image_url: imageUrlB,
+              md5: imageIdB
+            });
+            logger.debug('图片B元数据已成功存储到face_scores');
+          } catch (dbError) {
+            if (dbError.message.includes('duration')) {
+              logger.warn('遇到Cloudflare内部D1错误（duration），这是本地开发环境bug');
+            } else if (dbError.message.includes('no such table')) {
+              logger.warn('表不存在，可能创建失败', { error: dbError.message });
+            } else {
+              logger.error('D1存储错误', dbError);
+            }
+          }
+        } else {
+          logger.warn('D1未绑定，跳过元数据存储');
+        }
+      } catch (storageError) {
+        logger.error('存储错误', storageError);
       }
+    } else {
+      logger.warn('R2未绑定，跳过图片存储');
+      if (d1) logger.warn('由于R2未绑定，跳过D1存储');
     }
 
     return createSuccessResponse({
