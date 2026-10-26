@@ -355,6 +355,14 @@ body {
   font-size: 16px;
 }
 
+.storage-warning {
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid #f0d5e3;
+  color: #a64b25;
+  font-size: 13px;
+}
+
 .result.loading {
   display: flex;
   flex-direction: column;

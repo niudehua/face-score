@@ -131,7 +131,11 @@ async function loadImages(page = 1, isAppend = false) {
     });
     const data = await res.json();
 
-    if (data.data) {
+    if (!res.ok || data.success === false || !Array.isArray(data.data)) {
+      throw new Error(data.error || '档案数据暂时无法读取');
+    }
+
+    if (Array.isArray(data.data)) {
       totalCount = data.pagination.total;
       totalCountDisplay.textContent = `共 ${totalCount} 条分析 · 已加载 ${photoGroups.size} 张照片`;
 
@@ -156,7 +160,14 @@ async function loadImages(page = 1, isAppend = false) {
     }
   } catch (e) {
     console.error(e);
-    loading.style.display = 'none';
+    if (isAppend) {
+      loadMoreStatus.textContent = '加载失败，请稍后重试';
+      loadMoreStatus.style.display = 'block';
+    } else {
+      loading.querySelector('p').textContent = '档案加载失败，请刷新页面重试';
+      loading.style.display = 'block';
+      totalCountDisplay.textContent = '加载失败';
+    }
   } finally {
     isLoading = false;
   }

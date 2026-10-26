@@ -4,7 +4,7 @@ async function ensureTypedAnalysisTableExists(d1, analysisType) {
   const tableName = analysisType === 'score' ? 'score_analyses'
     : analysisType === 'fortune' ? 'fortune_analyses' : null;
   if (!tableName) throw new Error(`不支持的分析类型: ${analysisType}`);
-  await d1.exec(`
+  await d1.prepare(`
     CREATE TABLE IF NOT EXISTS ${tableName} (
       id TEXT PRIMARY KEY,
       score REAL NOT NULL,
@@ -15,10 +15,10 @@ async function ensureTypedAnalysisTableExists(d1, analysisType) {
       image_url TEXT NOT NULL,
       md5 TEXT NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE INDEX IF NOT EXISTS idx_${tableName}_md5 ON ${tableName}(md5);
-    CREATE INDEX IF NOT EXISTS idx_${tableName}_timestamp ON ${tableName}(timestamp);
-  `);
+    )
+  `).run();
+  await d1.prepare(`CREATE INDEX IF NOT EXISTS idx_${tableName}_md5 ON ${tableName}(md5)`).run();
+  await d1.prepare(`CREATE INDEX IF NOT EXISTS idx_${tableName}_timestamp ON ${tableName}(timestamp)`).run();
 }
 
 async function insertAnalysis(d1, analysisData) {
@@ -420,16 +420,18 @@ async function getReferencedImageIds(d1, md5List) {
 }
 
 async function ensureImageDeletionQueueExists(d1) {
-  await d1.exec(`
+  await d1.prepare(`
     CREATE TABLE IF NOT EXISTS image_deletion_queue (
       md5 TEXT PRIMARY KEY,
       queued_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       attempts INTEGER NOT NULL DEFAULT 0,
       last_error TEXT
-    );
+    )
+  `).run();
+  await d1.prepare(`
     CREATE INDEX IF NOT EXISTS idx_image_deletion_queue_queued_at
-      ON image_deletion_queue(queued_at);
-  `);
+    ON image_deletion_queue(queued_at)
+  `).run();
 }
 
 async function enqueueImageDeletions(d1, md5List) {

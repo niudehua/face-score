@@ -476,6 +476,12 @@
                 resultCard.innerText = "分析完成，但未生成解读内容。";
               }
             }
+            if (!data.key) {
+              const warning = document.createElement('p');
+              warning.className = 'storage-warning';
+              warning.textContent = '本次分析结果没有保存到档案，请稍后重试。';
+              resultCard.appendChild(warning);
+            }
           } else {
             resultCard.innerText = "检测失败，喵呜～换张更清晰的照片试试吧？";
           }
