@@ -1,4 +1,12 @@
-import { getImages, deleteImages, getImagesByIds, getReferencedImageIds } from '../lib/db.js';
+import {
+  getImages,
+  deleteImages,
+  getImagesByIds,
+  getReferencedImageIds,
+  enqueueImageDeletions,
+  removeQueuedImageDeletions,
+  recordImageDeletionFailures
+} from '../lib/db.js';
 import { rateLimit } from '../lib/rate-limit.js';
 import { deleteImagesFromR2 } from '../lib/storage.js';
 import { createSuccessResponse, createErrorResponse, createCORSHeaders } from '../lib/response.js';
@@ -240,20 +248,24 @@ export async function onRequestDelete(context) {
     const referencedIds = new Set(await getReferencedImageIds(FACE_SCORE_DB, md5List));
     const unreferencedIds = md5List.filter(md5 => !referencedIds.has(md5));
     const retainedByOtherRecords = md5List.length - unreferencedIds.length;
+    await enqueueImageDeletions(FACE_SCORE_DB, unreferencedIds);
 
-    // 7. 删除未被引用的 R2 图片
+    // 7. 删除未被引用的 R2 图片。失败项留在持久化队列，供定时任务重试。
     let r2Deleted = 0;
+    let pendingImageDeletes = unreferencedIds.length;
     if (FACE_IMAGES && unreferencedIds.length > 0) {
       try {
-        r2Deleted = await deleteImagesFromR2(FACE_IMAGES, unreferencedIds);
-        logger.debug('从R2删除成功', { deleted: r2Deleted });
+        const result = await deleteImagesFromR2(FACE_IMAGES, unreferencedIds);
+        r2Deleted = result.deletedCount;
+        const failedIds = new Set(result.failedIds);
+        const successfulIds = unreferencedIds.filter(md5 => !failedIds.has(md5));
+        await removeQueuedImageDeletions(FACE_SCORE_DB, successfulIds);
+        await recordImageDeletionFailures(FACE_SCORE_DB, result.failedIds, 'R2删除失败');
+        pendingImageDeletes = result.failedIds.length;
+        logger.debug('R2图片删除完成', { deleted: r2Deleted, failed: pendingImageDeletes });
       } catch (r2Error) {
         logger.error('从R2删除图片失败', r2Error);
-        return createErrorResponse('删除图片文件失败', {
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          headers: corsHeaders,
-          rateLimitInfo: rateLimitResult
-        });
+        await recordImageDeletionFailures(FACE_SCORE_DB, unreferencedIds, r2Error);
       }
     } else if (!FACE_IMAGES) {
       logger.warn('未绑定FACE_IMAGES，跳过R2删除');
@@ -262,11 +274,14 @@ export async function onRequestDelete(context) {
     // 8. 返回响应
     return createSuccessResponse({
       success: true,
-      message: retainedByOtherRecords > 0
-        ? `删除完成，${retainedByOtherRecords} 张仍被其他分析引用的图片已保留`
-        : '批量删除成功',
+      message: pendingImageDeletes > 0
+        ? `分析记录已删除，${pendingImageDeletes} 张照片已加入待删除队列，将由定时任务重试`
+        : retainedByOtherRecords > 0
+          ? `删除完成，${retainedByOtherRecords} 张仍被其他分析引用的图片已保留`
+          : '批量删除成功',
       deletedFromD1: d1Result.deleted,
       deletedFromR2: r2Deleted,
+      pendingImageDeletes,
       retainedByOtherRecords,
       totalRequested: ids.length
     }, {

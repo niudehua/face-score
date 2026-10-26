@@ -124,30 +124,27 @@ function compressImage(imageBase64, maxWidth = 300, maxHeight = 300) {
 async function deleteImagesFromR2(r2Bucket, md5List) {
   try {
     if (!md5List || md5List.length === 0) {
-      return 0;
+      return { deletedCount: 0, failedIds: [] };
     }
     
     let deletedCount = 0;
+    const failedIds = [];
     
     // 批量删除图片
     for (const md5 of md5List) {
       try {
         const key = `images/${md5}.jpg`;
         
-        // 先检查图片是否存在
-        const existingImage = await r2Bucket.head(key);
-        if (existingImage) {
-          await r2Bucket.delete(key);
-          deletedCount++;
-        }
+        // R2 删除是幂等的：不存在也视为成功，避免 HEAD/DELETE 之间状态变化。
+        await r2Bucket.delete(key);
+        deletedCount++;
       } catch (error) {
-        // 继续删除其他图片，不中断整个批量操作
-        // 错误会被上层调用者处理
         console.warn(`删除图片 ${md5} 失败:`, error.message);
+        failedIds.push(md5);
       }
     }
     
-    return deletedCount;
+    return { deletedCount, failedIds };
   } catch (error) {
     throw new Error(`R2批量删除失败: ${error.message}`);
   }

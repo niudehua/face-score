@@ -4,7 +4,11 @@ import {
   deleteOldRecords,
   getOldCoupleRecords,
   deleteOldCoupleRecords,
-  getReferencedImageIds
+  getReferencedImageIds,
+  enqueueImageDeletions,
+  getQueuedImageDeletions,
+  removeQueuedImageDeletions,
+  recordImageDeletionFailures
 } from '../lib/db.js';
 import { deleteImage } from '../lib/storage.js';
 import { rateLimit } from '../lib/rate-limit.js';
@@ -63,32 +67,43 @@ export async function onRequestGet(context) {
       coupleRecords: coupleRecordsToDelete.length
     });
 
-    // 先删除过期 D1 引用，再判断图片是否仍被其他记录引用。
-    const deleteResult = await deleteOldRecords(d1, cutoffTimestamp);
-    const coupleDeleteResult = coupleRecordsToDelete.length > 0
-      ? await deleteOldCoupleRecords(d1, cutoffTimestamp)
-      : { changes: 0, meta: { changes: 0 } };
     const candidateImageIds = [
       ...recordsToDelete.map(record => record.md5),
       ...coupleRecordsToDelete.flatMap(record => [record.md5_a, record.md5_b])
     ];
-    const stillReferenced = new Set(await getReferencedImageIds(d1, candidateImageIds));
-    const unreferencedImageIds = [...new Set(candidateImageIds)]
-      .filter(md5 => !stillReferenced.has(md5));
 
-    // 删除没有剩余引用的 R2 图片；共享图片会保留。
+    // 先持久化待删 MD5，再删分析行。即使任务中断，下一次仍能重试 R2 删除。
+    await enqueueImageDeletions(d1, candidateImageIds);
+
+    // 删除过期 D1 引用，再处理队列；共享照片仍会被引用检查拦住。
+    const deleteResult = await deleteOldRecords(d1, cutoffTimestamp);
+    const coupleDeleteResult = coupleRecordsToDelete.length > 0
+      ? await deleteOldCoupleRecords(d1, cutoffTimestamp)
+      : { changes: 0, meta: { changes: 0 } };
+
+    // 删除没有剩余引用的 R2 图片；失败项留在队列里供后续重试。
     let deletedImages = 0;
     let failedImages = 0;
+    let pendingImageDeletes = 0;
 
-    if (r2 && unreferencedImageIds.length > 0) {
+    if (r2) {
+      const queuedImageIds = await getQueuedImageDeletions(d1);
       logger.debug('开始清理R2中的旧图片');
 
-      for (const md5 of unreferencedImageIds) {
+      for (const md5 of queuedImageIds) {
+        const stillReferenced = await getReferencedImageIds(d1, [md5]);
+        if (stillReferenced.includes(md5)) {
+          await removeQueuedImageDeletions(d1, [md5]);
+          continue;
+        }
         try {
           await deleteImage(r2, md5);
           deletedImages++;
+          await removeQueuedImageDeletions(d1, [md5]);
         } catch (r2Error) {
           failedImages++;
+          pendingImageDeletes++;
+          await recordImageDeletionFailures(d1, [md5], r2Error);
           logger.error('删除R2图片失败', { md5, error: r2Error.message });
           // 继续处理其他图片
         }
@@ -96,8 +111,12 @@ export async function onRequestGet(context) {
       
       logger.debug('R2图片清理完成', { 
         deleted: deletedImages, 
-        failed: failedImages 
+        failed: failedImages,
+        pending: pendingImageDeletes
       });
+      pendingImageDeletes = (await getQueuedImageDeletions(d1)).length;
+    } else {
+      pendingImageDeletes = (await getQueuedImageDeletions(d1)).length;
     }
     
     const deletedCount = deleteResult.changes || 0;
@@ -107,7 +126,8 @@ export async function onRequestGet(context) {
       deletedRecords: deletedCount,
       deletedCoupleRecords: deletedCoupleCount,
       deletedImages,
-      failedImages
+      failedImages,
+      pendingImageDeletes
     });
     
     return createSuccessResponse({ 
@@ -117,6 +137,7 @@ export async function onRequestGet(context) {
       deletedCoupleCount,
       deletedImages,
       failedImages,
+      pendingImageDeletes,
       cutoffDate: cutoffDate.toISOString()
     }, {
       rateLimitInfo: rateLimitResult

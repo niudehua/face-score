@@ -202,7 +202,7 @@ function createPhotoGroupCard(group, img) {
 function updatePhotoGroupCard(group) {
   const badgeBox = group.card.querySelector('.analysis-type-badges');
   const types = [...new Set(group.records.map(record => record.analysis_type || 'score'))];
-  badgeBox.innerHTML = types.map(type => `<span class="analysis-type-badge">${getAnalysisTypeLabel(type)}</span>`).join('');
+  badgeBox.innerHTML = types.map(type => `<span class="analysis-type-badge analysis-type-${type}">${getAnalysisTypeLabel(type)}</span>`).join('');
   group.card.classList.toggle('selected', group.records.some(record => selectedImages.has(record.id)));
 }
 

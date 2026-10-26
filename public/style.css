@@ -716,6 +716,21 @@ input[type="file"] {
   font-weight: 600;
 }
 
+.analysis-type-score {
+  background: rgba(255, 255, 255, 0.94);
+  color: #a84479;
+}
+
+.analysis-type-fortune {
+  background: rgba(246, 240, 255, 0.96);
+  color: #6848a3;
+}
+
+.analysis-type-couple {
+  background: rgba(255, 237, 246, 0.96);
+  color: #c33783;
+}
+
 .selection-overlay {
   position: absolute;
   top: 6px;
