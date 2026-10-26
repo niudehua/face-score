@@ -1,6 +1,6 @@
 // 导入模块
 import { calculateImageId, uploadImage, getImageUrl } from '../lib/storage.js';
-import { insertOrUpdateScore } from '../lib/db.js';
+import { insertAnalysis } from '../lib/db.js';
 import { verifyTurnstile, extractTurnstileToken } from '../lib/turnstile.js';
 import { rateLimit } from '../lib/rate-limit.js';
 import { createSuccessResponse, createErrorResponse } from '../lib/response.js';
@@ -275,7 +275,7 @@ export async function onRequestPost(context) {
         try {
           // 计算图片的唯一标识符作为主键
           const imageId = await calculateImageId(imageBase64);
-          const id = `face_${imageId}`;
+          const id = `score_${crypto.randomUUID()}`;
           logger.debug(`图片ID生成: ${imageId}`);
 
           // 上传图片到 R2
@@ -292,6 +292,7 @@ export async function onRequestPost(context) {
           const timestamp = new Date().toISOString();
           const scoreData = {
             id,
+            analysis_type: 'score',
             score,
             comment,
             gender: genderCn,
@@ -305,7 +306,7 @@ export async function onRequestPost(context) {
           if (d1) {
             logger.debug('D1已绑定，准备存储元数据');
             try {
-              const d1Result = await insertOrUpdateScore(d1, scoreData);
+              const d1Result = await insertAnalysis(d1, scoreData);
               storedKey = scoreData.id;
               logger.debug('数据已成功存储到D1', { id: scoreData.id, changes: d1Result.changes || 0 });
             } catch (d1Error) {

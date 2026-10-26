@@ -9,7 +9,8 @@
 - **颜值评分**：Face++ 提供人脸属性和颜值分，Workers AI 生成趣味点评。
 - **气质解读**：根据检测到的人脸属性生成娱乐性报告；接口为 `/api/fortune`。
 - **CP 匹配**：分别分析两张照片并生成匹配结果；接口为 `/api/couple`。
-- **照片与记录管理**：配置 D1 和 R2 后，可浏览、删除照片记录，并按保留策略清理旧数据。
+- **分析档案**：配置 D1 和 R2 后，可按颜值评分、气质解读或 CP 匹配查看分析历史；同一张照片可以关联多条分析记录。
+- **照片管理**：删除单条分析记录时会检查共享引用；仍被其他分析使用的照片会继续保留在 R2。
 - **安全检查**：上传前可通过安全检查接口检查图片内容。
 - **网页端与微信小程序**：网页静态文件位于 `public/`，小程序代码位于 `face-score-miniprogram/`。
 - **管理登录**：支持 GitHub OAuth 登录，并通过允许用户配置限制可登录账号。
@@ -23,7 +24,7 @@
 | API | Cloudflare Pages Functions（`functions/api/`） |
 | 人脸属性 | Face++ Detect API |
 | 文本生成 | Cloudflare Workers AI（默认模型 `@cf/meta/llama-3-8b-instruct`） |
-| 持久化 | Cloudflare D1、R2、KV（按需绑定） |
+| 持久化 | Cloudflare D1（分析记录）、R2（图片）、KV（会话与限流，按需绑定） |
 | 人机验证 | Cloudflare Turnstile（网页端按配置启用） |
 
 ## 目录结构
@@ -139,7 +140,7 @@ module.exports = {
 | `WECHAT_PRIVATE_KEY` | Secret | 微信小程序安全检查所需私钥 |
 | `BYPASS_AUTH` | Variable | 仅限受控预览/调试环境的登录绕过开关 |
 
-`PROMPT_SCORE`、`PROMPT_TEMPERAMENT`、`PROMPT_COUPLE` 可用于覆盖默认提示词。D1、R2 未绑定时，分析接口仍可返回分析结果，但照片/记录持久化与管理功能不可用。数据库表会由代码在首次写入时创建。
+`PROMPT_SCORE`、`PROMPT_TEMPERAMENT`、`PROMPT_COUPLE` 可用于覆盖默认提示词。D1、R2 未绑定时，分析接口仍可返回分析结果，但照片/记录持久化与管理功能不可用。`face_analyses` 分析记录表会在首次保存分析结果时自动创建；旧 `face_scores` 记录仍会显示在档案中。
 
 ## 小程序 CI 上传
 

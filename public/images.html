@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" href="/logo.png" type="image/png">
-  <title>颜值档案 - 萌牛测颜</title>
+  <title>分析档案 - 萌牛测颜</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <link rel="stylesheet" href="/style.css">
 </head>
@@ -20,7 +20,7 @@
         </a>
       </div>
       <div class="header-center">
-        <h1 class="images-title">颜值档案</h1>
+        <h1 class="images-title">分析档案</h1>
         <span id="total-count" class="images-count">加载中...</span>
       </div>
       <div class="header-right">
@@ -33,12 +33,12 @@
 
       <div id="loading" class="state-container">
         <div class="spinner"></div>
-        <p>正在加载照片...</p>
+        <p>正在加载分析记录...</p>
       </div>
 
       <div id="empty" class="state-container" style="display: none;">
         <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">📷</div>
-        <p>暂无照片</p>
+        <p>暂无分析记录</p>
         <a href="/" class="empty-action">去上传一张</a>
       </div>
 
@@ -72,7 +72,10 @@
         </svg>
       </button>
       <img id="preview-image" src="" alt="Preview" class="preview-img" />
+      <img id="preview-image-b" src="" alt="CP匹配对象照片" class="preview-img preview-img-b" style="display: none;" />
       <div class="preview-info">
+        <div id="preview-type" class="preview-type">颜值评分</div>
+        <div id="preview-score-label" class="preview-score-label">颜值评分</div>
         <div class="preview-score">0.0</div>
         <div class="preview-date">时间</div>
         <p id="preview-comment" class="preview-comment"></p>

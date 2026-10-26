@@ -218,7 +218,7 @@ export async function onRequestDelete(context) {
 
     // 5. 获取要删除的图片信息
     const imagesToDelete = await getImagesByIds(FACE_SCORE_DB, ids);
-    const md5List = imagesToDelete.map(image => image.md5);
+    const md5List = [...new Set(imagesToDelete.map(image => image.md5).filter(Boolean))];
 
     logger.debug('获取要删除的图片信息', { md5Count: md5List.length });
 

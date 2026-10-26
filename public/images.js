@@ -18,10 +18,22 @@ const selectionCountDisplay = document.getElementById('selection-count');
 const deleteBtn = document.getElementById('delete-btn');
 
 const previewModal = document.getElementById('preview-modal');
+const previewContent = document.querySelector('.preview-content');
 const previewImage = document.getElementById('preview-image');
+const previewImageB = document.getElementById('preview-image-b');
 const previewScore = document.querySelector('.preview-score');
 const previewDate = document.querySelector('.preview-date');
 const previewComment = document.getElementById('preview-comment');
+const previewType = document.getElementById('preview-type');
+const previewScoreLabel = document.getElementById('preview-score-label');
+
+function getAnalysisTypeLabel(type) {
+  return ({
+    score: '颜值评分',
+    fortune: '气质解读',
+    couple: 'CP匹配'
+  })[type] || '分析记录';
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
   const isLoggedIn = await verifyLogin();
@@ -112,7 +124,7 @@ async function loadImages(page = 1, isAppend = false) {
 
     if (data.data) {
       totalCount = data.pagination.total;
-      totalCountDisplay.textContent = `${totalCount} 张照片`;
+      totalCountDisplay.textContent = `${totalCount} 条记录`;
 
       if (data.data.length === 0 && !isAppend) {
         loading.style.display = 'none';
@@ -152,12 +164,15 @@ function renderImages(images) {
 
     card.dataset.id = img.id;
 
-    card.innerHTML = `
-      <div class="image-wrapper">
-        <img src="${img.image_url}" loading="lazy">
-      </div>
-      <div class="selection-overlay"></div>
-    `;
+    const imageContent = img.analysis_type === 'couple' && img.image_url_b
+      ? `<div class="image-wrapper couple-image-wrapper">
+           <img src="${img.image_url}" loading="lazy">
+           <img src="${img.image_url_b}" loading="lazy">
+         </div>`
+      : `<div class="image-wrapper"><img src="${img.image_url}" loading="lazy"></div>`;
+    card.innerHTML = `${imageContent}
+      <span class="analysis-type-badge">${getAnalysisTypeLabel(img.analysis_type)}</span>
+      <div class="selection-overlay"></div>`;
 
     card.addEventListener('click', () => handleCardClick(img));
     fragment.appendChild(card);
@@ -210,7 +225,7 @@ async function handleDelete() {
   if (selectedImages.size === 0) return;
 
   const count = selectedImages.size;
-  if (!confirm(`确定要删除这 ${count} 张照片吗？`)) return;
+  if (!confirm(`确定要删除这 ${count} 条分析记录吗？如果照片仍被其他分析使用，图片文件会保留。`)) return;
 
   try {
     deleteBtn.textContent = '删除中...';
@@ -233,13 +248,13 @@ async function handleDelete() {
       toggleManageMode();
 
       totalCount -= count;
-      totalCountDisplay.textContent = `${totalCount} 张照片`;
+      totalCountDisplay.textContent = `${totalCount} 条记录`;
 
       if (totalCount === 0) {
         empty.style.display = 'block';
       }
 
-      alert(`成功删除 ${count} 张照片`);
+      alert(data.message || `成功删除 ${count} 条分析记录`);
     } else {
       alert('删除失败: ' + data.error);
     }
@@ -253,7 +268,21 @@ async function handleDelete() {
 
 function showPreview(img) {
   previewImage.src = img.image_url;
-  previewScore.textContent = img.score ? img.score.toFixed(1) : '0.0';
+  const type = img.analysis_type || 'score';
+  if (type === 'couple' && img.image_url_b) {
+    previewContent.classList.add('couple-preview');
+    previewImageB.src = img.image_url_b;
+    previewImageB.style.display = 'block';
+  } else {
+    previewContent.classList.remove('couple-preview');
+    previewImageB.removeAttribute('src');
+    previewImageB.style.display = 'none';
+  }
+  previewType.textContent = getAnalysisTypeLabel(type);
+  previewScoreLabel.textContent = type === 'fortune'
+    ? '参考颜值分'
+    : type === 'couple' ? 'CP匹配分' : '颜值分';
+  previewScore.textContent = Number(img.score || 0).toFixed(1);
   previewDate.textContent = new Date(img.timestamp).toLocaleString();
   previewComment.textContent = img.comment || '';
   previewModal.style.display = 'flex';

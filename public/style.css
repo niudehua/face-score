@@ -620,6 +620,31 @@ input[type="file"] {
   object-fit: cover;
 }
 
+.couple-image-wrapper {
+  display: flex;
+}
+
+.couple-image-wrapper img {
+  width: 50%;
+  min-width: 0;
+}
+
+.analysis-type-badge {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  max-width: calc(100% - 16px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #8d3d72;
+  font-size: 11px;
+  font-weight: 600;
+}
+
 .selection-overlay {
   position: absolute;
   top: 6px;
@@ -707,6 +732,22 @@ input[type="file"] {
   border-radius: 12px;
 }
 
+.preview-content.couple-preview {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.preview-content.couple-preview .preview-img {
+  width: calc(50% - 4px);
+  max-height: 48vh;
+}
+
+.preview-content.couple-preview .preview-info {
+  flex-basis: 100%;
+}
+
 .preview-info {
   text-align: center;
   margin-top: 16px;
@@ -716,6 +757,17 @@ input[type="file"] {
   font-size: 2rem;
   font-weight: 700;
   color: #ff6ec7;
+}
+
+.preview-type {
+  color: #8d3d72;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.preview-score-label {
+  color: #888;
+  font-size: 0.8rem;
 }
 
 .preview-date {
