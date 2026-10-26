@@ -248,7 +248,7 @@ export async function onRequestGet(context) {
     return new Response(null, {
       status: 302,
       headers: {
-        'Location': '/images',
+        'Location': '/archive',
         'Set-Cookie': cookie,
         'Cache-Control': 'no-store'
       }

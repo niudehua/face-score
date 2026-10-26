@@ -141,7 +141,7 @@
       document.getElementById('fileInputB').addEventListener('change', (e) => handleCoupleFileSelect(e, 'B'));
 
       document.getElementById('imagesBtn').addEventListener('click', () => {
-        window.location.href = '/images';
+        window.location.href = '/archive';
       });
 
       document.getElementById('previewClear').addEventListener('click', clearSinglePreview);
@@ -328,7 +328,7 @@
             const response = await fetch('/api/auth', { credentials: 'include' });
             const data = await response.json();
             if (data.success) {
-              window.location.href = '/images';
+              window.location.href = '/archive';
             } else {
               window.location.href = '/api/auth/github';
             }
