@@ -463,6 +463,46 @@ async function getImagesByIds(d1, ids) {
   }
 }
 
+/**
+ * Return image hashes that are still referenced by a score/fortune record or a
+ * couple match. These hashes must remain in R2 when another record is removed.
+ */
+async function getReferencedImageIds(d1, md5List) {
+  const uniqueIds = [...new Set((md5List || []).filter(Boolean))];
+  if (uniqueIds.length === 0) return [];
+
+  try {
+    const referenced = new Set();
+    const coupleTable = await d1.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='couple_matches'"
+    ).first();
+
+    // Keep each statement below SQLite's bind-parameter limit.
+    const batchSize = 300;
+    for (let i = 0; i < uniqueIds.length; i += batchSize) {
+      const batch = uniqueIds.slice(i, i + batchSize);
+      const placeholders = batch.map(() => '?').join(',');
+      const scoreRows = await d1.prepare(
+        `SELECT md5 AS image_id FROM face_scores WHERE md5 IN (${placeholders})`
+      ).bind(...batch).all();
+      for (const row of scoreRows.results || []) referenced.add(row.image_id);
+
+      if (coupleTable) {
+        const coupleRows = await d1.prepare(`
+          SELECT md5_a AS image_id FROM couple_matches WHERE md5_a IN (${placeholders})
+          UNION
+          SELECT md5_b AS image_id FROM couple_matches WHERE md5_b IN (${placeholders})
+        `).bind(...batch, ...batch).all();
+        for (const row of coupleRows.results || []) referenced.add(row.image_id);
+      }
+    }
+
+    return [...referenced];
+  } catch (err) {
+    throw new Error(`D1检查图片引用失败: ${err.message}`);
+  }
+}
+
 async function ensureCoupleTableExists(d1) {
   try {
     const tableCheck = await d1.prepare(
@@ -558,6 +598,11 @@ async function insertOrUpdateCoupleMatch(d1, matchData) {
 
 async function getOldCoupleRecords(d1, cutoffTimestamp) {
   try {
+    const tableCheck = await d1.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='couple_matches'"
+    ).first();
+    if (!tableCheck) return [];
+
     const result = await d1.prepare(
       "SELECT id, md5_a, md5_b FROM couple_matches WHERE timestamp < ?"
     )
@@ -605,6 +650,7 @@ export {
   getImages,
   deleteImages,
   getImagesByIds,
+  getReferencedImageIds,
   ensureCoupleTableExists,
   insertOrUpdateCoupleMatch,
   getOldCoupleRecords,

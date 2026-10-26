@@ -1,5 +1,5 @@
 import { calculateImageId, uploadImage, getImageUrl } from '../lib/storage.js';
-import { insertOrUpdateScore, insertOrUpdateCoupleMatch } from '../lib/db.js';
+import { insertOrUpdateCoupleMatch } from '../lib/db.js';
 import { verifyTurnstile } from '../lib/turnstile.js';
 import { rateLimit } from '../lib/rate-limit.js';
 import { createSuccessResponse, createErrorResponse, handleOptionsRequest } from '../lib/response.js';
@@ -305,32 +305,8 @@ export async function onRequestPost(context) {
             });
             logger.debug('CP匹配数据已成功存储到couple_matches');
 
-            const genderACn = genderA === '男' ? '帅气小哥哥' : '漂亮小姐姐';
-            const genderBCn = genderB === '男' ? '帅气小哥哥' : '漂亮小姐姐';
-
-            await insertOrUpdateScore(d1, {
-              id: `face_${imageIdA}`,
-              score: scoreA,
-              comment: `【CP匹配】与${genderBCn}匹配度${matchScore}分`,
-              gender: genderACn,
-              age: ageA,
-              timestamp,
-              image_url: imageUrlA,
-              md5: imageIdA
-            });
-            logger.debug('图片A元数据已成功存储到face_scores');
-
-            await insertOrUpdateScore(d1, {
-              id: `face_${imageIdB}`,
-              score: scoreB,
-              comment: `【CP匹配】与${genderACn}匹配度${matchScore}分`,
-              gender: genderBCn,
-              age: ageB,
-              timestamp,
-              image_url: imageUrlB,
-              md5: imageIdB
-            });
-            logger.debug('图片B元数据已成功存储到face_scores');
+            // CP 图片归属 couple_matches，不再写入 face_scores；避免把 CP 照片
+            // 当成颜值记录展示，也避免同一图片的分析结果互相覆盖。
           } catch (dbError) {
             if (dbError.message.includes('duration')) {
               logger.warn('遇到Cloudflare内部D1错误（duration），这是本地开发环境bug');

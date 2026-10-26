@@ -1,4 +1,4 @@
-import { getImages, deleteImages, getImagesByIds } from '../lib/db.js';
+import { getImages, deleteImages, getImagesByIds, getReferencedImageIds } from '../lib/db.js';
 import { rateLimit } from '../lib/rate-limit.js';
 import { deleteImagesFromR2 } from '../lib/storage.js';
 import { createSuccessResponse, createErrorResponse, createCORSHeaders } from '../lib/response.js';
@@ -222,25 +222,8 @@ export async function onRequestDelete(context) {
 
     logger.debug('获取要删除的图片信息', { md5Count: md5List.length });
 
-    // 6. 从R2删除图片
-    let r2Deleted = 0;
-    if (FACE_IMAGES && md5List.length > 0) {
-      try {
-        r2Deleted = await deleteImagesFromR2(FACE_IMAGES, md5List);
-        logger.debug('从R2删除成功', { deleted: r2Deleted });
-      } catch (r2Error) {
-        logger.error('从R2删除图片失败', r2Error);
-        return createErrorResponse('删除图片文件失败', {
-          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-          headers: corsHeaders,
-          rateLimitInfo: rateLimitResult
-        });
-      }
-    } else if (!FACE_IMAGES) {
-      logger.warn('未绑定FACE_IMAGES，跳过R2删除');
-    }
-
-    // 7. 从D1删除记录
+    // 6. 删除数据库记录，再检查是否仍被其他分析（例如 CP 匹配）引用。
+    // 只有完全没有引用的图片才从 R2 删除。
     let d1Result = { deleted: 0 };
     try {
       d1Result = await deleteImages(FACE_SCORE_DB, ids);
@@ -254,12 +237,37 @@ export async function onRequestDelete(context) {
       });
     }
 
+    const referencedIds = new Set(await getReferencedImageIds(FACE_SCORE_DB, md5List));
+    const unreferencedIds = md5List.filter(md5 => !referencedIds.has(md5));
+    const retainedByOtherRecords = md5List.length - unreferencedIds.length;
+
+    // 7. 删除未被引用的 R2 图片
+    let r2Deleted = 0;
+    if (FACE_IMAGES && unreferencedIds.length > 0) {
+      try {
+        r2Deleted = await deleteImagesFromR2(FACE_IMAGES, unreferencedIds);
+        logger.debug('从R2删除成功', { deleted: r2Deleted });
+      } catch (r2Error) {
+        logger.error('从R2删除图片失败', r2Error);
+        return createErrorResponse('删除图片文件失败', {
+          status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          headers: corsHeaders,
+          rateLimitInfo: rateLimitResult
+        });
+      }
+    } else if (!FACE_IMAGES) {
+      logger.warn('未绑定FACE_IMAGES，跳过R2删除');
+    }
+
     // 8. 返回响应
     return createSuccessResponse({
       success: true,
-      message: '批量删除成功',
+      message: retainedByOtherRecords > 0
+        ? `删除完成，${retainedByOtherRecords} 张仍被其他分析引用的图片已保留`
+        : '批量删除成功',
       deletedFromD1: d1Result.deleted,
       deletedFromR2: r2Deleted,
+      retainedByOtherRecords,
       totalRequested: ids.length
     }, {
       headers: corsHeaders,

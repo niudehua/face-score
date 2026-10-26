@@ -1,5 +1,11 @@
 // 导入模块
-import { getOldRecords, deleteOldRecords } from '../lib/db.js';
+import {
+  getOldRecords,
+  deleteOldRecords,
+  getOldCoupleRecords,
+  deleteOldCoupleRecords,
+  getReferencedImageIds
+} from '../lib/db.js';
 import { deleteImage } from '../lib/storage.js';
 import { rateLimit } from '../lib/rate-limit.js';
 import { createSuccessResponse, createErrorResponse } from '../lib/response.js';
@@ -50,20 +56,34 @@ export async function onRequestGet(context) {
 
     // 获取要删除的记录及其MD5
     const recordsToDelete = await getOldRecords(d1, cutoffTimestamp);
+    const coupleRecordsToDelete = await getOldCoupleRecords(d1, cutoffTimestamp);
     const recordCount = recordsToDelete.length;
-    logger.debug('准备删除旧记录', { count: recordCount });
-    
-    // 如果有R2绑定，先删除对应的图片
+    logger.debug('准备删除旧记录', {
+      scoreRecords: recordCount,
+      coupleRecords: coupleRecordsToDelete.length
+    });
+
+    // 先删除过期 D1 引用，再判断图片是否仍被其他记录引用。
+    const deleteResult = await deleteOldRecords(d1, cutoffTimestamp);
+    const coupleDeleteResult = coupleRecordsToDelete.length > 0
+      ? await deleteOldCoupleRecords(d1, cutoffTimestamp)
+      : { changes: 0, meta: { changes: 0 } };
+    const candidateImageIds = [
+      ...recordsToDelete.map(record => record.md5),
+      ...coupleRecordsToDelete.flatMap(record => [record.md5_a, record.md5_b])
+    ];
+    const stillReferenced = new Set(await getReferencedImageIds(d1, candidateImageIds));
+    const unreferencedImageIds = [...new Set(candidateImageIds)]
+      .filter(md5 => !stillReferenced.has(md5));
+
+    // 删除没有剩余引用的 R2 图片；共享图片会保留。
     let deletedImages = 0;
     let failedImages = 0;
-    
-    if (r2 && recordCount > 0) {
+
+    if (r2 && unreferencedImageIds.length > 0) {
       logger.debug('开始清理R2中的旧图片');
-      
-      // 批量删除R2图片
-      for (const record of recordsToDelete) {
-        const md5 = record.md5;
-        
+
+      for (const md5 of unreferencedImageIds) {
         try {
           await deleteImage(r2, md5);
           deletedImages++;
@@ -80,12 +100,12 @@ export async function onRequestGet(context) {
       });
     }
     
-    // 执行删除操作
-    const deleteResult = await deleteOldRecords(d1, cutoffTimestamp);
     const deletedCount = deleteResult.changes || 0;
+    const deletedCoupleCount = coupleDeleteResult.changes ?? coupleDeleteResult.meta?.changes ?? 0;
     
     logger.info('数据清理完成', { 
       deletedRecords: deletedCount,
+      deletedCoupleRecords: deletedCoupleCount,
       deletedImages,
       failedImages
     });
@@ -94,6 +114,7 @@ export async function onRequestGet(context) {
       success: true, 
       message: `数据清理完成，成功删除 ${deletedCount} 条记录`,
       deletedCount,
+      deletedCoupleCount,
       deletedImages,
       failedImages,
       cutoffDate: cutoffDate.toISOString()
