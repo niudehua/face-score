@@ -71,8 +71,17 @@
           <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </button>
-      <img id="preview-image" src="" alt="Preview" class="preview-img" />
-      <img id="preview-image-b" src="" alt="CP匹配对象照片" class="preview-img preview-img-b" style="display: none;" />
+      <div class="preview-photo-stage">
+        <div class="preview-photo preview-photo-a">
+          <img id="preview-image" src="" alt="预览照片 A" class="preview-img" />
+          <span class="preview-person-label">A</span>
+        </div>
+        <div id="preview-photo-b" class="preview-photo preview-photo-b" style="display: none;">
+          <img id="preview-image-b" src="" alt="预览照片 B" class="preview-img" />
+          <span class="preview-person-label">B</span>
+        </div>
+        <span id="preview-heart" class="preview-match-heart" aria-hidden="true" style="display: none;">♥</span>
+      </div>
       <div class="preview-info">
         <div id="preview-type" class="preview-type">颜值评分</div>
         <div id="preview-score-label" class="preview-score-label">颜值评分</div>

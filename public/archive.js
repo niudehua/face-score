@@ -21,6 +21,8 @@ const previewModal = document.getElementById('preview-modal');
 const previewContent = document.querySelector('.preview-content');
 const previewImage = document.getElementById('preview-image');
 const previewImageB = document.getElementById('preview-image-b');
+const previewPhotoB = document.getElementById('preview-photo-b');
+const previewHeart = document.getElementById('preview-heart');
 const previewScore = document.querySelector('.preview-score');
 const previewDate = document.querySelector('.preview-date');
 const previewComment = document.getElementById('preview-comment');
@@ -159,6 +161,7 @@ function renderImages(images) {
   images.forEach(img => {
     const card = document.createElement('div');
     card.className = 'image-card';
+    if (img.analysis_type === 'couple' && img.image_url_b) card.classList.add('couple-card');
     if (deleteMode) card.classList.add('deleting');
     if (selectedImages.has(img.id)) card.classList.add('selected');
 
@@ -166,8 +169,15 @@ function renderImages(images) {
 
     const imageContent = img.analysis_type === 'couple' && img.image_url_b
       ? `<div class="image-wrapper couple-image-wrapper">
-           <img src="${img.image_url}" loading="lazy">
-           <img src="${img.image_url_b}" loading="lazy">
+           <div class="couple-thumb-person">
+             <img src="${img.image_url}" alt="CP匹配照片 A" loading="lazy">
+             <span class="couple-thumb-label">A</span>
+           </div>
+           <div class="couple-thumb-person">
+             <img src="${img.image_url_b}" alt="CP匹配照片 B" loading="lazy">
+             <span class="couple-thumb-label">B</span>
+           </div>
+           <span class="couple-thumb-heart" aria-hidden="true">♥</span>
          </div>`
       : `<div class="image-wrapper"><img src="${img.image_url}" loading="lazy"></div>`;
     card.innerHTML = `${imageContent}
@@ -272,11 +282,13 @@ function showPreview(img) {
   if (type === 'couple' && img.image_url_b) {
     previewContent.classList.add('couple-preview');
     previewImageB.src = img.image_url_b;
-    previewImageB.style.display = 'block';
+    previewPhotoB.style.display = 'block';
+    previewHeart.style.display = 'flex';
   } else {
     previewContent.classList.remove('couple-preview');
     previewImageB.removeAttribute('src');
-    previewImageB.style.display = 'none';
+    previewPhotoB.style.display = 'none';
+    previewHeart.style.display = 'none';
   }
   previewType.textContent = getAnalysisTypeLabel(type);
   previewScoreLabel.textContent = type === 'fortune'
