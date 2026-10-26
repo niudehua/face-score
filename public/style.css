@@ -689,14 +689,21 @@ input[type="file"] {
 }
 
 .image-card.couple-card .analysis-type-badge {
-  top: 8px;
-  bottom: auto;
+  position: static;
 }
 
-.analysis-type-badge {
+.analysis-type-badges {
   position: absolute;
   left: 8px;
   bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: calc(100% - 16px);
+}
+
+.analysis-type-badge {
+  display: inline-block;
   max-width: calc(100% - 16px);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -923,6 +930,32 @@ input[type="file"] {
   margin-bottom: 8px;
 }
 
+.preview-analysis-tabs {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.preview-analysis-tab {
+  border: 1px solid #ead3e1;
+  border-radius: 999px;
+  padding: 7px 12px;
+  background: #fff;
+  color: #8d3d72;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.preview-analysis-tab.active {
+  border-color: #e957a9;
+  background: #fff0f8;
+  color: #b52d7f;
+  font-weight: 700;
+}
+
 .preview-score-label {
   color: #888;
   font-size: 0.8rem;
@@ -937,6 +970,20 @@ input[type="file"] {
   font-size: 0.9rem;
   color: #666666;
   margin-top: 8px;
+}
+
+.preview-delete-analysis {
+  margin-top: 14px;
+  padding: 7px 12px;
+  border: 1px solid #e7cbd8;
+  border-radius: 8px;
+  background: #fff;
+  color: #9b456d;
+  cursor: pointer;
+}
+
+.preview-delete-analysis:hover {
+  background: #fff3f8;
 }
 
 .state-container {

@@ -5,6 +5,7 @@ let isLoading = false;
 let deleteMode = false;
 let selectedImages = new Set();
 let totalCount = 0;
+const photoGroups = new Map();
 
 const imageGrid = document.getElementById('image-grid');
 const loading = document.getElementById('loading');
@@ -28,6 +29,10 @@ const previewDate = document.querySelector('.preview-date');
 const previewComment = document.getElementById('preview-comment');
 const previewType = document.getElementById('preview-type');
 const previewScoreLabel = document.getElementById('preview-score-label');
+const previewTabs = document.getElementById('preview-analysis-tabs');
+const deleteAnalysisBtn = document.getElementById('delete-analysis-btn');
+let activePreviewGroup = null;
+let activePreviewIndex = 0;
 
 function getAnalysisTypeLabel(type) {
   return ({
@@ -49,6 +54,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 function initEventListeners() {
   manageBtn.addEventListener('click', toggleManageMode);
   deleteBtn.addEventListener('click', handleDelete);
+  deleteAnalysisBtn.addEventListener('click', deletePreviewAnalysis);
 }
 
 async function verifyLogin() {
@@ -111,6 +117,7 @@ async function loadImages(page = 1, isAppend = false) {
   isLoading = true;
   if (!isAppend) {
     imageGrid.innerHTML = '';
+    photoGroups.clear();
     loading.style.display = 'block';
     empty.style.display = 'none';
     loadMoreTrigger.style.display = 'none';
@@ -126,7 +133,7 @@ async function loadImages(page = 1, isAppend = false) {
 
     if (data.data) {
       totalCount = data.pagination.total;
-      totalCountDisplay.textContent = `${totalCount} 条记录`;
+      totalCountDisplay.textContent = `共 ${totalCount} 条分析 · 已加载 ${photoGroups.size} 张照片`;
 
       if (data.data.length === 0 && !isAppend) {
         loading.style.display = 'none';
@@ -156,54 +163,61 @@ async function loadImages(page = 1, isAppend = false) {
 }
 
 function renderImages(images) {
-  const fragment = document.createDocumentFragment();
-
   images.forEach(img => {
-    const card = document.createElement('div');
-    card.className = 'image-card';
-    if (img.analysis_type === 'couple' && img.image_url_b) card.classList.add('couple-card');
-    if (deleteMode) card.classList.add('deleting');
-    if (selectedImages.has(img.id)) card.classList.add('selected');
-
-    card.dataset.id = img.id;
-
-    const imageContent = img.analysis_type === 'couple' && img.image_url_b
-      ? `<div class="image-wrapper couple-image-wrapper">
-           <div class="couple-thumb-person">
-             <img src="${img.image_url}" alt="CP匹配照片 A" loading="lazy">
-             <span class="couple-thumb-label">A</span>
-           </div>
-           <div class="couple-thumb-person">
-             <img src="${img.image_url_b}" alt="CP匹配照片 B" loading="lazy">
-             <span class="couple-thumb-label">B</span>
-           </div>
-           <span class="couple-thumb-heart" aria-hidden="true">♥</span>
-         </div>`
-      : `<div class="image-wrapper"><img src="${img.image_url}" loading="lazy"></div>`;
-    card.innerHTML = `${imageContent}
-      <span class="analysis-type-badge">${getAnalysisTypeLabel(img.analysis_type)}</span>
-      <div class="selection-overlay"></div>`;
-
-    card.addEventListener('click', () => handleCardClick(img));
-    fragment.appendChild(card);
+    const type = img.analysis_type || 'score';
+    const hashes = type === 'couple' ? [img.md5, img.md5_b].filter(Boolean).sort() : [img.md5].filter(Boolean);
+    const key = hashes.length ? `${type}:${hashes.join(':')}` : `${type}:id:${img.id}`;
+    let group = photoGroups.get(key);
+    if (!group) {
+      group = { key, records: [], card: null };
+      photoGroups.set(key, group);
+    }
+    if (group.records.some(record => record.id === img.id)) return;
+    group.records.push(img);
+    if (!group.card) createPhotoGroupCard(group, img);
+    updatePhotoGroupCard(group);
   });
-
-  imageGrid.appendChild(fragment);
+  totalCountDisplay.textContent = `共 ${totalCount} 条分析 · 已加载 ${photoGroups.size} 张照片`;
 }
 
-function handleCardClick(img) {
+function createPhotoGroupCard(group, img) {
+  const card = document.createElement('div');
+  card.className = 'image-card';
+  if (img.analysis_type === 'couple' && img.image_url_b) card.classList.add('couple-card');
+  if (deleteMode) card.classList.add('deleting');
+  card.dataset.groupKey = group.key;
+  const imageContent = img.analysis_type === 'couple' && img.image_url_b
+    ? `<div class="image-wrapper couple-image-wrapper">
+         <div class="couple-thumb-person"><img src="${img.image_url}" alt="CP匹配照片 A" loading="lazy"><span class="couple-thumb-label">A</span></div>
+         <div class="couple-thumb-person"><img src="${img.image_url_b}" alt="CP匹配照片 B" loading="lazy"><span class="couple-thumb-label">B</span></div>
+         <span class="couple-thumb-heart" aria-hidden="true">♥</span>
+       </div>`
+    : `<div class="image-wrapper"><img src="${img.image_url}" alt="分析照片" loading="lazy"></div>`;
+  card.innerHTML = `${imageContent}<div class="analysis-type-badges"></div><div class="selection-overlay"></div>`;
+  card.addEventListener('click', () => handleCardClick(group));
+  group.card = card;
+  imageGrid.appendChild(card);
+}
+
+function updatePhotoGroupCard(group) {
+  const badgeBox = group.card.querySelector('.analysis-type-badges');
+  const types = [...new Set(group.records.map(record => record.analysis_type || 'score'))];
+  badgeBox.innerHTML = types.map(type => `<span class="analysis-type-badge">${getAnalysisTypeLabel(type)}</span>`).join('');
+  group.card.classList.toggle('selected', group.records.some(record => selectedImages.has(record.id)));
+}
+
+function handleCardClick(group) {
   if (deleteMode) {
-    const card = document.querySelector(`.image-card[data-id="${img.id}"]`);
-    if (selectedImages.has(img.id)) {
-      selectedImages.delete(img.id);
-      card.classList.remove('selected');
+    const allSelected = group.records.every(record => selectedImages.has(record.id));
+    if (allSelected) {
+      group.records.forEach(record => selectedImages.delete(record.id));
     } else {
-      selectedImages.add(img.id);
-      card.classList.add('selected');
+      group.records.forEach(record => selectedImages.add(record.id));
     }
+    updatePhotoGroupCard(group);
     updateSelectionUI();
   } else {
-    showPreview(img);
+    showPreview(group);
   }
 }
 
@@ -227,7 +241,7 @@ function toggleManageMode() {
 }
 
 function updateSelectionUI() {
-  selectionCountDisplay.textContent = `已选择 ${selectedImages.size} 张`;
+  selectionCountDisplay.textContent = `已选择 ${selectedImages.size} 条分析`;
   deleteBtn.disabled = selectedImages.size === 0;
 }
 
@@ -250,15 +264,18 @@ async function handleDelete() {
     const data = await res.json();
 
     if (data.success) {
-      selectedImages.forEach(id => {
-        const card = document.querySelector(`.image-card[data-id="${id}"]`);
-        if (card) card.remove();
-      });
+      for (const [key, group] of photoGroups) {
+        group.records = group.records.filter(record => !selectedImages.has(record.id));
+        if (!group.records.length) {
+          group.card.remove();
+          photoGroups.delete(key);
+        } else updatePhotoGroupCard(group);
+      }
 
       toggleManageMode();
 
       totalCount -= count;
-      totalCountDisplay.textContent = `${totalCount} 条记录`;
+      totalCountDisplay.textContent = `共 ${totalCount} 条分析 · 已加载 ${photoGroups.size} 张照片`;
 
       if (totalCount === 0) {
         empty.style.display = 'block';
@@ -276,7 +293,17 @@ async function handleDelete() {
   }
 }
 
-function showPreview(img) {
+function showPreview(group, activeIndex = 0) {
+  activePreviewGroup = group;
+  activePreviewIndex = activeIndex;
+  const img = group.records[activeIndex] || group.records[0];
+  previewTabs.style.display = group.records.length > 1 ? 'flex' : 'none';
+  previewTabs.innerHTML = group.records.map((record, index) => {
+    const sameType = group.records.filter(item => item.analysis_type === record.analysis_type);
+    const suffix = sameType.length > 1 ? ` · ${new Date(record.timestamp).toLocaleDateString()}` : '';
+    return `<button type="button" class="preview-analysis-tab${index === activeIndex ? ' active' : ''}" role="tab" aria-selected="${index === activeIndex}">${getAnalysisTypeLabel(record.analysis_type)}${suffix}</button>`;
+  }).join('');
+  [...previewTabs.children].forEach((button, index) => button.addEventListener('click', () => showPreview(group, index)));
   previewImage.src = img.image_url;
   const type = img.analysis_type || 'score';
   if (type === 'couple' && img.image_url_b) {
@@ -299,6 +326,44 @@ function showPreview(img) {
   previewComment.textContent = img.comment || '';
   previewModal.style.display = 'flex';
   document.body.style.overflow = 'hidden';
+}
+
+async function deletePreviewAnalysis() {
+  if (!activePreviewGroup) return;
+  const group = activePreviewGroup;
+  const record = group.records[activePreviewIndex];
+  if (!record || !confirm(`确定删除这条${getAnalysisTypeLabel(record.analysis_type)}记录吗？`)) return;
+
+  deleteAnalysisBtn.disabled = true;
+  deleteAnalysisBtn.textContent = '删除中...';
+  try {
+    const res = await fetch('/api/images', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: [record.id] })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || '删除失败');
+
+    group.records.splice(activePreviewIndex, 1);
+    totalCount = Math.max(0, totalCount - 1);
+    totalCountDisplay.textContent = `共 ${totalCount} 条分析 · 已加载 ${photoGroups.size - (group.records.length ? 0 : 1)} 张照片`;
+    if (group.records.length) {
+      updatePhotoGroupCard(group);
+      showPreview(group, Math.min(activePreviewIndex, group.records.length - 1));
+    } else {
+      group.card.remove();
+      photoGroups.delete(group.key);
+      closePreview();
+    }
+    if (totalCount === 0) empty.style.display = 'block';
+    alert(data.message || '分析记录已删除');
+  } catch (error) {
+    alert(error.message || '删除失败');
+  } finally {
+    deleteAnalysisBtn.disabled = false;
+    deleteAnalysisBtn.textContent = '删除此项分析';
+  }
 }
 
 window.closePreview = function() {
