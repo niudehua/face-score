@@ -1,4 +1,4 @@
-name: Scheduled Tasks
+name: 清理过期记录与图片
 on:
   schedule:
     # UTC 10:00 = Asia/Shanghai 18:00
@@ -11,6 +11,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   run-scheduled-tasks:
+    name: 验证维护权限、清理并复核
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -18,7 +19,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Run authenticated maintenance
+      - name: 执行清理及前后检查
         env:
           API_BASE_URL: ${{ secrets.API_BASE_URL }}
           MAINTENANCE_TOKEN: ${{ secrets.MAINTENANCE_TOKEN }}

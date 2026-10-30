@@ -1,4 +1,4 @@
-name: Deploy to Cloudflare
+name: 部署网页与 API（Cloudflare）
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   deploy:
-    name: Deploy Pages (with Functions)
+    name: 测试并部署网页与 API
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true

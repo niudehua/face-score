@@ -1,4 +1,4 @@
-name: 部署微信小程序
+name: 上传小程序开发版（微信）
 
 on:
   push:
@@ -10,6 +10,7 @@ on:
 
 jobs:
   deploy:
+    name: 上传开发版（不审核、不发布）
     runs-on: ubuntu-latest
     steps:
       # 1. 检出代码
@@ -85,5 +86,5 @@ jobs:
         run: rm -f private.key
 
       # 9. 输出部署结果
-      - name: 部署完成
-        run: echo "小程序部署成功！"
+      - name: 开发版上传完成
+        run: echo "小程序开发版上传成功，审核与正式发布需在微信后台操作。"
