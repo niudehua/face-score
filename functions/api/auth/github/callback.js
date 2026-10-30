@@ -1,3 +1,5 @@
+import { signToken } from '../../../lib/tokens.js';
+import { sha256 } from '../../../lib/mcp/oauth.js';
 import { cookieValue } from '../../../lib/access.js';
 import { SESSION_TTL } from '../../../lib/constants.js';
 import { rateLimit } from '../../../lib/rate-limit.js';
@@ -17,7 +19,7 @@ export async function onRequestGet(context) {
     const raw = await env.SESSION_KV.get(`oauth:${state}`);
     if (!raw) return createErrorResponse('登录请求已失效，请重新登录', { status: 400, headers });
     await env.SESSION_KV.delete(`oauth:${state}`);
-    const { verifier, callback } = JSON.parse(raw);
+    const { verifier, callback, mcpFlow } = JSON.parse(raw);
     if (callback !== new URL('/api/auth/github/callback', request.url).href) return createErrorResponse('登录回调地址无效', { status: 400, headers });
     const response = await fetch('https://github.com/login/oauth/access_token', {
       method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json', 'User-Agent': 'Face-Score-App' },
@@ -35,7 +37,12 @@ export async function onRequestGet(context) {
     // Resume a pending MCP consent flow after the existing GitHub login.
     // Cookie contents never become a redirect URL; consent validates the D1 request.
     const pendingMcp = /^[a-f0-9-]{36}$/.test(cookieValue(request, 'mcp_flow'));
-    const resultHeaders = new Headers({ Location: pendingMcp ? '/api/mcp/oauth/consent' : '/archive', 'Cache-Control': 'no-store' });
+    let destination = pendingMcp ? '/api/mcp/oauth/consent' : '/archive';
+    if (typeof mcpFlow === 'string' && /^[a-f0-9-]{36}$/.test(mcpFlow)) {
+      const continuation = await signToken(env, 'mcp-browser-flow', { flow: mcpFlow, session: await sha256(id) }, 600);
+      destination = '/api/mcp/oauth/consent?mcp_continue=' + encodeURIComponent(continuation);
+    }
+    const resultHeaders = new Headers({ Location: destination, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
     resultHeaders.append('Set-Cookie', clearState);
     resultHeaders.append('Set-Cookie', `session_id=${id}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_TTL}`);
     return new Response(null, { status: 302, headers: resultHeaders });

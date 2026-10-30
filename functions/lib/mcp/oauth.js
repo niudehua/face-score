@@ -107,8 +107,9 @@ export async function authorize(context) {
   const session = await verifySession(context.request, context.env);
   // Commit a first-party document before leaving for GitHub. A redirect-only
   // entry can lose its flow cookie in external-browser OAuth handoffs.
-  const next = session.valid ? '/api/mcp/oauth/consent' : '/api/auth/github';
-  return new Response(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>连接私人萌牛测颜</title><body><h1>连接私人萌牛测颜</h1><p>请在当前浏览器继续。下一步通过 GitHub 确认本人身份，然后选择是否授权 ChatGPT。</p><p><a href="${next}">继续连接</a></p><p>此步骤不会授予工具访问权限。请勿复制授权链接到其他浏览器。</p></body></html>`, { headers: {
+  const continuation = await signToken(context.env, session.valid ? 'mcp-browser-flow' : 'mcp-login-flow', { flow: id, ...(session.valid ? { session: await sha256(cookieValue(context.request, 'session_id')) } : {}) }, 600);
+  const next = (session.valid ? '/api/mcp/oauth/consent' : '/api/auth/github') + '?mcp_continue=' + encodeURIComponent(continuation);
+  return new Response(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>连接私人萌牛测颜</title><body><h1>连接私人萌牛测颜</h1><p>请在当前浏览器继续。下一步通过 GitHub 确认本人身份，然后选择是否授权 ChatGPT。</p><p><a href="${escape(next)}">继续连接</a></p><p>此步骤不会授予工具访问权限。请勿复制授权链接到其他浏览器。</p></body></html>`, { headers: {
     'Content-Type': 'text/html; charset=utf-8',
     'Set-Cookie': `mcp_flow=${id}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600`, 'Cache-Control': 'no-store', 'Referrer-Policy': 'same-origin',
     'X-Frame-Options': 'DENY', 'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
@@ -119,8 +120,8 @@ async function ownerSession(context, c) {
   if (!session.valid) throw new McpError('请通过 GitHub 登录后重新连接 MCP', 401);
   if (session.sessionData.username.toLowerCase() !== c.owner) throw new McpError('仅 MCP_OWNER_GITHUB_USER 指定的本人账号可授权', 403);
 }
-async function pendingFlow(context, c) {
-  const id = flowId(context.request);
+async function pendingFlow(context, c, explicitId) {
+  const id = explicitId || flowId(context.request);
   if (!/^[a-f0-9-]{36}$/.test(id)) throw new McpError('授权请求已失效，请在 ChatGPT 重新连接');
   const db = await database(context.env);
   const row = await db.prepare('SELECT payload FROM mcp_oauth_flows WHERE id = ? AND expires_at > ?').bind(id, now()).first();
@@ -131,18 +132,27 @@ async function pendingFlow(context, c) {
 }
 export async function consentPage(context) {
   const c = config(context); await ownerSession(context, c);
-  const { id } = await pendingFlow(context, c);
-  const csrf = await signToken(context.env, 'mcp-consent', { flow: id }, 600);
+  const continuation = new URL(context.request.url).searchParams.get('mcp_continue');
+  let explicitId;
+  const session = await sha256(cookieValue(context.request, 'session_id'));
+  if (continuation) {
+    const claims = await verifyToken(context.env, continuation, 'mcp-browser-flow');
+    if (!claims || claims.session !== session) throw new McpError('授权流程凭据无效或不属于当前登录会话', 403);
+    explicitId = claims.flow;
+  }
+  const { id } = await pendingFlow(context, c, explicitId);
+  const csrf = await signToken(context.env, 'mcp-consent', { flow: id, session }, 600);
   return new Response(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>连接私人萌牛测颜</title><body><h1>授权 ChatGPT 使用萌牛测颜</h1><p>当前账号：${escape(c.owner)}</p><p>允许三个工具分析你主动选择的照片。调用时照片会下载到后端并发送给 Face++；配置微信安全服务时也会发送给微信检查。本服务不保存照片，不调用 Workers AI，检测结果交给 ChatGPT 生成娱乐文案。</p><p>照片不能用来判断真实人格、健康或恋爱关系。此授权不允许浏览、删除档案或执行维护操作。</p><form method="post" action="/api/mcp/oauth/consent"><input type="hidden" name="csrf" value="${escape(csrf)}"><button name="decision" value="approve">允许连接</button><button name="decision" value="deny">取消</button></form></body></html>`, {
-    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'same-origin', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "default-src 'none'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'" }
+    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'strict-origin', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "default-src 'none'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'" }
   });
 }
 export async function consent(context) {
   const c = config(context); await limit(context, '/mcp/oauth/consent'); await ownerSession(context, c);
   if (!isSameOrigin(context.request)) throw new McpError('授权页面来源无效', 403);
   const form = await readForm(context.request);
-  const { id, data, db } = await pendingFlow(context, c);
   const csrf = await verifyToken(context.env, form.get('csrf'), 'mcp-consent');
+  if (csrf?.session && csrf.session !== await sha256(cookieValue(context.request, 'session_id'))) throw new McpError('授权确认不属于当前登录会话', 403);
+  const { id, data, db } = await pendingFlow(context, c, csrf?.session ? csrf.flow : undefined);
   if (csrf?.flow !== id) throw new McpError('授权确认校验失败', 403);
   if (!['approve', 'deny'].includes(form.get('decision'))) throw new McpError('授权选择无效');
   const taken = await db.prepare('DELETE FROM mcp_oauth_flows WHERE id = ? AND expires_at > ? RETURNING payload').bind(id, now()).first();

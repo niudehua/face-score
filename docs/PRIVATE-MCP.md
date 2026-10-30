@@ -44,7 +44,7 @@ ChatGPT 通过 `_meta["openai/fileParams"]` 将用户选择的文件传入 `phot
 2. 先验证 `https://你的域名/.well-known/oauth-authorization-server` 和 `https://你的域名/.well-known/oauth-protected-resource/mcp` 返回 JSON。访问 `/mcp` 未认证时应为 401，带 `WWW-Authenticate`，不应返回照片或工具结果。
 3. 在 ChatGPT 网页版打开 [Plugins](https://chatgpt.com/plugins)，点击加号 → Add custom MCP server（添加自定义 MCP 服务），添加名称“萌牛测颜（私人）”，URL 填 `https://你的域名/mcp`，认证选择 OAuth。
 4. 在 OAuth 高级设置中填写 `MCP_CLIENT_ID` 和 `MCP_CLIENT_SECRET` 的值。这里是本服务的凭证，不是 GitHub OAuth 的凭证。若界面显示专属回调地址，先同步到 Cloudflare `MCP_REDIRECT_URI` 并重新部署，再继续连接。
-5. 首先在本服务入口点击“继续连接”，让当前浏览器保存授权流程 Cookie；全程在同一浏览器完成。需要登录时会跳转 GitHub，使用本人账号登录，再在本服务授权页核对账号与图片传输说明，手动点击“允许连接”。“继续连接”本身不授予权限。授权只允许 `face:analyze`，不包含档案、删除或维护权限。
+5. 首先在本服务入口点击“继续连接”，通过短期签名流程凭据继续授权（不依赖额外的 `mcp_flow` Cookie）；全程在同一浏览器完成。需要登录时会跳转 GitHub，使用本人账号登录，再在本服务授权页核对账号与图片传输说明，手动点击“允许连接”。“继续连接”本身不授予权限。授权只允许 `face:analyze`，不包含档案、删除或维护权限。
 6. 成功连接后应出现三个分析工具。在对话中明确选择照片和该应用，例如：“请用萌牛测颜分析这张本人照片，我同意将它发送给 Face++（以及已配置的微信内容检查），给我一句友好的娱乐点评。”
 
 是否能创建自定义 MCP 取决于 ChatGPT 账号及工作区策略。若你的界面没有 OAuth 客户端 ID/Secret 输入，不要改成无认证；先核对当前账号的接入方式。本地测试通过不代表已完成真实 ChatGPT OAuth 联调。
@@ -89,3 +89,5 @@ OAuth access token 有效期一小时，refresh token 有效期七天并在使�
 - [OpenAI MCP OAuth 认证](https://developers.openai.com/plugins/build/auth)：受保护资源发现、PKCE、预配置客户端、issuer 与 resource 绑定。
 - [OpenAI 文件工具参数](https://developers.openai.com/plugins/reference#file-inputs)：`openai/fileParams` 和四字段文件对象。
 - [MCP Streamable HTTP](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports)：无会话 JSON 响应，未提供 SSE GET 流时返回 405。
+
+授权流程兼容说明：入口链接携带 10 分钟有效的签名流程凭据。已登录时凭据绑定当前登录会话；未登录时通过 GitHub OAuth 的一次性 state 在服务端传递流程编号，登录完成后再签发绑定新会话的凭据。确认表单同样绑定会话，D1 请求仍检查期限、客户端和资源并原子消费。凭据不能替代管理员登录或 MCP access token。不要分享包含 `mcp_continue` 的完整链接。
