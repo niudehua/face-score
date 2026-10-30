@@ -280,3 +280,20 @@ test('file download follows only bounded validated redirects and reports safe HT
   await assert.rejects(download(file(), base), error => /network/.test(error.message) && !/private full URL/.test(error.message));
   assert.doesNotMatch(JSON.stringify(r.logs), /private-token|signed-query|secret-|provider secret|private full URL/);
 });
+
+
+test('regional compatibility permits only constrained read-only SAS URLs, with a strict opt-out', async () => {
+  const r = runtime(), { permittedUrl } = await r.module('functions/lib/mcp/tools.js');
+  const query = new URLSearchParams({ sv: '2023-11-03', se: new Date(Date.now() + 3600000).toISOString(), sp: 'r', sr: 'b', sig: 'A'.repeat(43) + '=', spr: 'https' });
+  const regional = 'https://oaisdmntprnortheurope.blob.core.windows.net/photos/input.png?';
+  assert.equal(permittedUrl(regional + query, base).hostname, 'oaisdmntprnortheurope.blob.core.windows.net');
+  assert.throws(() => permittedUrl(regional + query, { ...base, MCP_FILE_HOST_POLICY: 'strict' }), /域名未被允许/);
+  for (const patch of [{ sp: 'rw' }, { sr: 'c' }, { sig: '' }, { se: '2000-01-01' }, { spr: 'http' }]) {
+    const invalid = new URLSearchParams(query); for (const [key, value] of Object.entries(patch)) invalid.set(key, value);
+    assert.throws(() => permittedUrl(regional + invalid, base), /域名未被允许/);
+  }
+  for (const host of ['attacker.blob.core.windows.net', 'oaisdmntprnortheurope.blob.core.windows.net.evil.test', 'sub.oaisdmntprnortheurope.blob.core.windows.net']) {
+    assert.throws(() => permittedUrl('https://' + host + '/photos/input.png?' + query, base), /域名未被允许/);
+  }
+  assert.throws(() => permittedUrl(regional + query + '&sp=rw', base), /域名未被允许/);
+});

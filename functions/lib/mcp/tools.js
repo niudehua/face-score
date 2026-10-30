@@ -28,20 +28,34 @@ export const tools = [
   descriptor('analyze_temperament', '照片气质印象分析', '检测一张照片的表情和拍摄状态，供描述照片印象。不能用于推断人格、健康、族裔或运势。', 1),
   descriptor('analyze_couple', '双人合照氛围分析', '分别检测两张各含一张人脸的照片，供比较表情氛围；不测量真实恋爱关系或相容性，不预设两人是情侣。', 2)
 ];
-// Exact storage accounts observed in ChatGPT fileParams. Do not infer ownership
-// from an Azure suffix or an oai-like account prefix: Azure is multi-tenant.
+// Exact hosts remain available in strict mode. Regional compatibility below
+// limits outbound GET destinations; it does NOT authenticate OpenAI ownership.
 const CHATGPT_FILE_HOSTS = [
   'files.oaiusercontent.com', 'files.openai.com',
   'oaisdmntprcentralus.blob.core.windows.net',
   'oaisdmntpreastus2.blob.core.windows.net',
   'oaisdmntprwestcentralus.blob.core.windows.net'
 ];
+function regionalFileUrl(url, env) {
+  if (env.MCP_FILE_HOST_POLICY === 'strict') return false;
+  // Azure storage account names are single labels, at most 24 characters.
+  // Do not allow arbitrary Azure accounts, subdomains, or other cloud suffixes.
+  if (!/^oaisdmntpr[a-z][a-z0-9]{0,13}\.blob\.core\.windows\.net$/.test(url.hostname)) return false;
+  const q = url.searchParams;
+  if (!['sig', 'se', 'sp', 'sr', 'sv'].every(key => q.getAll(key).length === 1)) return false;
+  return q.get('sp') === 'r' && q.get('sr') === 'b' &&
+    /^[A-Za-z0-9+/=]{16,256}$/.test(q.get('sig') || '') &&
+    /^\d{4}-\d{2}-\d{2}$/.test(q.get('sv') || '') &&
+    Number.isFinite(Date.parse(q.get('se'))) && Date.parse(q.get('se')) > Date.now() &&
+    (!q.has('spr') || q.get('spr') === 'https') &&
+    /^\/[^/]+\/.+/.test(url.pathname);
+}
 export function permittedUrl(raw, env) {
   let url;
   try { url = new URL(raw); } catch { throw new McpError('图片下载地址无效，请重新选择照片'); }
   const hosts = new Set([...CHATGPT_FILE_HOSTS, ...(env.MCP_FILE_HOSTS || '').split(',').map(h => h.trim().toLowerCase()).filter(Boolean)]);
   if (url.protocol !== 'https:' || url.username || url.password || url.hash || (url.port && url.port !== '443') ||
-      !hosts.has(url.hostname.toLowerCase()) || url.hostname === 'localhost' || url.hostname.endsWith('.localhost') || url.hostname.endsWith('.local') || url.hostname.endsWith('.internal') ||
+      (!hosts.has(url.hostname.toLowerCase()) && !regionalFileUrl(url, env)) || url.hostname === 'localhost' || url.hostname.endsWith('.localhost') || url.hostname.endsWith('.local') || url.hostname.endsWith('.internal') ||
       /^[\d.]+$/.test(url.hostname) || url.hostname.includes(':')) throw new McpError(`图片下载域名未被允许（${url.hostname.slice(0, 255)}），请让管理员核对 MCP_FILE_HOSTS；不要提供内网或任意图片 URL`);
   return url;
 }
