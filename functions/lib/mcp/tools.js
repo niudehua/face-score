@@ -28,12 +28,19 @@ export const tools = [
   descriptor('analyze_temperament', '照片气质印象分析', '检测一张照片的表情和拍摄状态，供描述照片印象。不能用于推断人格、健康、族裔或运势。', 1),
   descriptor('analyze_couple', '双人合照氛围分析', '分别检测两张各含一张人脸的照片，供比较表情氛围；不测量真实恋爱关系或相容性，不预设两人是情侣。', 2)
 ];
-function permittedUrl(raw, env) {
+// Exact storage accounts observed in ChatGPT fileParams. Do not infer ownership
+// from an Azure suffix or an oai-like account prefix: Azure is multi-tenant.
+const CHATGPT_FILE_HOSTS = [
+  'files.oaiusercontent.com', 'files.openai.com',
+  'oaisdmntprcentralus.blob.core.windows.net',
+  'oaisdmntpreastus2.blob.core.windows.net'
+];
+export function permittedUrl(raw, env) {
   let url;
   try { url = new URL(raw); } catch { throw new McpError('图片下载地址无效，请重新选择照片'); }
-  const hosts = (env.MCP_FILE_HOSTS || 'files.oaiusercontent.com,files.openai.com').split(',').map(h => h.trim().toLowerCase()).filter(Boolean);
+  const hosts = new Set([...CHATGPT_FILE_HOSTS, ...(env.MCP_FILE_HOSTS || '').split(',').map(h => h.trim().toLowerCase()).filter(Boolean)]);
   if (url.protocol !== 'https:' || url.username || url.password || url.hash || (url.port && url.port !== '443') ||
-      !hosts.includes(url.hostname.toLowerCase()) || url.hostname === 'localhost' || url.hostname.endsWith('.localhost') || url.hostname.endsWith('.local') || url.hostname.endsWith('.internal') ||
+      !hosts.has(url.hostname.toLowerCase()) || url.hostname === 'localhost' || url.hostname.endsWith('.localhost') || url.hostname.endsWith('.local') || url.hostname.endsWith('.internal') ||
       /^[\d.]+$/.test(url.hostname) || url.hostname.includes(':')) throw new McpError(`图片下载域名未被允许（${url.hostname.slice(0, 255)}），请让管理员核对 MCP_FILE_HOSTS；不要提供内网或任意图片 URL`);
   return url;
 }

@@ -231,3 +231,25 @@ test('MCP login carries the signed flow through GitHub state without an mcp_flow
   assert.ok((await pair.json()).access_token);
   assert.equal((await consent.onRequestPost(formContext('/api/mcp/oauth/consent', env, { decision: 'approve', csrf }, { Cookie: sessionCookie }))).status, 400);
 });
+
+
+test('ChatGPT file hosts include observed Azure regions even with legacy configuration; no Azure wildcards', async () => {
+  const r = runtime(), { permittedUrl } = await r.module('functions/lib/mcp/tools.js');
+  for (const env of [base, { ...base, MCP_FILE_HOSTS: 'files.oaiusercontent.com' }]) {
+    for (const host of ['files.oaiusercontent.com', 'files.openai.com', 'oaisdmntprcentralus.blob.core.windows.net', 'oaisdmntpreastus2.blob.core.windows.net']) {
+      assert.equal(permittedUrl('https://' + host + '/container/photo?sig=temporary', env).hostname, host);
+    }
+  }
+  const extra = { ...base, MCP_FILE_HOSTS: ' CUSTOM.example.test ,*.blob.core.windows.net' };
+  assert.equal(permittedUrl('https://custom.example.test/photo', extra).hostname, 'custom.example.test');
+  for (const raw of [
+    'https://arbitrary.blob.core.windows.net/photo',
+    'https://oaisdmntprunknownregion.blob.core.windows.net/photo',
+    'https://oaisdmntpreastus2.blob.core.windows.net.evil.test/photo',
+    'https://sub.oaisdmntpreastus2.blob.core.windows.net/photo',
+    'https://oaisdmntpreastus2.blob.core.windows.net@127.0.0.1/photo',
+    'http://oaisdmntpreastus2.blob.core.windows.net/photo',
+    'https://oaisdmntpreastus2.blob.core.windows.net:8443/photo',
+    'https://oaisdmntpreastus2.blob.core.windows.net/photo#fragment'
+  ]) assert.throws(() => permittedUrl(raw, extra), /域名未被允许/);
+});

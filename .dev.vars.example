@@ -28,4 +28,5 @@ MCP_CLIENT_SECRET=
 # Copy the exact ChatGPT callback shown in the connector settings.
 MCP_REDIRECT_URI=https://chatgpt.com/connector_platform_oauth_redirect
 # Exact file CDN hosts only; add actual ChatGPT download host if needed, never *.
-MCP_FILE_HOSTS=files.oaiusercontent.com,files.openai.com
+# Optional extra exact file hosts; built-in ChatGPT hosts do not need configuration.
+MCP_FILE_HOSTS=
