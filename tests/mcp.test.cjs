@@ -236,7 +236,7 @@ test('MCP login carries the signed flow through GitHub state without an mcp_flow
 test('ChatGPT file hosts include observed Azure regions even with legacy configuration; no Azure wildcards', async () => {
   const r = runtime(), { permittedUrl } = await r.module('functions/lib/mcp/tools.js');
   for (const env of [base, { ...base, MCP_FILE_HOSTS: 'files.oaiusercontent.com' }]) {
-    for (const host of ['files.oaiusercontent.com', 'files.openai.com', 'oaisdmntprcentralus.blob.core.windows.net', 'oaisdmntpreastus2.blob.core.windows.net']) {
+    for (const host of ['files.oaiusercontent.com', 'files.openai.com', 'oaisdmntprcentralus.blob.core.windows.net', 'oaisdmntpreastus2.blob.core.windows.net', 'oaisdmntprwestcentralus.blob.core.windows.net']) {
       assert.equal(permittedUrl('https://' + host + '/container/photo?sig=temporary', env).hostname, host);
     }
   }
@@ -247,6 +247,7 @@ test('ChatGPT file hosts include observed Azure regions even with legacy configu
     'https://oaisdmntprunknownregion.blob.core.windows.net/photo',
     'https://oaisdmntpreastus2.blob.core.windows.net.evil.test/photo',
     'https://sub.oaisdmntpreastus2.blob.core.windows.net/photo',
+    'https://oaisdmntprwestcentralus.blob.core.windows.net.evil.test/photo',
     'https://oaisdmntpreastus2.blob.core.windows.net@127.0.0.1/photo',
     'http://oaisdmntpreastus2.blob.core.windows.net/photo',
     'https://oaisdmntpreastus2.blob.core.windows.net:8443/photo',

@@ -33,7 +33,8 @@ export const tools = [
 const CHATGPT_FILE_HOSTS = [
   'files.oaiusercontent.com', 'files.openai.com',
   'oaisdmntprcentralus.blob.core.windows.net',
-  'oaisdmntpreastus2.blob.core.windows.net'
+  'oaisdmntpreastus2.blob.core.windows.net',
+  'oaisdmntprwestcentralus.blob.core.windows.net'
 ];
 export function permittedUrl(raw, env) {
   let url;

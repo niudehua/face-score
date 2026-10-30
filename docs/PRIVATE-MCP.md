@@ -30,7 +30,7 @@ ChatGPT 通过 `_meta["openai/fileParams"]` 将用户选择的文件传入 `phot
 | `MCP_CLIENT_ID` | 文本 | 例如 `face-score-personal`；这是本服务给 ChatGPT 的 OAuth 客户端标识，不是 GitHub Client ID |
 | `MCP_CLIENT_SECRET` | 密钥 | 独立随机密钥，至少 32 字符、无空白；用 `openssl rand -hex 32` 在本机生成并保管，不要放进代码或聊天 |
 | `MCP_REDIRECT_URI` | 文本 | 从 ChatGPT 的 MCP 管理界面复制精确 OAuth 回调地址；支持 `https://chatgpt.com/connector_platform_oauth_redirect` 或界面显示的 `https://chatgpt.com/connector/oauth/具体ID` |
-| `MCP_FILE_HOSTS` | 文本 | 可选；追加精确主机名，逗号分隔，无协议/路径，不支持通配符。内置 `files.oaiusercontent.com`、`files.openai.com` 及实际遇到的 `oaisdmntprcentralus.blob.core.windows.net`、`oaisdmntpreastus2.blob.core.windows.net`，已有配置不覆盖内置名单 |
+| `MCP_FILE_HOSTS` | 文本 | 可选；追加精确主机名，逗号分隔，无协议/路径，不支持通配符。内置 `files.oaiusercontent.com`、`files.openai.com` 及实际遇到的 `oaisdmntprcentralus.blob.core.windows.net`、`oaisdmntpreastus2.blob.core.windows.net`、`oaisdmntprwestcentralus.blob.core.windows.net`，已有配置不覆盖内置名单 |
 
 不要复用 `MAINTENANCE_TOKEN`、微信 AppSecret 或 GitHub Client Secret 作为 MCP Client Secret。
 
@@ -71,7 +71,7 @@ npm test
 | 内容安全暂时不可用 | 检查既有微信 AppSecret/权限/配额；MCP 不会通过关闭检查放行 |
 | 服务返回 JSON-RPC 错误 | 使用 Streamable HTTP；POST Content-Type 为 application/json，Accept 同时包含 application/json 与 text/event-stream |
 
-内置文件主机是保守的精确允许列表，覆盖已观察到的两个 Azure 区域账户。它不是 OpenAI 承诺的完整主机清单；未知区域账户仍需核对，不按 `oaisdmntpr*` 或 `*.blob.core.windows.net` 自动放行，因为名称前缀或多租户后缀不能证明账户归属。已有 `MCP_FILE_HOSTS` 是追加配置，不会覆盖内置名单。下载不使用自动重定向，最多手动跟随 3 次，并在每一跳重新执行完整 HTTPS/精确域名校验，不转发 Cookie 或认证头；禁止 IP 字面量、localhost 等目的地。整个下载链（含响应体）共享 15 秒期限，人脸检测另有超时限制。下载错误区分网络、超时、HTTP 状态及传输中断，日志仅记录域名、状态码、跳数和固定错误类型，不记录签名 URL、Location 或响应正文。没有配置内容检查时，MCP 的行为与现有网页相同：`REQUIRE_IMAGE_SECURITY=true` 强制检查；提供微信 AppID/AppSecret 时自动检查。
+内置文件主机是保守的精确允许列表，覆盖已观察到的三个 Azure 区域账户。它不是 OpenAI 承诺的完整主机清单；未知区域账户仍需核对，不按 `oaisdmntpr*` 或 `*.blob.core.windows.net` 自动放行，因为名称前缀或多租户后缀不能证明账户归属。已有 `MCP_FILE_HOSTS` 是追加配置，不会覆盖内置名单。下载不使用自动重定向，最多手动跟随 3 次，并在每一跳重新执行完整 HTTPS/精确域名校验，不转发 Cookie 或认证头；禁止 IP 字面量、localhost 等目的地。整个下载链（含响应体）共享 15 秒期限，人脸检测另有超时限制。下载错误区分网络、超时、HTTP 状态及传输中断，日志仅记录域名、状态码、跳数和固定错误类型，不记录签名 URL、Location 或响应正文。没有配置内容检查时，MCP 的行为与现有网页相同：`REQUIRE_IMAGE_SECURITY=true` 强制检查；提供微信 AppID/AppSecret 时自动检查。
 
 ## 凭证周期与关闭
 
