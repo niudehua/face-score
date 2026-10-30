@@ -44,7 +44,7 @@ ChatGPT 通过 `_meta["openai/fileParams"]` 将用户选择的文件传入 `phot
 2. 先验证 `https://你的域名/.well-known/oauth-authorization-server` 和 `https://你的域名/.well-known/oauth-protected-resource/mcp` 返回 JSON。访问 `/mcp` 未认证时应为 401，带 `WWW-Authenticate`，不应返回照片或工具结果。
 3. 在 ChatGPT 网页版打开 [Plugins](https://chatgpt.com/plugins)，点击加号 → Add custom MCP server（添加自定义 MCP 服务），添加名称“萌牛测颜（私人）”，URL 填 `https://你的域名/mcp`，认证选择 OAuth。
 4. 在 OAuth 高级设置中填写 `MCP_CLIENT_ID` 和 `MCP_CLIENT_SECRET` 的值。这里是本服务的凭证，不是 GitHub OAuth 的凭证。若界面显示专属回调地址，先同步到 Cloudflare `MCP_REDIRECT_URI` 并重新部署，再继续连接。
-5. 跳转 GitHub 后使用本人账号登录，在本服务授权页核对账号与图片传输说明，手动点击“允许连接”。授权只允许 `face:analyze`，不包含档案、删除或维护权限。
+5. 首先在本服务入口点击“继续连接”，让当前浏览器保存授权流程 Cookie；全程在同一浏览器完成。需要登录时会跳转 GitHub，使用本人账号登录，再在本服务授权页核对账号与图片传输说明，手动点击“允许连接”。“继续连接”本身不授予权限。授权只允许 `face:analyze`，不包含档案、删除或维护权限。
 6. 成功连接后应出现三个分析工具。在对话中明确选择照片和该应用，例如：“请用萌牛测颜分析这张本人照片，我同意将它发送给 Face++（以及已配置的微信内容检查），给我一句友好的娱乐点评。”
 
 是否能创建自定义 MCP 取决于 ChatGPT 账号及工作区策略。若你的界面没有 OAuth 客户端 ID/Secret 输入，不要改成无认证；先核对当前账号的接入方式。本地测试通过不代表已完成真实 ChatGPT OAuth 联调。

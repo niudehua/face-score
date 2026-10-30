@@ -105,9 +105,13 @@ export async function authorize(context) {
   const db = await database(context.env); await prune(db);
   await db.prepare('INSERT INTO mcp_oauth_flows (id, payload, expires_at) VALUES (?, ?, ?)').bind(id, JSON.stringify(payload), now() + 600).run();
   const session = await verifySession(context.request, context.env);
-  return new Response(null, { status: 302, headers: {
-    Location: session.valid ? '/api/mcp/oauth/consent' : '/api/auth/github',
-    'Set-Cookie': `mcp_flow=${id}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600`, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer'
+  // Commit a first-party document before leaving for GitHub. A redirect-only
+  // entry can lose its flow cookie in external-browser OAuth handoffs.
+  const next = session.valid ? '/api/mcp/oauth/consent' : '/api/auth/github';
+  return new Response(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>连接私人萌牛测颜</title><body><h1>连接私人萌牛测颜</h1><p>请在当前浏览器继续。下一步通过 GitHub 确认本人身份，然后选择是否授权 ChatGPT。</p><p><a href="${next}">继续连接</a></p><p>此步骤不会授予工具访问权限。请勿复制授权链接到其他浏览器。</p></body></html>`, { headers: {
+    'Content-Type': 'text/html; charset=utf-8',
+    'Set-Cookie': `mcp_flow=${id}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600`, 'Cache-Control': 'no-store', 'Referrer-Policy': 'same-origin',
+    'X-Frame-Options': 'DENY', 'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
   } });
 }
 async function ownerSession(context, c) {

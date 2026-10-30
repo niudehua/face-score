@@ -30,7 +30,11 @@ test('private MCP OAuth: real SQLite one-time code, PKCE, single owner, refresh 
   const invalid = await authorize.onRequestGet(ctx('/api/mcp/oauth/authorize?' + new URLSearchParams({ ...params, redirect_uri: 'https://evil.test/callback' }), env));
   assert.equal(invalid.status, 400); assert.equal(invalid.headers.get('Location'), null);
   const initiated = await authorize.onRequestGet(ctx(route, env));
-  assert.equal(initiated.status, 302); assert.equal(initiated.headers.get('Location'), '/api/auth/github');
+  assert.equal(initiated.status, 200); assert.equal(initiated.headers.get('Location'), null);
+  assert.match(initiated.headers.get('Content-Type'), /text\/html/);
+  assert.equal(initiated.headers.get('Referrer-Policy'), 'same-origin');
+  assert.match(await initiated.text(), /href="\/api\/auth\/github"/);
+  assert.match(initiated.headers.get('Set-Cookie'), /HttpOnly; Secure; SameSite=Lax/);
   const flowCookie = initiated.headers.get('Set-Cookie').split(';')[0], flowId = flowCookie.split('=')[1];
   await env.SESSION_KV.put('owner-session', JSON.stringify({ username: 'Owner', lastActivity: Date.now() }));
   await env.SESSION_KV.put('other-session', JSON.stringify({ username: 'other-admin', lastActivity: Date.now() }));
@@ -78,7 +82,8 @@ test('private MCP OAuth: real SQLite one-time code, PKCE, single owner, refresh 
   // A fresh consent supports confidential-client Basic auth and explicit revocation.
   const secondFlow = await authorize.onRequestGet(ctx(route, env, undefined, { Cookie: 'session_id=owner-session' }));
   const cookie2 = secondFlow.headers.get('Set-Cookie').split(';')[0];
-  assert.equal(secondFlow.headers.get('Location'), '/api/mcp/oauth/consent');
+  assert.equal(secondFlow.status, 200); assert.equal(secondFlow.headers.get('Location'), null);
+  assert.match(await secondFlow.text(), /href="\/api\/mcp\/oauth\/consent"/);
   const csrf2 = await tokens.signToken(env, 'mcp-consent', { flow: cookie2.split('=')[1] }, 600);
   const approval2 = await consent.onRequestPost(formContext('/api/mcp/oauth/consent', env, { decision: 'approve', csrf: csrf2 }, { Cookie: cookie2 + '; session_id=owner-session' }));
   const basicArgs = { ...exchange, code: new URL(approval2.headers.get('Location')).searchParams.get('code') }; delete basicArgs.client_secret;
