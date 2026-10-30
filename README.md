@@ -204,6 +204,12 @@ curl --fail-with-body \
 
 模板中的 `{score}`、`{smileStatus}` 等占位符会由代码替换，名称必须与相应接口传给 `formatPrompt` 的字段一致。仅修改文案无需调整接口；CP 模板必须保留“匹配分、等级、亮点、注意、标签”五行字段，第一项为零至一百的整数，后三项内容各占一行，以兼容当前结果解析。真实模型的文案效果、格式遵循与延迟仍应在部署后分别试用三种功能确认。
 
+## 私人 ChatGPT MCP
+
+新增 `/mcp`（Streamable HTTP，JSON 响应），提供 `analyze_face`、`analyze_temperament`、`analyze_couple` 三个工具。默认关闭；启用后通过 OAuth、GitHub 本人账号和明确授权访问。仅返回 Face++ 检测数据，由 ChatGPT 生成文案，不调用 Workers AI，不写入照片或分析档案。
+
+接入配置、图片传递、授权与撤销步骤见 [私人 MCP 接入指南](docs/PRIVATE-MCP.md)。MCP 使用独立 OAuth 客户端凭证，不能把维护令牌、小程序令牌或管理员 Cookie 当作 MCP 访问令牌。现有网页、小程序分析接口不经过 MCP。
+
 ## 本地验证
 
 ```bash

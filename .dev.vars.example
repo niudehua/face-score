@@ -15,3 +15,17 @@ MAINTENANCE_TOKEN=
 # Only permits skipping unconfigured Turnstile on loopback development URLs.
 ALLOW_INSECURE_LOCAL_DEV=false
 REQUIRE_IMAGE_SECURITY=false
+
+# Private ChatGPT MCP: disabled until all OAuth settings are configured.
+MCP_ENABLED=false
+# Exact production HTTPS origin, no trailing slash; use the existing GitHub callback host.
+MCP_ORIGIN=
+# One GitHub login only, also present in ALLOWED_GITHUB_USERS.
+MCP_OWNER_GITHUB_USER=
+MCP_CLIENT_ID=face-score-personal
+# Independent random secret, at least 32 characters. Also enter in ChatGPT OAuth client settings.
+MCP_CLIENT_SECRET=
+# Copy the exact ChatGPT callback shown in the connector settings.
+MCP_REDIRECT_URI=https://chatgpt.com/connector_platform_oauth_redirect
+# Exact file CDN hosts only; add actual ChatGPT download host if needed, never *.
+MCP_FILE_HOSTS=files.oaiusercontent.com,files.openai.com

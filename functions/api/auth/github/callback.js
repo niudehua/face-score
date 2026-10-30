@@ -32,7 +32,10 @@ export async function onRequestGet(context) {
     if (!userResponse.ok || typeof user.login !== 'string' || !allowed.includes(user.login.toLowerCase())) return createErrorResponse('您的 GitHub 账号未被授权访问', { status: 403, headers });
     const id = crypto.randomUUID();
     await env.SESSION_KV.put(id, JSON.stringify({ username: user.login, provider: 'github', createdAt: Date.now(), lastActivity: Date.now() }), { expirationTtl: SESSION_TTL });
-    const resultHeaders = new Headers({ Location: '/archive', 'Cache-Control': 'no-store' });
+    // Resume a pending MCP consent flow after the existing GitHub login.
+    // Cookie contents never become a redirect URL; consent validates the D1 request.
+    const pendingMcp = /^[a-f0-9-]{36}$/.test(cookieValue(request, 'mcp_flow'));
+    const resultHeaders = new Headers({ Location: pendingMcp ? '/api/mcp/oauth/consent' : '/archive', 'Cache-Control': 'no-store' });
     resultHeaders.append('Set-Cookie', clearState);
     resultHeaders.append('Set-Cookie', `session_id=${id}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_TTL}`);
     return new Response(null, { status: 302, headers: resultHeaders });
