@@ -385,7 +385,7 @@ Page({
         if (errorMsg.includes('违规')) {
           this.setData({ result: errorMsg })
         } else {
-          this.setData({ result: '网络信号溜去捉迷藏啦，请检查网络后再试一次喵～' })
+          this.setData({ result: errorMsg })
         }
       } finally {
         this.setData({ 
@@ -462,7 +462,7 @@ Page({
       if (errorMsg.includes('违规')) {
         this.setData({ result: errorMsg })
       } else {
-        this.setData({ result: '网络信号溜去捉迷藏啦，请检查网络后再试一次喵～' })
+        this.setData({ result: errorMsg })
       }
     } finally {
       const buttonText = this.data.mode === 'score' ? '开始颜值测试' : '生成气质报告'
@@ -473,103 +473,17 @@ Page({
     }
   },
 
-  // 调用评分API
   callScoreAPI(base64Data, path = '/api/score') {
-    return new Promise((resolve, reject) => {
-      let url = app.globalData.apiUrl;
-
-      url = url.replace(/\/$/, '') + path;
-
-      console.log('API Request URL:', url);
-
-      wx.request({
-        url: url,
-        method: 'POST',
-        header: {
-          'Content-Type': 'application/json',
-          'X-App-Type': 'miniprogram'
-        },
-        data: {
-          image: base64Data,
-          app_type: 'miniprogram'
-        },
-        success: (res) => {
-          if (res.statusCode === 403) {
-            reject(new Error(res.data?.error || res.data?.message || '您发布的内容包含违规信息'))
-          } else {
-            resolve(res)
-          }
-        },
-        fail: (err) => {
-          reject(err)
-        }
-      })
-    })
+    return app.apiRequest(path, { image: base64Data });
   },
 
-  // 调用CP契合度API
   callCoupleAPI(base64DataA, base64DataB) {
-    return new Promise((resolve, reject) => {
-      let url = app.globalData.apiUrl;
-      url = url.replace(/\/$/, '') + '/api/couple';
-
-      console.log('API Request URL:', url);
-
-      wx.request({
-        url: url,
-        method: 'POST',
-        header: {
-          'Content-Type': 'application/json',
-          'X-App-Type': 'miniprogram'
-        },
-        data: {
-          imageA: base64DataA,
-          imageB: base64DataB,
-          app_type: 'miniprogram'
-        },
-        success: (res) => {
-          if (res.statusCode === 403) {
-            reject(new Error(res.data?.error || res.data?.message || '您发布的内容包含违规信息'))
-          } else {
-            resolve(res)
-          }
-        },
-        fail: (err) => {
-          reject(err)
-        }
-      })
-    })
+    return app.apiRequest('/api/couple', { imageA: base64DataA, imageB: base64DataB });
   },
 
-  // 调用安全检查API
-  callSecurityAPI(base64Data) {
-    return new Promise((resolve, reject) => {
-      let url = app.globalData.apiUrl;
-      url = url.replace(/\/$/, '') + '/api/security';
-
-      wx.request({
-        url: url,
-        method: 'POST',
-        header: {
-          'Content-Type': 'application/json',
-          'X-App-Type': 'miniprogram'
-        },
-        data: {
-          image: base64Data,
-          app_type: 'miniprogram'
-        },
-        success: (res) => {
-          if (res.statusCode === 200 && res.data) {
-            resolve(res.data)
-          } else {
-            reject(new Error('安全检查失败'))
-          }
-        },
-        fail: (err) => {
-          reject(err)
-        }
-      })
-    })
+  async callSecurityAPI(base64Data) {
+    const response = await app.apiRequest('/api/security', { image: base64Data });
+    return response.data;
   },
 
   // 计算文本所需高度

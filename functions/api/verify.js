@@ -1,8 +1,10 @@
+import { authorizeMaintenance } from '../lib/access.js';
 // 导入模块
 import { getRetentionStats, getStats, getCleanupStatus } from '../lib/db.js';
 import { rateLimit, addRateLimitHeaders } from '../lib/rate-limit.js';
 
 export async function onRequestGet(context) {
+  if (!await authorizeMaintenance(context)) return new Response(JSON.stringify({ error: '维护认证失败：请提供有效的维护令牌，或登录管理员账号' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   // 实施限流 - 管理端点，限制更严格
   const rateLimitResult = await rateLimit(context.request, context, {
       path: '/api/verify',
@@ -27,7 +29,7 @@ export async function onRequestGet(context) {
       let response = new Response(JSON.stringify({ 
         error: "D1 database not configured", 
         logs 
-      }), { status: 500, headers: { "Content-Type": "application/json" } });
+      }), { status: 500, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
       response = addRateLimitHeaders(response, rateLimitResult);
       return response;
     }
@@ -50,7 +52,7 @@ export async function onRequestGet(context) {
       let response = new Response(JSON.stringify({ 
         error: `Invalid action: ${action}`, 
         logs 
-      }), { status: 400, headers: { "Content-Type": "application/json" } });
+      }), { status: 400, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
       response = addRateLimitHeaders(response, rateLimitResult);
       return response;
     }
@@ -61,7 +63,7 @@ export async function onRequestGet(context) {
       error: "验证任务失败", 
       detail: error.message, 
       logs 
-    }), { status: 500, headers: { "Content-Type": "application/json" } });
+    }), { status: 500, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
     response = addRateLimitHeaders(response, rateLimitResult);
     return response;
   }
@@ -110,7 +112,7 @@ async function verifyRetentionPolicy(d1, log, rateLimitResult) {
       cutoffDate: cutoffDate.toISOString()
     },
     logs 
-  }), { headers: { "Content-Type": "application/json" } });
+  }), { headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
   // 添加限流响应头
   response = addRateLimitHeaders(response, rateLimitResult);
   return response;
@@ -136,7 +138,7 @@ async function getDatabaseStats(d1, log, rateLimitResult) {
       recordsThisMonth: stats.recordsThisMonth
     },
     logs 
-  }), { headers: { "Content-Type": "application/json" } });
+  }), { headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
   // 添加限流响应头
   response = addRateLimitHeaders(response, rateLimitResult);
   return response;
@@ -164,7 +166,7 @@ async function getCleanupStatusApi(d1, log, rateLimitResult) {
     pendingDeletion: cleanupStatus.pendingDeletion,
     nextCleanupCutoff: cutoffDate.toISOString(),
     logs 
-  }), { headers: { "Content-Type": "application/json" } });
+  }), { headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
   // 添加限流响应头
   response = addRateLimitHeaders(response, rateLimitResult);
   return response;

@@ -1,3 +1,4 @@
+import { authorizeMaintenance } from '../lib/access.js';
 // 导入模块
 import {
   getOldRecords,
@@ -16,7 +17,8 @@ import { createSuccessResponse, createErrorResponse } from '../lib/response.js';
 import { createLogger } from '../lib/logger.js';
 import { RATE_LIMIT_CONFIG, HTTP_STATUS, DATA_RETENTION_MONTHS } from '../lib/constants.js';
 
-export async function onRequestGet(context) {
+export async function onRequestPost(context) {
+  if (!await authorizeMaintenance(context)) return new Response(JSON.stringify({ error: '维护认证失败：请提供有效的维护令牌，或登录管理员账号' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   const logger = createLogger('cleanup-api');
   
   // 实施限流 - 管理端点，限制更严格
@@ -138,7 +140,8 @@ export async function onRequestGet(context) {
       deletedImages,
       failedImages,
       pendingImageDeletes,
-      cutoffDate: cutoffDate.toISOString()
+      cutoffDate: cutoffDate.toISOString(),
+      r2Configured: !!r2
     }, {
       rateLimitInfo: rateLimitResult
     });
@@ -149,7 +152,9 @@ export async function onRequestGet(context) {
       status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       rateLimitInfo: rateLimitResult,
       logs: logger.getLogs(),
-      debug: true
+      debug: false
     });
   }
 }
+
+export function onRequestGet() { return new Response(null, { status: 405, headers: { Allow: 'POST', 'Cache-Control': 'no-store' } }); }

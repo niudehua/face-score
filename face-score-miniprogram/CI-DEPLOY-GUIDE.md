@@ -1,141 +1,47 @@
-# 微信小程序CI部署指南
+# 微信小程序开发与 CI 上传
 
-## 1. 环境变量配置
+## 本地开发
 
-### 1.1 本地开发环境
+用微信开发者工具导入本目录，在项目详情中填写自己的 AppID，并创建被 Git 忽略的 `config/config.local.js`：
 
-在微信开发工具中，你必须通过以下方式配置环境变量：
-
-1. 开启环境变量功能：
-   - 点击「详情」→「本地设置」
-   - 勾选「启用自定义处理命令」和「启用环境变量」
-
-2. 创建 `.env` 文件：
-
-   ```
-   # 开发环境
-   NODE_ENV=development
-   APPID=你的开发环境appid
-   API_BASE_URL=你的开发环境API地址
-   ```
-
-### 1.2 GitHub Secrets配置
-
-**所有敏感信息必须配置在GitHub Secrets中，没有硬编码默认值！**
-
-在GitHub仓库的「Settings」→「Secrets and variables」→「Actions」中配置以下Secrets：
-
-| 名称 | 类型 | 描述 | 必填 |
-|------|------|------|------|
-| WECHAT_APPID | Secret | 微信小程序appid | 是 |
-| WECHAT_PRIVATE_KEY | Secret | Base64编码的私钥内容 | 是 |
-| API_BASE_URL | Secret | 后端API基础地址(含协议头) | 是 |
-
-## 2. 如何获取配置值
-
-### 2.1 获取WECHAT_APPID
-
-1. 登录微信公众平台
-2. 进入「开发」→「开发管理」
-3. 复制「AppID」
-
-### 2.2 获取WECHAT_PRIVATE_KEY
-
-1. 登录微信公众平台
-2. 进入「开发」→「开发管理」→「开发设置」
-3. 找到「小程序代码上传」
-4. 点击「生成」或「下载」私钥文件（.p12格式）
-5. 将私钥文件转换为Base64编码：
-   - 在命令行中执行：
-
-     ```bash
-     # Linux/Mac
-     base64 private.p12 > private.base64
-     
-     # Windows
-     certutil -encode private.p12 private.base64
-     ```
-
-   - 复制文件内容作为WECHAT_PRIVATE_KEY值
-
-## 3. GitHub Actions部署
-
-### 3.1 触发条件
-
-- 代码提交到 `main` 分支
-- 修改了 `face-score-miniprogram/` 目录下的文件
-
-### 3.2 部署流程
-
-1. 检出代码
-2. 设置Node.js环境
-3. 安装miniprogram-ci
-4. 配置私钥
-5. 上传小程序代码
-6. 清理临时文件
-
-### 3.3 查看部署日志
-
-- 进入GitHub仓库的「Actions」页面
-- 点击对应的「部署微信小程序」工作流
-- 查看详细日志
-
-## 4. 本地调试
-
-### 4.1 开发工具中运行
-
-1. 打开微信开发者工具
-2. 导入小程序项目
-3. 选择「face-score-miniprogram」目录
-4. 使用配置的appid登录
-5. 运行小程序
-
-### 4.2 环境切换
-
-在开发工具中，你可以通过修改 `.env` 文件切换环境：
-
-```bash
-# 开发环境
-NODE_ENV=development
-
-# 生产环境
-NODE_ENV=production
+```javascript
+module.exports = {
+  apiUrl: 'https://你的后端域名',
+  appid: '你的小程序AppID',
+  debug: true
+};
 ```
 
-## 5. 常见问题
+原生小程序不会自动读取 `.env`。配置模块虽然兼容存在 `process.env` 的构建环境，本地开发仍应使用上面的配置文件。
 
-### 5.1 部署失败
+在微信后台将 API HTTPS 域名加入 request 合法域名。开发者工具的域名校验设置不能代替真机配置。
 
-- 检查私钥是否正确
-- 检查appid是否匹配
-- 查看GitHub Actions日志
-- 检查IP白名单设置
+客户端先使用 `wx.login`，将登录码发送至 `/api/miniprogram-session`；服务端向微信验证后返回一小时的短期凭证。凭证仅保存在内存中，过期时客户端重新登录。不要将 AppSecret 或上传私钥写入小程序代码。
 
-### 5.2 环境变量不生效
+后端 Cloudflare 环境需配置 `WECHAT_APPID`、`WECHAT_APPSECRET`、`APP_SIGNING_SECRET`，以及 Face++ 凭证。`WECHAT_APPSECRET` 是微信 AppSecret，与 CI 上传私钥是两个不同凭证。旧变量 `WECHAT_PRIVATE_KEY` 暂时仅作为 AppSecret 的兼容别名，建议迁移。
 
-- 确保开启了环境变量功能
-- 重新构建项目
-- 检查配置文件路径
+选图时会预检查图片；分析接口还会检查实际收到的图片，前端的“已通过”状态不能跳过服务端检查。
 
-### 5.3 私钥错误
+## GitHub Actions
 
-- 确保私钥是Base64编码
-- 确保私钥没有过期
-- 确保私钥与appid匹配
+工作流为 `.github/workflows/deploy-miniprogram.yml`。修改本目录并推送 main，或手动运行，会上传代码版本；微信审核与发布仍需要在微信后台完成。
 
-## 6. 版本管理
+GitHub Actions Secrets：
 
-- 版本号由GitHub SHA自动生成
-- 版本描述为提交信息
-- 支持手动触发部署
+| 名称 | 内容 |
+| --- | --- |
+| `WECHAT_APPID` | 小程序 AppID |
+| `API_BASE_URL` | 后端 HTTPS 根地址，不含 `/api` |
+| `WECHAT_UPLOAD_KEY` | 微信下载的小程序代码上传私钥原始文本，保留换行，不做 Base64 编码 |
 
-## 7. 安全注意事项
+工作流生成只含公开配置的 `config.local.js`，同步 `project.config.json` 的 AppID，将上传私钥以受限权限写入临时文件，并在结束时删除。该私钥也被排除在小程序打包范围和 Git 跟踪范围之外。
 
-- 私钥必须通过GitHub Secrets管理
-- 禁止硬编码敏感信息
-- 定期轮换私钥
-- 限制IP白名单
+Cloudflare 的 `WECHAT_APPSECRET`、`APP_SIGNING_SECRET` 不需要提供给小程序 CI。GitHub Secrets 中设置变量也不会自动写入 Cloudflare；后端密钥需要单独配置。
 
-## 8. 联系方式
+## 上线前联调
 
-如有问题，请联系项目管理员。
+1. 使用真实微信登录码确认登录及过期重试。
+2. 确认内容安全接口权限、额度和图片格式要求。
+3. 确认评分、气质、双人分析和错误提示。
+4. 使用真机 HTTPS 域名验证，不仅依赖开发者工具。
+5. 确认上传包不含私钥，日志不含后端凭证。

@@ -1,3 +1,4 @@
+import { validateBase64Image } from './validator.js';
 // R2存储操作模块
 
 /**
@@ -40,10 +41,12 @@ async function uploadImage(r2Bucket, imageBase64, md5) {
       bytes[i] = binaryString.charCodeAt(i);
     }
 
-    const key = `images/${md5}.jpg`;
+    const validation = validateBase64Image(imageBase64);
+    if (!validation.valid) throw new Error(validation.error);
+    const key = `images/${md5}.jpg`; // Keep existing object keys compatible.
     await r2Bucket.put(key, bytes, {
       httpMetadata: {
-        contentType: 'image/jpeg',
+        contentType: validation.contentType,
       },
     });
 

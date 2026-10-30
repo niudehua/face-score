@@ -1,0 +1,25 @@
+# Copy to wrangler.toml for deployments managed through Wrangler.
+# Resource IDs/names must be replaced before using the relevant sections.
+name = "face-score-pages"
+pages_build_output_dir = "./public"
+compatibility_date = "2024-01-01"
+
+[ai]
+binding = "AI"
+
+[[d1_databases]]
+binding = "FACE_SCORE_DB"
+database_name = "YOUR_D1_DATABASE_NAME"
+database_id = "YOUR_D1_DATABASE_ID"
+
+[[r2_buckets]]
+binding = "FACE_IMAGES"
+bucket_name = "YOUR_R2_BUCKET_NAME"
+
+[[kv_namespaces]]
+binding = "SESSION_KV"
+id = "YOUR_SESSION_KV_ID"
+
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "YOUR_RATE_LIMIT_KV_ID"

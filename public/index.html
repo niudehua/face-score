@@ -124,6 +124,7 @@
   <script>
     let currentMode = 'score';
     let turnstileEnabled = false;
+    let turnstileWidgetId;
 
     document.addEventListener('DOMContentLoaded', () => {
       initTurnstile();
@@ -271,7 +272,7 @@
 
         if (data.site_key && typeof data.site_key === 'string' && data.site_key.trim()) {
           turnstileEnabled = true;
-          turnstile.render('#turnstile-widget', {
+          turnstileWidgetId = turnstile.render('#turnstile-widget', {
             sitekey: data.site_key,
             theme: 'light'
           });
@@ -371,7 +372,7 @@
 
           let token = null;
           if (turnstileEnabled && typeof turnstile !== 'undefined' && typeof turnstile.getResponse === 'function') {
-            token = turnstile.getResponse();
+            token = turnstile.getResponse(turnstileWidgetId);
             if (!token) {
               resultCard.innerHTML = '<div class="error">验证失败，请完成验证码喵～</div>';
               return;
@@ -387,8 +388,8 @@
               ...(token ? { turnstile_response: token } : {})
             }),
           });
-          if (!res.ok) throw new Error("接口请求失败");
           const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "接口请求失败");
 
           if (data.score !== undefined && data.score !== null) {
             const score = Number(data.score.toFixed(1));
@@ -398,14 +399,20 @@
             if (data.notes) msg += `需要注意：${data.notes}\n\n`;
             if (data.tags) msg += `标签：${data.tags}`;
             resultCard.innerText = msg;
+            if (!data.key) {
+              const warning = document.createElement('p');
+              warning.className = 'storage-warning';
+              warning.textContent = '本次分析结果没有保存到档案，请稍后重试。';
+              resultCard.appendChild(warning);
+            }
           } else {
             resultCard.innerText = "分析失败，请重试。";
           }
         } catch (e) {
-          resultCard.innerText = "网络信号溜去捉迷藏啦，请检查网络后再试一次喵～";
+          resultCard.innerText = e.message || "请求失败，请稍后重试。";
         } finally {
           if (turnstileEnabled && typeof turnstile !== 'undefined' && typeof turnstile.reset === 'function') {
-            turnstile.reset('#turnstile-widget');
+            turnstile.reset(turnstileWidgetId);
           }
         }
         return;
@@ -427,7 +434,7 @@
         try {
           let token = null;
           if (turnstileEnabled && typeof turnstile !== 'undefined' && typeof turnstile.getResponse === 'function') {
-            token = turnstile.getResponse();
+            token = turnstile.getResponse(turnstileWidgetId);
             if (!token) {
               resultCard.innerHTML = '<div class="error">验证失败，请完成验证码喵～</div>';
               return;
@@ -444,8 +451,8 @@
               ...(token ? { turnstile_response: token } : {})
             }),
           });
-          if (!res.ok) throw new Error("接口请求失败");
           const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "接口请求失败");
 
           if ((data.score !== undefined && data.score !== null) || data.type === 'fortune') {
             if (currentMode === 'score') {
@@ -469,7 +476,7 @@
               }
             } else {
               if (data.title && data.comment) {
-                resultCard.innerHTML = `<strong>${data.title}</strong>\n\n${data.comment}`;
+                resultCard.innerText = `${data.title}\n\n${data.comment}`;
               } else if (data.comment) {
                 resultCard.innerText = data.comment;
               } else {
@@ -486,10 +493,10 @@
             resultCard.innerText = "检测失败，喵呜～换张更清晰的照片试试吧？";
           }
         } catch (e) {
-          resultCard.innerText = "网络信号溜去捉迷藏啦，请检查网络后再试一次喵～";
+          resultCard.innerText = e.message || "请求失败，请稍后重试。";
         } finally {
           if (turnstileEnabled && typeof turnstile !== 'undefined' && typeof turnstile.reset === 'function') {
-            turnstile.reset('#turnstile-widget');
+            turnstile.reset(turnstileWidgetId);
           }
         }
       };

@@ -1,21 +1,9 @@
-# Security Policy
+# Security policy
 
-## Supported Versions
+Security fixes target the current main branch. There is no maintained release/version support matrix.
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+Do not include API credentials, OAuth tokens, upload private keys, original face photos or signed image URLs in public issues. Use the repository's private vulnerability reporting feature when it is enabled, or contact the maintainer privately through their published contact details. This repository does not currently specify a dedicated security email address or response SLA.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+Deployment requirements and remaining limits are documented in README.md under access controls and upgrade notes. In particular, production administrators require GitHub OAuth and an explicit allowlist; maintenance requests require authentication; WeChat AppSecret and CI upload private keys must remain separate.
 
-## Reporting a Vulnerability
-
-Use this section to tell people how to report a vulnerability.
-
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+Earlier versions logged sensitive OAuth response data and CI upload key contents. Removing those log statements does not remove historic logs or invalidate existing credentials. Deployment owners should review historic logs and arrange credential rotation through the relevant providers when needed. No automatic rotation is performed by this repository.

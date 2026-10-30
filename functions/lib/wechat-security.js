@@ -1,3 +1,4 @@
+import { validateBase64Image } from './validator.js';
 import { WECHAT_API_URL } from './constants.js';
 
 let accessToken = null;
@@ -30,6 +31,8 @@ async function checkImageSecurity(base64Image, appId, appSecret) {
     throw new Error('微信小程序配置未完成');
   }
 
+  const validation = validateBase64Image(base64Image);
+  if (!validation.valid) throw new Error(validation.error);
   const token = await getAccessToken(appId, appSecret);
 
   const base64Data = base64Image.includes(',') ? base64Image.split(',')[1] : base64Image;
@@ -47,7 +50,7 @@ async function checkImageSecurity(base64Image, appId, appSecret) {
   let body = '';
   body += '--' + boundary + crlf;
   body += 'Content-Disposition: form-data; name="media"; filename="image.jpg"' + crlf;
-  body += 'Content-Type: image/jpeg' + crlf;
+  body += 'Content-Type: ' + validation.contentType + crlf;
   body += crlf;
   
   const bodyStart = new TextEncoder().encode(body);

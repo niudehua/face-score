@@ -13,46 +13,12 @@ import { createSuccessResponse, createErrorResponse, createCORSHeaders } from '.
 import { createLogger } from '../lib/logger.js';
 import { RATE_LIMIT_CONFIG, HTTP_STATUS } from '../lib/constants.js';
 
-// 验证会话（支持后门跳过）
-async function verifySession(request, env) {
-  const bypass =
-    typeof env.BYPASS_AUTH === 'string' &&
-    env.BYPASS_AUTH.toLowerCase() === 'true';
-  if (bypass) {
-    return { valid: true, sessionData: { username: 'bypass' } };
-  }
-  const { SESSION_KV } = env;
-
-  // 从Cookie中获取会话ID
-  const cookies = request.headers.get('Cookie') || '';
-  const sessionIdMatch = cookies.match(/session_id=([^;]+)/);
-
-  if (!sessionIdMatch || !sessionIdMatch[1]) {
-    return { valid: false, message: '未登录' };
-  }
-
-  const sessionId = sessionIdMatch[1];
-  // 从KV中获取会话
-  const sessionDataStr = await SESSION_KV.get(sessionId);
-
-  if (!sessionDataStr) {
-    return { valid: false, message: '会话已过期' };
-  }
-
-  const sessionData = JSON.parse(sessionDataStr);
-
-  // 更新最后活动时间，自动续期
-  sessionData.lastActivity = Date.now();
-  const expirationTtl = 7 * 24 * 60 * 60; // 7天
-  await SESSION_KV.put(sessionId, JSON.stringify(sessionData), { expirationTtl });
-
-  return { valid: true, sessionData };
-}
+import { verifySession, isSameOrigin } from '../lib/access.js';
 
 export async function onRequestGet(context) {
   const { FACE_SCORE_DB } = context.env;
   const logger = createLogger('images-api');
-  const corsHeaders = createCORSHeaders('*', context.request);
+  const corsHeaders = { 'Cache-Control': 'no-store' };
 
   try {
     // 1. 实施限流
@@ -95,10 +61,10 @@ export async function onRequestGet(context) {
     logger.debug('请求参数', { page, limit, sort_by, order, date_from, date_to });
 
     // 4. 验证参数
-    if (page < 1) {
+    if (!Number.isInteger(page) || page < 1) {
       throw new Error('页码必须大于等于1');
     }
-    if (limit < 1 || limit > 100) {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
       throw new Error('每页数量必须在1-100之间');
     }
 
@@ -148,7 +114,7 @@ export async function onRequestGet(context) {
       headers: corsHeaders,
       rateLimitInfo: null, // 错误情况下不返回限流信息
       logs: logger.getLogs(),
-      debug: true
+      debug: false
     });
   }
 }
@@ -157,9 +123,9 @@ export async function onRequestGet(context) {
 export async function onRequestDelete(context) {
   const { FACE_SCORE_DB, FACE_IMAGES } = context.env;
   const logger = createLogger('images-delete-api');
-  const corsHeaders = createCORSHeaders('*', context.request);
+  const corsHeaders = { 'Cache-Control': 'no-store' };
 
-  // 删除操作不支持后门跳过，确保安全
+  if (!isSameOrigin(context.request)) return createErrorResponse('请求来源无效', { status: 403 });
   try {
     // 1. 实施限流
     const rateLimitResult = await rateLimit(context.request, context, {
@@ -203,7 +169,7 @@ export async function onRequestDelete(context) {
 
     logger.debug('请求体解析成功', { idsCount: ids?.length });
 
-    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    if (!Array.isArray(ids) || ids.length === 0 || ids.length > 100 || ids.some(id => typeof id !== 'string' || !id || id.length > 200)) {
       logger.warn('未提供有效的图片ID列表');
       return createErrorResponse('请提供要删除的图片ID列表', {
         status: HTTP_STATUS.BAD_REQUEST,
@@ -229,6 +195,9 @@ export async function onRequestDelete(context) {
     const md5List = [...new Set(imagesToDelete.map(image => image.md5).filter(Boolean))];
 
     logger.debug('获取要删除的图片信息', { md5Count: md5List.length });
+
+    // Persist candidates before removing references so an interrupted request can be retried.
+    await enqueueImageDeletions(FACE_SCORE_DB, md5List);
 
     // 6. 删除数据库记录，再检查是否仍被其他分析（例如 CP 匹配）引用。
     // 只有完全没有引用的图片才从 R2 删除。
@@ -308,7 +277,7 @@ export async function onRequestDelete(context) {
       headers: corsHeaders,
       rateLimitInfo: null, // 错误情况下不返回限流信息
       logs: logger.getLogs(),
-      debug: true
+      debug: false
     });
   }
 }

@@ -20,7 +20,7 @@ jobs:
       - name: 设置Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "22"
 
       # 3. 安装miniprogram-ci
       - name: 安装微信小程序CI工具
@@ -33,27 +33,35 @@ jobs:
 
       # 5. 配置私钥
       - name: 配置私钥
+        env:
+          WECHAT_UPLOAD_KEY: ${{ secrets.WECHAT_UPLOAD_KEY }}
         working-directory: ./face-score-miniprogram
         run: |
-          printf '%s' "${{ secrets.WECHAT_UPLOAD_KEY }}" > private.key
-          ls -la private.key
-          cat private.key
+          umask 077
+          printf '%s' "$WECHAT_UPLOAD_KEY" > private.key
 
-      # 6. 配置环境变量
+      # 6. Generate public runtime configuration without shell interpolation.
       - name: 配置环境变量
         working-directory: ./face-score-miniprogram
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          WECHAT_APPID: ${{ secrets.WECHAT_APPID }}
         run: |
-          cd config
-          echo "module.exports = {" > config.local.js
-          echo "  apiUrl: '${{ secrets.API_BASE_URL }}'," >> config.local.js
-          echo "  appid: '${{ secrets.WECHAT_APPID }}'," >> config.local.js
-          echo "  debug: false" >> config.local.js
-          echo "};" >> config.local.js
-          cat config.local.js
+          node <<'JS'
+          const fs = require('fs');
+          const { API_BASE_URL, WECHAT_APPID } = process.env;
+          if (!API_BASE_URL || !WECHAT_APPID) throw new Error('Missing API_BASE_URL or WECHAT_APPID');
+          fs.writeFileSync('config/config.local.js', 'module.exports = ' + JSON.stringify({ apiUrl: API_BASE_URL, appid: WECHAT_APPID, debug: false }) + ';\n');
+          const project = JSON.parse(fs.readFileSync('project.config.json', 'utf8'));
+          project.appid = WECHAT_APPID;
+          fs.writeFileSync('project.config.json', JSON.stringify(project, null, 2));
+          JS
 
       # 7. 上传小程序代码
       - name: 上传小程序代码
         working-directory: ./face-score-miniprogram
+        env:
+          WECHAT_APPID: ${{ secrets.WECHAT_APPID }}
         run: |
           # 使用GitHub Actions运行次数作为版本号，格式：1.0.${run_number}
           VERSION="1.0.${{ github.run_number }}"
@@ -61,15 +69,14 @@ jobs:
 
           # 按照官方文档使用正确的命令行参数
           miniprogram-ci upload \
-            --appid ${{ secrets.WECHAT_APPID }} \
+            --appid "$WECHAT_APPID" \
             --pkp ./private.key \
             --pp . \
             --uv "$VERSION" \
-            --ud "自动部署 - ${{ github.event.head_commit.message }}" \
+            --ud "自动部署 $VERSION" \
             --robot 1 \
             --enable-es6 true \
-            --enable-minify true \
-            --verbose
+            --enable-minify true
 
       # 8. 清理临时文件
       - name: 清理私钥

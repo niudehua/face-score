@@ -1,165 +1,20 @@
-// 登录鉴权API
-
-// 生成随机会话ID
-function generateSessionId() {
-  return crypto.randomUUID();
-}
-
-// 用户名密码登录已移除，请使用 GitHub OAuth 登录
-
-// 登出API
-export async function onRequestDelete(context) {
-  const { request, env } = context;
-  const { SESSION_KV } = env;
-
-  try {
-    // 从Cookie中获取会话ID
-    const cookies = request.headers.get('Cookie') || '';
-    const sessionIdMatch = cookies.match(/session_id=([^;]+)/);
-
-    if (sessionIdMatch && sessionIdMatch[1]) {
-      const sessionId = sessionIdMatch[1];
-      // 从KV中删除会话
-      await SESSION_KV.delete(sessionId);
-    }
-    // 清除Cookie
-    const cookie = 'session_id=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0';
-
-    return new Response(JSON.stringify({
-      success: true,
-      message: '登出成功'
-    }), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Set-Cookie': cookie,
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type'
-      }
-    });
-  } catch (error) {
-    console.error('登出失败:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      message: '登出失败，请稍后重试'
-    }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type'
-      }
-    });
-  }
-}
-
-// 验证会话API
+import { cookieValue, isSameOrigin, verifySession } from '../lib/access.js';
+import { createErrorResponse, createSuccessResponse } from '../lib/response.js';
+import { SESSION_TTL } from '../lib/constants.js';
+const clearCookie = 'session_id=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0';
+const headers = { 'Cache-Control': 'no-store' };
 export async function onRequestGet(context) {
-  const { request, env } = context;
-  const { SESSION_KV } = env;
-
-  // 禁止缓存，防止循环重定向
-  const noCacheHeaders = {
-    'Cache-Control': 'no-store, max-age=0',
-    'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type'
-  };
-
-  try {
-    // 后门配置：BYPASS_AUTH=true 时，视为已登录（仅用于预览/调试）
-    const bypass =
-      typeof env.BYPASS_AUTH === 'string' &&
-      env.BYPASS_AUTH.toLowerCase() === 'true';
-    if (bypass) {
-      return new Response(JSON.stringify({
-        success: true,
-        message: 'bypass auth enabled',
-        data: { username: 'bypass' }
-      }), {
-        status: 200,
-        headers: noCacheHeaders
-      });
-    }
-
-    // 从Cookie中获取会话ID
-    const cookies = request.headers.get('Cookie') || '';
-    const sessionIdMatch = cookies.match(/session_id=([^;]+)/);
-
-    if (!sessionIdMatch || !sessionIdMatch[1]) {
-      return new Response(JSON.stringify({
-        success: false,
-        message: '未登录'
-      }), {
-        status: 401,
-        headers: noCacheHeaders
-      });
-    }
-
-    const sessionId = sessionIdMatch[1];
-    // 从KV中获取会话
-    const sessionDataStr = await SESSION_KV.get(sessionId);
-
-    if (!sessionDataStr) {
-      // 关键修复：如果KV中没有会话，必须清除Cookie，否则客户端会死循环
-      const clearCookie = 'session_id=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0';
-
-      return new Response(JSON.stringify({
-        success: false,
-        message: '会话已过期'
-      }), {
-        status: 401,
-        headers: {
-          ...noCacheHeaders,
-          'Set-Cookie': clearCookie
-        }
-      });
-    }
-
-    const sessionData = JSON.parse(sessionDataStr);
-
-    // 更新最后活动时间，自动续期
-    sessionData.lastActivity = Date.now();
-    const expirationTtl = 7 * 24 * 60 * 60; // 7天
-    await SESSION_KV.put(sessionId, JSON.stringify(sessionData), { expirationTtl });
-
-    // 更新Cookie
-    const cookie = `session_id=${sessionId}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${expirationTtl}`;
-
-    return new Response(JSON.stringify({
-      success: true,
-      message: '已登录',
-      data: {
-        username: sessionData.username
-      }
-    }), {
-      status: 200,
-      headers: {
-        ...noCacheHeaders,
-        'Set-Cookie': cookie
-      }
-    });
-  } catch (error) {
-    console.error('验证会话失败:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      message: '验证会话失败，请稍后重试'
-    }), {
-      status: 500,
-      headers: noCacheHeaders
-    });
-  }
-}
-
-export async function onRequestOptions(context) {
-  return new Response(null, {
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type'
-    }
+  const result = await verifySession(context.request, context.env);
+  if (!result.valid) return createErrorResponse(result.message, { status: 401, headers: { ...headers, 'Set-Cookie': clearCookie } });
+  return createSuccessResponse({ success: true, data: { username: result.sessionData.username } }, {
+    headers: { ...headers, 'Set-Cookie': `session_id=${cookieValue(context.request, 'session_id')}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_TTL}` }
   });
+}
+export async function onRequestDelete(context) {
+  if (!isSameOrigin(context.request)) return createErrorResponse('请求来源无效', { status: 403 });
+  const id = cookieValue(context.request, 'session_id');
+  try {
+    if (id && context.env.SESSION_KV) await context.env.SESSION_KV.delete(id);
+    return createSuccessResponse({ success: true }, { headers: { ...headers, 'Set-Cookie': clearCookie } });
+  } catch { return createErrorResponse('退出失败，请重试', { status: 503, headers }); }
 }

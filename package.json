@@ -1,5 +1,8 @@
 {
   "dependencies": {
     "@cloudflare/ai": "^1.2.2"
+  },
+  "scripts": {
+    "test": "node --experimental-vm-modules --test tests/*.test.cjs"
   }
 }

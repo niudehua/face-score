@@ -30,7 +30,17 @@ export function validateBase64Image(base64) {
     return { valid: false, error: '图片大小超过10MB限制' };
   }
 
-  return { valid: true };
+  try {
+    const binary = atob(base64Data);
+    const signature = Array.from(binary.slice(0, 12), c => c.charCodeAt(0));
+    const jpeg = signature[0] === 0xff && signature[1] === 0xd8 && signature[2] === 0xff;
+    const png = [137, 80, 78, 71, 13, 10, 26, 10].every((v, i) => signature[i] === v);
+    const gif = binary.startsWith('GIF87a') || binary.startsWith('GIF89a');
+    const webp = binary.startsWith('RIFF') && binary.slice(8, 12) === 'WEBP';
+    if (!jpeg && !png && !gif && !webp) return { valid: false, error: '图片文件类型无效' };
+    return { valid: true, contentType: jpeg ? 'image/jpeg' : png ? 'image/png' : gif ? 'image/gif' : 'image/webp' };
+  } catch { return { valid: false, error: '无效的Base64图片格式' }; }
+
 }
 
 /**

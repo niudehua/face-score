@@ -19,7 +19,7 @@ export async function rateLimit(request, context, options) {
   } = options;
 
   // 获取客户端 IP
-  const ip = request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For')?.split(',')[0] || 'unknown';
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
   
   // 生成限流密钥
   const key = `rate_limit:${ip}:${path}`;
@@ -59,9 +59,13 @@ export async function rateLimit(request, context, options) {
       }
       
       const memoryStore = globalThis.rateLimitMemoryStore;
+      for (const [storedKey, stored] of memoryStore) {
+        if (currentTime >= stored.expiresAt) memoryStore.delete(storedKey);
+      }
       const windowData = memoryStore.get(windowKey) || {
         count: 0,
-        windowStart: currentTime
+        windowStart: currentTime,
+        expiresAt: currentTime + windowSeconds
       };
       
       // 检查窗口是否过期
@@ -84,10 +88,8 @@ export async function rateLimit(request, context, options) {
       }
     }
   } catch (error) {
-    // 如果存储操作失败，记录错误但允许请求继续
-    console.error('限流存储操作失败:', error.message);
-    // 允许请求继续，但不返回限流头
-    return { limited: false };
+    console.error('限流存储操作失败');
+    return { limited: true, response: new Response(JSON.stringify({ error: '服务暂时不可用，请稍后重试' }), { status: 503, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }) };
   }
   
   // 计算窗口重置时间（秒）
@@ -127,8 +129,8 @@ export async function rateLimit(request, context, options) {
  * @param {Object} rateLimitInfo - 限流信息对象
  */
 export function addRateLimitHeaders(response, rateLimitInfo) {
-  if (!response || !rateLimitInfo) {
-    return;
+  if (!response || !rateLimitInfo || !Number.isFinite(rateLimitInfo.limit)) {
+    return response;
   }
   
   const {

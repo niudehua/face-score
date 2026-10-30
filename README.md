@@ -47,21 +47,23 @@
 | `/api/score` | POST | 人脸颜值评分 |
 | `/api/fortune` | POST | 气质解读报告 |
 | `/api/couple` | POST | 双人匹配分析 |
-| `/api/security` | POST | 图片安全检查 |
+| `/api/miniprogram-session` | POST | 微信登录码换取短期凭证 |
+| `/api/security` | POST | 小程序图片预检查，需短期凭证 |
 | `/api/turnstile` | GET | 获取 Turnstile 站点配置 |
 | `/api/images` | GET、DELETE | 管理照片记录 |
-| `/api/image` | GET | 读取 R2 中的图片 |
+| `/api/image` | GET | 通过管理员会话或短期签名链接读取图片 |
 | `/api/auth/github` | GET | 发起 GitHub OAuth 登录 |
 | `/api/auth/github/callback` | GET | OAuth 回调 |
 | `/api/auth` | GET、DELETE | 检查会话、退出登录 |
-| `/api/cleanup` | GET | 清理过期记录和图片 |
-| `/api/verify` | GET | 校验/查看存储配置状态 |
+| `/api/cleanup` | POST | 清理过期记录和图片，需管理员会话或维护令牌 |
+| `/api/verify` | GET | 查看数据保留及清理统计，需管理员会话或维护令牌 |
 
 ## 本地开发
 
 ### 环境要求
 
-- Node.js（建议使用当前受支持的 LTS 版本）
+- Node.js 22 或 24（本地回归测试也兼容当前仓库使用的 Node.js 20）
+- Python 3（仅 SQLite 回归测试使用；应用运行不依赖 Python）
 - npm
 - Cloudflare Wrangler CLI（可通过 `npx wrangler` 临时运行）
 - 微信开发者工具（开发小程序时需要）
@@ -74,13 +76,13 @@ npm install
 
 ### 2. 配置 Cloudflare 本地变量
 
-在仓库根目录创建 `.dev.vars`（该文件已被 Git 忽略），填写服务端密钥，例如：
+复制 `.dev.vars.example` 为 `.dev.vars`（后者已被 Git 忽略），填写服务端密钥，例如：
 
 ```dotenv
 FACEPP_KEY=你的Face++API_Key
 FACEPP_SECRET=你的Face++API_Secret
 
-# 网页端 Turnstile（可选）
+# 网页端 Turnstile（生产网页请求必需）
 TURNSTILE_SECRET_KEY=你的Turnstile密钥
 TURNSTILE_SITE_KEY=你的Turnstile站点Key
 
@@ -98,7 +100,7 @@ ALLOWED_GITHUB_USERS=你的GitHub用户名
 npx wrangler pages dev public
 ```
 
-默认情况下可在 `http://localhost:8788` 打开网页。若仓库所用 Wrangler 版本的命令参数或项目配置不同，请以 `npx wrangler pages dev --help` 和 Cloudflare Pages 配置为准。后端至少需要 Face++ 密钥；AI 绑定缺失时部分接口会使用默认文案或报告。
+默认情况下可在 `http://localhost:8788` 打开网页。仅本地开发且未配置 Turnstile 时，可在 `.dev.vars` 显式设置 `ALLOW_INSECURE_LOCAL_DEV=true`；该开关只在 localhost、127.0.0.1 或 IPv6 回环地址生效，不影响管理员鉴权。若仓库所用 Wrangler 版本的命令参数或项目配置不同，请以 `npx wrangler pages dev --help` 和 Cloudflare Pages 配置为准。后端至少需要 Face++ 密钥；AI 绑定缺失时部分接口会使用默认文案或报告。
 
 ### 4. 配置并运行小程序
 
@@ -131,16 +133,19 @@ module.exports = {
 | `FACE_IMAGES` | R2 binding | 可选，上传图片存储 |
 | `RATE_LIMIT_KV` | KV binding | 可选，跨实例限流计数；未绑定时使用进程内存计数 |
 | `SESSION_KV` | KV binding | GitHub OAuth 会话存储 |
-| `TURNSTILE_SITE_KEY` | Variable | 网页端 Turnstile 站点密钥 |
-| `TURNSTILE_SECRET_KEY` | Secret | 网页请求的 Turnstile 校验密钥 |
+| `TURNSTILE_SITE_KEY` | Variable | 生产网页必需，Turnstile 站点 Key |
+| `TURNSTILE_SECRET_KEY` | Secret | 生产网页必需，Turnstile 服务端校验密钥 |
 | `OAUTH_GITHUB_CLIENT_ID` | Variable | GitHub OAuth 应用 ID |
 | `OAUTH_GITHUB_CLIENT_SECRET` | Secret | GitHub OAuth 应用密钥 |
 | `ALLOWED_GITHUB_USERS` | Variable | 允许登录的 GitHub 用户名单 |
 | `WECHAT_APPID` | Variable | 微信小程序安全检查配置 |
-| `WECHAT_PRIVATE_KEY` | Secret | 微信小程序安全检查所需私钥 |
-| `BYPASS_AUTH` | Variable | 仅限受控预览/调试环境的登录绕过开关 |
+| `WECHAT_APPSECRET` | Secret | 微信 AppSecret，用于登录码交换与内容安全，不是 CI 上传私钥 |
+| `APP_SIGNING_SECRET` | Secret | 独立随机值，至少 32 字符；小程序凭证及短期图片链接签名 |
+| `MAINTENANCE_TOKEN` | Secret | 独立随机值，至少 32 字符；定时维护接口认证 |
+| `ALLOW_INSECURE_LOCAL_DEV` | Variable | 仅回环地址本地开发可跳过未配置的 Turnstile，默认关闭 |
+| `REQUIRE_IMAGE_SECURITY` | Variable | 设为 `true` 强制网页内容安全检查；小程序始终强制检查 |
 
-`PROMPT_SCORE`、`PROMPT_TEMPERAMENT`、`PROMPT_COUPLE` 可用于覆盖默认提示词。D1、R2 未绑定时，分析接口仍可返回分析结果，但照片/记录持久化与管理功能不可用。`face_analyses` 分析记录表会在首次保存分析结果时自动创建；旧 `face_scores` 记录仍会显示在档案中。
+`PROMPT_SCORE`、`PROMPT_TEMPERAMENT`、`PROMPT_COUPLE` 可用于覆盖默认提示词。D1、R2 未绑定时，分析接口仍可返回分析结果，但照片/记录持久化与管理功能不可用。当前使用 `score_analyses`、`fortune_analyses`、`couple_matches` 三张表，按需自动创建。旧 `face_scores`、`face_analyses` 数据没有自动迁移或兼容展示；升级前先备份，再根据实际旧表结构单独迁移，旧图片不要直接清理。
 
 ## 小程序 CI 上传
 
@@ -148,14 +153,50 @@ module.exports = {
 
 ## 图片与数据说明
 
-分析流程会把用户提交的图片发送给 Face++；若绑定 R2，图片会保存到 `FACE_IMAGES`，若同时绑定 D1，分析元数据会保存到 `FACE_SCORE_DB`。照片管理接口需要会话验证。清理接口会按代码中配置的保留期限处理旧记录。部署者应确认第三方服务的数据处理条款，并向用户清楚说明图片用途、保存期限和删除方式。
+分析流程会把用户提交的图片发送给 Face++；若绑定 R2，图片会保存到 `FACE_IMAGES`，若同时绑定 D1，分析元数据会保存到 `FACE_SCORE_DB`。照片管理接口需要会话验证。清理接口按 6 个月保留期限处理旧记录；上传及删除失败的图片候选存入持久化删除队列，任务重试前会再次检查是否仍有分析引用。仅绑定 R2 而无 D1 的图片没有记录或清理队列，建议同时绑定。部署者应确认第三方服务的数据处理条款，并向用户清楚说明图片用途、保存期限和删除方式。
 
-## 已知配置注意事项
+## 访问权限及升级注意事项
 
-- README 中记录的默认模型和 API 行为以代码当前默认值为准，Cloudflare 服务端配置可能覆盖这些值。
-- `wrangler.toml` 在此仓库的 `.gitignore` 中被忽略；请确认本地/CI 部署环境已准备好有效的 Wrangler 配置及必要绑定。
-- 安全检查、限流和 Turnstile 的生效情况取决于相应密钥和绑定。小程序请求有单独的 Turnstile 分支，生产防刷策略应结合部署环境实际验证。
-- 仓库中的 `SECURITY.md` 目前仍含通用模板内容，漏洞报告渠道和受支持版本尚需维护者补充。
+- 管理员必须通过 GitHub OAuth 登录，并列入 `ALLOWED_GITHUB_USERS`；每次访问会重新检查允许列表。`BYPASS_AUTH` 已不再生效。OAuth 使用短期 state Cookie、KV 状态和 PKCE 校验。
+- 档案是管理员可查看的全站档案，不是普通用户个人空间。
+- 图片读取需要管理员 Cookie 或与图片标识绑定的 15 分钟签名链接；新响应设置 `private, no-store`。数据库保存不带签名的稳定地址，管理员预览不受链接到期影响。未配置签名密钥时，返回的稳定图片地址仅管理员能打开；网页和小程序选图预览仍使用本地照片。
+- 签名链接是短期访问凭证，持有者在到期前可读取指定图片，请勿公开分享。旧版本曾将图片响应缓存一年，新代码无法撤回浏览器已保存的副本；已有 CDN/外部缓存需由部署者另行核查清理。
+- 小程序不再仅凭 `app_type` 或请求头跳过验证，必须先通过微信登录码换取服务端签名凭证。网页和小程序后端应同步升级。
+- 小程序始终进行服务端内容检查；网页在配置微信 AppID/AppSecret 或 `REQUIRE_IMAGE_SECURITY=true` 时也会检查。仅未配置微信安全服务且未强制启用的网页允许只做人机验证。
+- `WECHAT_PRIVATE_KEY` 暂时兼容为 AppSecret 的旧变量名；请迁移到 `WECHAT_APPSECRET`。真正的小程序上传私钥只放在 GitHub Actions 的 `WECHAT_UPLOAD_KEY`。
+- `RATE_LIMIT_KV` 计数为读后写，并非原子全局限额；无 KV 时仅按实例内存限流。存储故障时返回 503。需要严格跨实例额度控制时，应额外配置 Cloudflare 平台限流规则或原子计数服务。
+- 图片引用检查与 R2 删除仍跨多个服务，没有全局事务；高并发上传和删除同一照片时需要进一步加锁。旧表迁移应在恢复定时清理前完成。
+- 以前的 OAuth/上传工作流可能把凭证写入日志。此次已删除输出，但历史日志和真实密钥没有自动清理或轮换，应由维护者核查。
+
+## 配置与定时维护
+
+`wrangler.toml` 是已跟踪的 Pages 基础配置，不包含真实密钥。完整绑定结构见 `wrangler.example.toml`；使用 Wrangler 管理绑定时，复制示例并填入真实资源 ID/名称。生产环境的配置应在部署前核对，GitHub Actions 的环境变量不会自动成为 Pages 运行时 Secret。
+
+为避免覆盖控制台绑定，部署工作流会在临时目录只暂存 `public/` 与 `functions/` 后上传，运行时绑定由现有 Pages 控制台管理。若改用配置文件管理，应准备好完整绑定后修改工作流，不要混用两种管理方式。
+
+定时维护工作流每天北京时间 18:00 运行。Cloudflare 和 GitHub Actions 都必须配置同一个 `MAINTENANCE_TOKEN`，GitHub 还需 `API_BASE_URL`。维护请求为：
+
+```bash
+curl --fail-with-body -X POST \
+  -H "Authorization: Bearer $MAINTENANCE_TOKEN" \
+  "$API_BASE_URL/api/cleanup"
+
+curl --fail-with-body \
+  -H "Authorization: Bearer $MAINTENANCE_TOKEN" \
+  "$API_BASE_URL/api/verify?action=retention"
+```
+
+`GET /api/cleanup` 返回 405，不执行删除。维护令牌不要放在 URL 参数中。
+
+## 本地验证
+
+```bash
+npm test
+```
+
+测试使用 Node 内置测试器、Web Crypto 和 Python 标准库 SQLite；不请求真实第三方接口，不安装额外测试依赖。覆盖人脸属性兼容、鉴权、签名链接、OAuth state/PKCE、微信登录及安全检查、小程序令牌续期、限流和共享照片删除重试。云端 Face++/Workers AI 返回、微信权限与额度、Cloudflare 资源绑定、HTTPS OAuth 回调和真机效果仍需实际环境联调。
+
+协议参考：[Face++ 返回属性示例](https://www.faceplusplus.com/demo/v2.html?language=en&module=FaceAttributes)、[GitHub OAuth](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps)、[D1 批量事务](https://developers.cloudflare.com/d1/worker-api/d1-database/)。Face++ 请求参数 `smiling` 对应响应 `smile`；代码兼容这两个字段，不能仅凭命名不同认定真实服务必然报错。
 
 ## 许可证
 

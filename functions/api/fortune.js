@@ -1,12 +1,14 @@
+import { faceAttributes } from '../lib/face-attributes.js';
 // 导入模块
 import { calculateImageId, uploadImage, getImageUrl } from '../lib/storage.js';
-import { insertAnalysis } from '../lib/db.js';
-import { verifyTurnstile } from '../lib/turnstile.js';
+import { insertAnalysis, enqueueImageDeletions, removeQueuedImageDeletions } from '../lib/db.js';
+import { guardAnalysis } from '../lib/request-guard.js';
+import { imageAccessUrl } from '../lib/tokens.js';
 import { rateLimit } from '../lib/rate-limit.js';
 import { createSuccessResponse, createErrorResponse, handleOptionsRequest } from '../lib/response.js';
 import { createLogger } from '../lib/logger.js';
 import { validateBase64Image } from '../lib/validator.js';
-import { RATE_LIMIT_CONFIG, HTTP_STATUS } from '../lib/constants.js';
+import { RATE_LIMIT_CONFIG, HTTP_STATUS, DEFAULT_FACEPP_API_URL } from '../lib/constants.js';
 import { getTemperamentPrompt, formatPrompt } from '../lib/prompts.js';
 
 export async function onRequestOptions(context) {
@@ -14,8 +16,7 @@ export async function onRequestOptions(context) {
 }
 
 export async function onRequestPost(context) {
-  const { FACEPP_KEY, FACEPP_SECRET, TURNSTILE_SECRET_KEY } = context.env;
-  const hasTurnstileSecret = typeof TURNSTILE_SECRET_KEY === 'string' && TURNSTILE_SECRET_KEY.trim().length > 0;
+  const { FACEPP_KEY, FACEPP_SECRET } = context.env;
   const logger = createLogger('fortune-api');
   const debug = false;
 
@@ -46,8 +47,9 @@ export async function onRequestPost(context) {
       return createErrorResponse('请求体格式错误', { status: HTTP_STATUS.BAD_REQUEST });
     }
 
+    if (!body || typeof body !== 'object' || Array.isArray(body)) return createErrorResponse('请求体格式错误', { status: 400 });
     const { image: imageBase64, debug: requestDebug = false } = body;
-    const isDebugMode = requestDebug;
+    const isDebugMode = false; // Never expose internal logs based on user input.
 
     // 3. 验证图片
     if (!imageBase64) {
@@ -58,23 +60,8 @@ export async function onRequestPost(context) {
       return createErrorResponse(imageValidation.error || '图片格式无效', { status: HTTP_STATUS.BAD_REQUEST });
     }
 
-    // 4. Turnstile 验证 (逻辑同 score.js)
-    let isMiniProgram = false;
-    if (body.app_type === 'miniprogram' || context.request.headers.get('X-App-Type') === 'miniprogram') {
-      isMiniProgram = true;
-    }
-
-    if (hasTurnstileSecret && !isMiniProgram) {
-      const turnstileToken = body.turnstile_response;
-
-      const isVerified = await verifyTurnstile(turnstileToken, TURNSTILE_SECRET_KEY);
-
-      if (!isVerified) {
-        return createErrorResponse('验证失败，请检查您的请求', { status: HTTP_STATUS.FORBIDDEN });
-      }
-    } else {
-      // logger.debug(`跳过 Turnstile 验证: hasSecret=${hasTurnstileSecret}, isMiniProgram=${isMiniProgram}`);
-    }
+    const denied = await guardAnalysis(context, body, [imageBase64]);
+    if (denied) return denied;
 
     // 5. 调用 Face++
     const formData = new FormData();
@@ -84,7 +71,7 @@ export async function onRequestPost(context) {
     // 请求相同的属性用于分析
     formData.append("return_attributes", "age,gender,smiling,headpose,facequality,eyestatus,emotion,ethnicity,beauty,skinstatus");
 
-    const resp = await fetch("https://api-us.faceplusplus.com/facepp/v3/detect", {
+    const resp = await fetch(context.env.FACEPP_API_URL || DEFAULT_FACEPP_API_URL, {
       method: "POST",
       body: formData,
     });
@@ -98,31 +85,33 @@ export async function onRequestPost(context) {
 
     if (result.faces && result.faces.length > 0) {
       const face = result.faces[0];
+      const attributes = faceAttributes(face);
+      if (!attributes) return createErrorResponse('人脸服务返回的数据不完整，请重试', { status: 502 });
       const {
         gender,
         age,
         smile,
-        facequality,
-        eyestatus,
-        emotion,
-        skinstatus,
+        facequality = {},
+        eyestatus = {},
+        emotion = {},
+        skinstatus = {},
         beauty,
-      } = face.attributes;
+      } = attributes;
 
       // --- 美学特征映射开始 ---
 
       const genderText = gender.value === "Male" ? "男施主" : "女施主";
 
       // 气色 (Skin Status)
-      const healthScore = skinstatus.health || 50;
+      const healthScore = skinstatus.health ?? 50;
       let qiSe = "气色一般";
       if (healthScore > 80) qiSe = "红光满面，气色极佳";
       else if (healthScore > 60) qiSe = "面色红润";
       else qiSe = "略显疲态，需注意休息";
 
       // 眼神 (Eye Status) - 睁眼程度代表精气神
-      const leftEyeOpen = (100 - (eyestatus.left_eye_status.no_glass_eye_close || 0)).toFixed(1);
-      const rightEyeOpen = (100 - (eyestatus.right_eye_status.no_glass_eye_close || 0)).toFixed(1);
+      const leftEyeOpen = (100 - (eyestatus.left_eye_status?.no_glass_eye_close || 0)).toFixed(1);
+      const rightEyeOpen = (100 - (eyestatus.right_eye_status?.no_glass_eye_close || 0)).toFixed(1);
       let eyeSpirit = "眼神柔和";
       if (parseFloat(leftEyeOpen) > 90) eyeSpirit = "目光如炬，炯炯有神";
 
@@ -134,7 +123,7 @@ export async function onRequestPost(context) {
       else socialLuck = "神情庄重，不怒自威";
 
       // 情绪 (Emotion)
-      const specificEmotion = Object.entries(emotion).sort((a, b) => b[1] - a[1])[0][0]; // 取概率最高的情绪
+      const specificEmotion = (Object.entries(emotion).sort((a, b) => b[1] - a[1])[0] || ['neutral'])[0]; // 取概率最高的情绪
 
       // 构建提示词
       const promptTemplate = getTemperamentPrompt(context.env);
@@ -147,7 +136,7 @@ export async function onRequestPost(context) {
         specificEmotion: specificEmotion,
         smileValue: smileValue.toFixed(1),
         socialLuck: socialLuck,
-        beautyScore: beauty.gender === 'Male' ? beauty.male_score : beauty.female_score
+        beautyScore: gender.value === 'Male' ? beauty.male_score : beauty.female_score
       });
 
       let fortuneReport = "分析师正在生成报告，请稍后再试...";
@@ -180,6 +169,8 @@ export async function onRequestPost(context) {
           const id = `fortune_${crypto.randomUUID()}`;
           logger.debug(`图片ID生成: ${imageId}`);
 
+          // Track the upload before writing R2; failed metadata saves remain recoverable.
+          if (d1) await enqueueImageDeletions(d1, [imageId]);
           const r2Key = await uploadImage(r2, imageBase64, imageId);
           imageUrl = getImageUrl(imageId);
           logger.debug(`图片已成功上传到R2: ${r2Key}`);
@@ -193,7 +184,7 @@ export async function onRequestPost(context) {
           const scoreData = {
             id,
             analysis_type: 'fortune',
-            score: parseFloat(beauty.gender === 'Male' ? beauty.male_score : beauty.female_score),
+            score: parseFloat(gender.value === 'Male' ? beauty.male_score : beauty.female_score),
             comment: `【气质分析】${fortuneReport}`,
             gender: genderText === '男施主' ? '帅气小哥哥' : '漂亮小姐姐',
             age: age.value,
@@ -207,6 +198,7 @@ export async function onRequestPost(context) {
             try {
               const d1Result = await insertAnalysis(d1, scoreData);
               storedKey = scoreData.id;
+              await removeQueuedImageDeletions(d1, [imageId]);
               logger.debug('数据已成功存储到D1', { id: scoreData.id, changes: d1Result.changes || 0 });
             } catch (d1Error) {
               if (d1Error.message.includes('duration')) {
@@ -232,7 +224,7 @@ export async function onRequestPost(context) {
         type: 'fortune',
         title: '气质分析报告',
         comment: fortuneReport,
-        image_url: imageUrl,
+        image_url: await imageAccessUrl(context.env, imageUrl),
         key: storedKey,
         traits: {
           gender: genderText,

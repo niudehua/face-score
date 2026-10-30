@@ -1,3 +1,5 @@
+import { verifySession } from '../lib/access.js';
+import { verifyToken } from '../lib/tokens.js';
 // 导入模块
 import { getImage } from '../lib/storage.js';
 import { rateLimit, addRateLimitHeaders } from '../lib/rate-limit.js';
@@ -30,6 +32,11 @@ export async function onRequestGet(context) {
     });
   }
 
+  if (!/^[a-f0-9]{32}$/.test(md5)) return createErrorResponse('图片标识无效', { status: 400 });
+  const capability = await verifyToken(context.env, url.searchParams.get('token'), 'image');
+  if (capability?.md5 !== md5 && !(await verifySession(context.request, context.env)).valid) {
+    return createErrorResponse('请先登录或使用有效的图片链接', { status: 401, headers: { 'Cache-Control': 'no-store' } });
+  }
   const r2 = context.env.FACE_IMAGES;
   if (!r2) {
     logger.error('R2存储桶未配置');
@@ -53,7 +60,10 @@ export async function onRequestGet(context) {
     const headers = new Headers();
     object.writeHttpMetadata(headers);
     headers.set('etag', object.httpEtag);
-    headers.set('Cache-Control', 'public, max-age=31536000');
+    headers.set('Cache-Control', 'private, no-store');
+    headers.set('Referrer-Policy', 'no-referrer');
+    headers.set('X-Content-Type-Options', 'nosniff');
+    headers.set('Vary', 'Cookie');
 
     let response = new Response(object.body, {
       headers,

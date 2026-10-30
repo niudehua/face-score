@@ -1,0 +1,17 @@
+# Copy to .dev.vars; never commit real secrets.
+FACEPP_KEY=
+FACEPP_SECRET=
+TURNSTILE_SITE_KEY=
+TURNSTILE_SECRET_KEY=
+OAUTH_GITHUB_CLIENT_ID=
+OAUTH_GITHUB_CLIENT_SECRET=
+ALLOWED_GITHUB_USERS=
+WECHAT_APPID=
+# WeChat AppSecret, NOT the miniprogram-ci upload private key.
+WECHAT_APPSECRET=
+# Independent random secrets, each at least 32 characters.
+APP_SIGNING_SECRET=
+MAINTENANCE_TOKEN=
+# Only permits skipping unconfigured Turnstile on loopback development URLs.
+ALLOW_INSECURE_LOCAL_DEV=false
+REQUIRE_IMAGE_SECURITY=false

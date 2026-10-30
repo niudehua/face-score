@@ -30,7 +30,12 @@
   "compileType": "miniprogram",
   "simulatorPluginLibVersion": {},
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      {
+        "type": "file",
+        "value": "private.key"
+      }
+    ],
     "include": []
   },
   "appid": "wx6bbbcfc7fd1981e2",

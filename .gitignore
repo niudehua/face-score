@@ -28,7 +28,6 @@ public/build/
 
 # Wrangler/Cloudflare
 .wrangler/
-wrangler.toml
 
 # Misc
 coverage/
@@ -69,3 +68,6 @@ pnpm-lock.yaml
 *.local.* 
 .trae/*
 .cursor/*
+
+# WeChat CI upload credential
+face-score-miniprogram/private.key

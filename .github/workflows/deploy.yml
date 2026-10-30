@@ -22,14 +22,19 @@ jobs:
         with:
           node-version: 24
 
+      - name: Run regression tests
+        run: npm test
+
       - name: Install Wrangler 📦
         run: npm install -g wrangler
 
       - name: Deploy Pages 🚀
         run: |
+          DEPLOY_DIR=$(mktemp -d)
+          trap 'rm -rf "$DEPLOY_DIR"' EXIT
+          cp -R public functions "$DEPLOY_DIR/"
+          cd "$DEPLOY_DIR"
           wrangler pages deploy public --project-name=face-score-pages
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.ACCOUNT_ID }}
-          WECHAT_APPID: ${{ secrets.WECHAT_APPID }}
-          WECHAT_PRIVATE_KEY: ${{ secrets.WECHAT_PRIVATE_KEY }}

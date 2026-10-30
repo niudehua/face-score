@@ -1,7 +1,9 @@
+import { faceAttributes } from '../lib/face-attributes.js';
 // 导入模块
 import { calculateImageId, uploadImage, getImageUrl } from '../lib/storage.js';
-import { insertAnalysis } from '../lib/db.js';
-import { verifyTurnstile, extractTurnstileToken } from '../lib/turnstile.js';
+import { insertAnalysis, enqueueImageDeletions, removeQueuedImageDeletions } from '../lib/db.js';
+import { guardAnalysis } from '../lib/request-guard.js';
+import { imageAccessUrl } from '../lib/tokens.js';
 import { rateLimit } from '../lib/rate-limit.js';
 import { createSuccessResponse, createErrorResponse } from '../lib/response.js';
 import { createLogger } from '../lib/logger.js';
@@ -10,9 +12,8 @@ import { RATE_LIMIT_CONFIG, HTTP_STATUS, DEFAULT_FACEPP_API_URL } from '../lib/c
 import { getScorePrompt, formatPrompt } from '../lib/prompts.js';
 
 export async function onRequestPost(context) {
-  const { FACEPP_KEY, FACEPP_SECRET, TURNSTILE_SECRET_KEY } = context.env;
+  const { FACEPP_KEY, FACEPP_SECRET } = context.env;
   // 将空字符串视为未配置，方便本地跳过
-  const hasTurnstileSecret = typeof TURNSTILE_SECRET_KEY === 'string' && TURNSTILE_SECRET_KEY.trim().length > 0;
   const logger = createLogger('score-api');
   const debug = false; // 从请求参数中获取
 
@@ -55,8 +56,9 @@ export async function onRequestPost(context) {
       });
     }
 
+    if (!body || typeof body !== 'object' || Array.isArray(body)) return createErrorResponse('请求体格式错误', { status: 400 });
     const { image: imageBase64, debug: requestDebug = false } = body;
-    const isDebugMode = requestDebug;
+    const isDebugMode = false; // Never expose internal logs based on user input.
 
     // 3. 验证图片数据
     if (!imageBase64) {
@@ -80,34 +82,8 @@ export async function onRequestPost(context) {
       });
     }
 
-    // 4. Turnstile 验证（小程序请求跳过）
-    let isMiniProgram = false;
-    
-    // 检查请求是否来自小程序
-    if (body.app_type === 'miniprogram' || context.request.headers.get('X-App-Type') === 'miniprogram') {
-      isMiniProgram = true;
-      logger.debug('检测到小程序请求，跳过 Turnstile 验证');
-    }
-    
-    if (hasTurnstileSecret && !isMiniProgram) {
-      // 从请求体中直接获取令牌，避免重复读取请求体
-      const turnstileToken = body.turnstile_response;
-      const isVerified = await verifyTurnstile(turnstileToken, TURNSTILE_SECRET_KEY);
-      
-      if (!isVerified) {
-        logger.warn('Turnstile 验证失败');
-        return createErrorResponse('验证失败，请检查您的请求', {
-          status: HTTP_STATUS.FORBIDDEN,
-          rateLimitInfo: rateLimitResult,
-          logs: isDebugMode ? logger.getLogs() : undefined,
-          debug: isDebugMode
-        });
-      }
-      
-      logger.debug('Turnstile 验证成功');
-    } else if (!isMiniProgram) {
-      logger.debug('Turnstile 密钥未配置，跳过验证');
-    }
+    const denied = await guardAnalysis(context, body, [imageBase64]);
+    if (denied) return denied;
 
     const formData = new FormData();
     formData.append("api_key", FACEPP_KEY);
@@ -142,21 +118,23 @@ export async function onRequestPost(context) {
 
     if (result.faces && result.faces.length > 0) {
       const face = result.faces[0];
+      const attributes = faceAttributes(face);
+      if (!attributes) return createErrorResponse('人脸服务返回的数据不完整，请重试', { status: 502 });
       const {
         beauty,
         gender,
         age,
         smile,
-        headpose,
-        facequality,
-        blur,
-        eyestatus,
-        emotion,
-        ethnicity,
-        mouthstatus,
-        eyegaze,
-        skinstatus,
-      } = face.attributes;
+        headpose = {},
+        facequality = {},
+        blur = {},
+        eyestatus = {},
+        emotion = {},
+        ethnicity = {},
+        mouthstatus = {},
+        eyegaze = {},
+        skinstatus = {},
+      } = attributes;
 
       // 颜值分数（这里选对性别的分）
       const score = gender.value === "Male" ? beauty.male_score : beauty.female_score;
@@ -172,26 +150,26 @@ export async function onRequestPost(context) {
       // 表情描述，取概率最高的两个
       const emotionDesc = Object.entries(emotion)
         .sort((a, b) => b[1] - a[1])
-        .map(([k, v]) => `${k}(${(v * 100).toFixed(1)}%)`)
+        .map(([k, v]) => `${k}(${v.toFixed(1)}%)`)
         .slice(0, 2)
         .join("，");
 
       // 眼睛闭合概率（no_glass_eye_close 是闭眼概率）
-      const leftEyeClosed = eyestatus.left_eye_status.no_glass_eye_close ?? 0;
-      const rightEyeClosed = eyestatus.right_eye_status.no_glass_eye_close ?? 0;
-      const eyeStatusDesc = `左眼闭合度 ${(leftEyeClosed * 100).toFixed(1)}%，右眼闭合度 ${(rightEyeClosed * 100).toFixed(1)}%`;
+      const leftEyeClosed = eyestatus.left_eye_status?.no_glass_eye_close ?? 0;
+      const rightEyeClosed = eyestatus.right_eye_status?.no_glass_eye_close ?? 0;
+      const eyeStatusDesc = `左眼闭合度 ${leftEyeClosed.toFixed(1)}%，右眼闭合度 ${rightEyeClosed.toFixed(1)}%`;
 
       // 嘴巴状态，mouthstatus 里几个字段简单拼接
       const mouthOpen = mouthstatus.open ?? 0;
       const mouthClose = mouthstatus.close ?? 0;
-      const mouthStatusDesc = `嘴巴张开概率 ${(mouthOpen * 100).toFixed(1)}%，闭合概率 ${(mouthClose * 100).toFixed(1)}%`;
+      const mouthStatusDesc = `嘴巴张开概率 ${mouthOpen.toFixed(1)}%，闭合概率 ${mouthClose.toFixed(1)}%`;
 
       // 种族信息，有可能是空字符串
       const ethnicityDesc = ethnicity.value ? `种族：${ethnicity.value}` : "种族信息未知";
 
       // 眼睛注视方向，取左右眼的坐标平均值
-      const leftGaze = eyegaze.left_eye_gaze;
-      const rightGaze = eyegaze.right_eye_gaze;
+      const leftGaze = eyegaze.left_eye_gaze || { position_x_coordinate: 0, position_y_coordinate: 0 };
+      const rightGaze = eyegaze.right_eye_gaze || { position_x_coordinate: 0, position_y_coordinate: 0 };
       const avgGazeX = ((leftGaze.position_x_coordinate + rightGaze.position_x_coordinate) / 2).toFixed(3);
       const avgGazeY = ((leftGaze.position_y_coordinate + rightGaze.position_y_coordinate) / 2).toFixed(3);
       const eyeGazeDesc = `眼睛注视方向坐标约为 (X: ${avgGazeX}, Y: ${avgGazeY})`;
@@ -279,6 +257,8 @@ export async function onRequestPost(context) {
           logger.debug(`图片ID生成: ${imageId}`);
 
           // 上传图片到 R2
+          // Track the upload before writing R2; failed metadata saves remain recoverable.
+          if (d1) await enqueueImageDeletions(d1, [imageId]);
           const r2Key = await uploadImage(r2, imageBase64, imageId);
           imageUrl = getImageUrl(imageId);  // 使用API路径
           logger.debug(`图片已成功上传到R2: ${r2Key}`);
@@ -308,6 +288,7 @@ export async function onRequestPost(context) {
             try {
               const d1Result = await insertAnalysis(d1, scoreData);
               storedKey = scoreData.id;
+              await removeQueuedImageDeletions(d1, [imageId]);
               logger.debug('数据已成功存储到D1', { id: scoreData.id, changes: d1Result.changes || 0 });
             } catch (d1Error) {
               // 检查是否为Cloudflare内部的duration错误
@@ -336,7 +317,7 @@ export async function onRequestPost(context) {
         score,
         comment,
         key: storedKey,
-        image_url: imageUrl
+        image_url: await imageAccessUrl(context.env, imageUrl)
       }, {
         rateLimitInfo: rateLimitResult,
         logs: isDebugMode ? logger.getLogs() : undefined,

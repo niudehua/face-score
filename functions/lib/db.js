@@ -65,22 +65,13 @@ async function getOldRecords(d1, cutoffTimestamp) {
 }
 
 async function deleteOldRecords(d1, cutoffTimestamp) {
-  try {
-    await d1.exec('BEGIN TRANSACTION;');
-    try {
-      await ensureTypedAnalysisTableExists(d1, 'score');
-      await ensureTypedAnalysisTableExists(d1, 'fortune');
-      const scoreResult = await d1.prepare('DELETE FROM score_analyses WHERE timestamp < ?').bind(cutoffTimestamp).run();
-      const fortuneResult = await d1.prepare('DELETE FROM fortune_analyses WHERE timestamp < ?').bind(cutoffTimestamp).run();
-      await d1.exec('COMMIT;');
-      return { changes: (scoreResult.meta?.changes || scoreResult.changes || 0) + (fortuneResult.meta?.changes || fortuneResult.changes || 0) };
-    } catch (error) {
-      await d1.exec('ROLLBACK;');
-      throw error;
-    }
-  } catch (err) {
-    throw new Error(`D1删除旧记录失败: ${err.message}`);
-  }
+  await ensureTypedAnalysisTableExists(d1, 'score');
+  await ensureTypedAnalysisTableExists(d1, 'fortune');
+  const results = await d1.batch([
+    d1.prepare('DELETE FROM score_analyses WHERE timestamp < ?').bind(cutoffTimestamp),
+    d1.prepare('DELETE FROM fortune_analyses WHERE timestamp < ?').bind(cutoffTimestamp)
+  ]);
+  return { changes: results.reduce((sum, result) => sum + (result.meta?.changes ?? result.changes ?? 0), 0) };
 }
 
 async function getStats(d1) {
@@ -398,7 +389,7 @@ async function getReferencedImageIds(d1, md5List) {
     await ensureTypedAnalysisTableExists(d1, 'fortune');
     await ensureCoupleTableExists(d1);
     const referenced = new Set();
-    const batchSize = 300;
+    const batchSize = 40; // Two IN clauses stay below D1 bound-parameter limits.
     for (let i = 0; i < uniqueIds.length; i += batchSize) {
       const batch = uniqueIds.slice(i, i + batchSize);
       const placeholders = batch.map(() => '?').join(',');
@@ -495,7 +486,7 @@ async function ensureCoupleTableExists(d1) {
     
     if (!tableCheck) {
       await d1.prepare(`
-        CREATE TABLE couple_matches (
+        CREATE TABLE IF NOT EXISTS couple_matches (
           id TEXT PRIMARY KEY,
           score REAL NOT NULL,
           grade TEXT NOT NULL,
@@ -517,8 +508,8 @@ async function ensureCoupleTableExists(d1) {
         )
       `).run();
       
-      await d1.prepare("CREATE INDEX idx_couple_matches_timestamp ON couple_matches(timestamp)").run();
-      await d1.prepare("CREATE INDEX idx_couple_matches_created_at ON couple_matches(created_at)").run();
+      await d1.prepare("CREATE INDEX IF NOT EXISTS idx_couple_matches_timestamp ON couple_matches(timestamp)").run();
+      await d1.prepare("CREATE INDEX IF NOT EXISTS idx_couple_matches_created_at ON couple_matches(created_at)").run();
     }
     
     return true;
@@ -551,6 +542,8 @@ async function insertOrUpdateCoupleMatch(d1, matchData) {
         timestamp = excluded.timestamp,
         image_url_a = excluded.image_url_a,
         image_url_b = excluded.image_url_b,
+        md5_a = excluded.md5_a,
+        md5_b = excluded.md5_b,
         created_at = CURRENT_TIMESTAMP
     `;
     
@@ -600,26 +593,8 @@ async function getOldCoupleRecords(d1, cutoffTimestamp) {
 }
 
 async function deleteOldCoupleRecords(d1, cutoffTimestamp) {
-  try {
-    await d1.exec("BEGIN TRANSACTION;");
-    
-    try {
-      const result = await d1.prepare(
-        "DELETE FROM couple_matches WHERE timestamp < ?"
-      )
-      .bind(cutoffTimestamp)
-      .run();
-      
-      await d1.exec("COMMIT;");
-      
-      return result;
-    } catch (transactionError) {
-      await d1.exec("ROLLBACK;");
-      throw transactionError;
-    }
-  } catch (err) {
-    throw new Error(`D1删除旧记录失败(couple_matches): ${err.message}`);
-  }
+  await ensureCoupleTableExists(d1);
+  return d1.prepare('DELETE FROM couple_matches WHERE timestamp < ?').bind(cutoffTimestamp).run();
 }
 
 export {

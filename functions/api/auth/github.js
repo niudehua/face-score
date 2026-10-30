@@ -1,39 +1,23 @@
-// 生成随机会话ID
-function generateSessionId() {
-  return crypto.randomUUID();
-}
+import { rateLimit } from '../../lib/rate-limit.js';
+import { createErrorResponse } from '../../lib/response.js';
 
-// 处理GitHub授权请求
 export async function onRequestGet(context) {
-  const { env } = context;
-  const { OAUTH_GITHUB_CLIENT_ID } = env;
-  
-  console.log('[DEBUG] 处理 /api/auth/github 请求');
-  
-  if (!OAUTH_GITHUB_CLIENT_ID) {
-    return new Response(JSON.stringify({ 
-      success: false, 
-      message: 'GitHub OAuth 配置未完成' 
-    }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      }
-    });
-  }
-  
-  // 构建GitHub授权URL
-  const callbackUrl = `https://${context.request.headers.get('Host')}/api/auth/github/callback`;
-  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${OAUTH_GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(callbackUrl)}&scope=read:user`;
-  
-  console.log(`[DEBUG] 重定向到GitHub授权页: ${githubAuthUrl}`);
-  
-  // 重定向到GitHub授权页
-  return new Response(null, {
-    status: 302,
-    headers: {
-      'Location': githubAuthUrl
-    }
-  });
+  const limited = await rateLimit(context.request, context, { path: '/api/auth/github', limit: 20 });
+  if (limited.limited) return limited.response;
+  const { OAUTH_GITHUB_CLIENT_ID, OAUTH_GITHUB_CLIENT_SECRET, SESSION_KV, ALLOWED_GITHUB_USERS } = context.env;
+  if (!OAUTH_GITHUB_CLIENT_ID || !OAUTH_GITHUB_CLIENT_SECRET || !SESSION_KV || !ALLOWED_GITHUB_USERS?.trim()) return createErrorResponse('GitHub 登录未配置', { status: 503 });
+  try {
+    const state = crypto.randomUUID();
+    const verifier = crypto.randomUUID() + crypto.randomUUID();
+    const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
+    const challenge = btoa(String.fromCharCode(...digest)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    const callback = new URL('/api/auth/github/callback', context.request.url).href;
+    await SESSION_KV.put(`oauth:${state}`, JSON.stringify({ verifier, callback }), { expirationTtl: 600 });
+    const params = new URLSearchParams({ client_id: OAUTH_GITHUB_CLIENT_ID, redirect_uri: callback, scope: 'read:user', state, code_challenge: challenge, code_challenge_method: 'S256' });
+    return new Response(null, { status: 302, headers: {
+      Location: `https://github.com/login/oauth/authorize?${params}`,
+      'Set-Cookie': `oauth_state=${state}; Path=/api/auth/github; HttpOnly; Secure; SameSite=Lax; Max-Age=600`,
+      'Cache-Control': 'no-store'
+    } });
+  } catch { return createErrorResponse('登录服务暂时不可用', { status: 503 }); }
 }

@@ -5,7 +5,9 @@ import { addRateLimitHeaders } from './rate-limit.js';
 
 // 默认响应头
 const DEFAULT_HEADERS = {
-  'Content-Type': 'application/json; charset=utf-8'
+  'Content-Type': 'application/json; charset=utf-8',
+  'Cache-Control': 'no-store',
+  'Referrer-Policy': 'no-referrer'
 };
 
 /**

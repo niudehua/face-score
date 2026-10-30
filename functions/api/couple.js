@@ -1,6 +1,8 @@
+import { faceAttributes } from '../lib/face-attributes.js';
 import { calculateImageId, uploadImage, getImageUrl } from '../lib/storage.js';
-import { insertOrUpdateCoupleMatch } from '../lib/db.js';
-import { verifyTurnstile } from '../lib/turnstile.js';
+import { insertOrUpdateCoupleMatch, enqueueImageDeletions, removeQueuedImageDeletions } from '../lib/db.js';
+import { guardAnalysis } from '../lib/request-guard.js';
+import { imageAccessUrl } from '../lib/tokens.js';
 import { rateLimit } from '../lib/rate-limit.js';
 import { createSuccessResponse, createErrorResponse, handleOptionsRequest } from '../lib/response.js';
 import { createLogger } from '../lib/logger.js';
@@ -13,8 +15,7 @@ export async function onRequestOptions(context) {
 }
 
 export async function onRequestPost(context) {
-  const { FACEPP_KEY, FACEPP_SECRET, TURNSTILE_SECRET_KEY, FACE_SCORE_DB } = context.env;
-  const hasTurnstileSecret = typeof TURNSTILE_SECRET_KEY === 'string' && TURNSTILE_SECRET_KEY.trim().length > 0;
+  const { FACEPP_KEY, FACEPP_SECRET, FACE_SCORE_DB } = context.env;
   const logger = createLogger('couple-api');
 
   try {
@@ -43,8 +44,9 @@ export async function onRequestPost(context) {
       return createErrorResponse('请求体格式错误', { status: HTTP_STATUS.BAD_REQUEST });
     }
 
+    if (!body || typeof body !== 'object' || Array.isArray(body)) return createErrorResponse('请求体格式错误', { status: 400 });
     const { imageA: imageBase64A, imageB: imageBase64B, debug: requestDebug = false } = body;
-    const isDebugMode = requestDebug;
+    const isDebugMode = false; // Never expose internal logs based on user input.
 
     if (!imageBase64A || !imageBase64B) {
       return createErrorResponse('缺少 imageA 或 imageB 字段', { status: HTTP_STATUS.BAD_REQUEST });
@@ -59,18 +61,8 @@ export async function onRequestPost(context) {
       return createErrorResponse('图片B格式无效: ' + (validationB.error || '无效图片'), { status: HTTP_STATUS.BAD_REQUEST });
     }
 
-    let isMiniProgram = false;
-    if (body.app_type === 'miniprogram' || context.request.headers.get('X-App-Type') === 'miniprogram') {
-      isMiniProgram = true;
-    }
-
-    if (hasTurnstileSecret && !isMiniProgram) {
-      const turnstileToken = body.turnstile_response;
-      const isVerified = await verifyTurnstile(turnstileToken, TURNSTILE_SECRET_KEY);
-      if (!isVerified) {
-        return createErrorResponse('验证失败，请检查您的请求', { status: HTTP_STATUS.FORBIDDEN });
-      }
-    }
+    const denied = await guardAnalysis(context, body, [imageBase64A, imageBase64B]);
+    if (denied) return denied;
 
     // 带重试的 Face++ 人脸分析函数
     async function analyzeFaceWithRetry(imageBase64, maxRetries = 3) {
@@ -134,15 +126,15 @@ export async function onRequestPost(context) {
 
     let attributesA, attributesB;
     try {
-      attributesA = faceA.attributes;
-      attributesB = faceB.attributes;
+      attributesA = faceAttributes(faceA);
+      attributesB = faceAttributes(faceB);
 
       if (!attributesA || !attributesB) {
         throw new Error('Face++未返回人脸属性');
       }
     } catch (attrError) {
       logger.error('属性提取失败', attrError);
-      return createErrorResponse('属性提取失败: ' + attrError.message, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR });
+      return createErrorResponse('人脸服务返回的数据不完整，请重试', { status: 502 });
     }
 
     let genderA, ageA, scoreA, genderB, ageB, scoreB, smileA, smileB;
@@ -155,8 +147,8 @@ export async function onRequestPost(context) {
       ageB = attributesB.age?.value || 0;
       scoreB = Math.max(attributesB.beauty?.male_score || 0, attributesB.beauty?.female_score || 0);
 
-      smileA = attributesA.smiling?.value || 0;
-      smileB = attributesB.smiling?.value || 0;
+      smileA = attributesA.smile?.value ?? attributesA.smiling?.value ?? 0;
+      smileB = attributesB.smile?.value ?? attributesB.smiling?.value ?? 0;
     } catch (attrError) {
       logger.error('属性值访问失败', attrError);
       return createErrorResponse('属性值访问失败: ' + attrError.message, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR });
@@ -244,9 +236,10 @@ export async function onRequestPost(context) {
     const tagsMatch = aiContent.match(/标签\s*[：:]\s*(.+)/);
     if (tagsMatch) tags = tagsMatch[1].trim();
 
-    if (!matchScore || matchScore === 0) {
+    if (!Number.isFinite(matchScore) || matchScore <= 0) {
       matchScore = Math.round((scoreA + scoreB) / 2);
     }
+    matchScore = Math.max(0, Math.min(100, matchScore));
     if (!grade) {
       if (matchScore >= 90) grade = '天作之合';
       else if (matchScore >= 80) grade = '神仙眷侣';
@@ -259,6 +252,7 @@ export async function onRequestPost(context) {
     const timestamp = new Date().toISOString();
     const matchId = `${timestamp}-${Math.random().toString(36).substr(2, 9)}`;
 
+    let storedKey = null;
     let imageUrlA = '';
     let imageUrlB = '';
     let md5A = '';
@@ -271,12 +265,14 @@ export async function onRequestPost(context) {
       try {
         const imageIdA = await calculateImageId(imageBase64A);
         md5A = imageIdA;
+        if (d1) await enqueueImageDeletions(d1, [imageIdA]);
         await uploadImage(r2, imageBase64A, imageIdA);
         imageUrlA = getImageUrl(imageIdA);
         logger.debug(`图片A已成功上传到R2: ${imageUrlA}`);
 
         const imageIdB = await calculateImageId(imageBase64B);
         md5B = imageIdB;
+        if (d1) await enqueueImageDeletions(d1, [imageIdB]);
         await uploadImage(r2, imageBase64B, imageIdB);
         imageUrlB = getImageUrl(imageIdB);
         logger.debug(`图片B已成功上传到R2: ${imageUrlB}`);
@@ -303,6 +299,8 @@ export async function onRequestPost(context) {
               md5_a: md5A,
               md5_b: md5B
             });
+            await removeQueuedImageDeletions(d1, [md5A, md5B]);
+            storedKey = matchId;
             logger.debug('CP匹配数据已成功存储到couple_matches');
 
             // CP 图片归属 couple_matches，不再写入 face_scores；避免把 CP 照片
@@ -335,17 +333,18 @@ export async function onRequestPost(context) {
       tags,
       ai_comment: aiContent,
       type: 'couple',
+      key: storedKey,
       personA: {
         gender: genderA,
         age: ageA,
         score: scoreA,
-        image_url: imageUrlA
+        image_url: await imageAccessUrl(context.env, imageUrlA)
       },
       personB: {
         gender: genderB,
         age: ageB,
         score: scoreB,
-        image_url: imageUrlB
+        image_url: await imageAccessUrl(context.env, imageUrlB)
       }
     }, { rateLimitInfo: rateLimitResult });
 

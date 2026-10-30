@@ -1,3 +1,4 @@
+import { miniProgramIdentity } from '../lib/request-guard.js';
 import { checkImageSecurity } from '../lib/wechat-security.js';
 import { rateLimit } from '../lib/rate-limit.js';
 import { createSuccessResponse, createErrorResponse, handleOptionsRequest } from '../lib/response.js';
@@ -10,7 +11,8 @@ export async function onRequestOptions(context) {
 }
 
 export async function onRequestPost(context) {
-  const { WECHAT_APPID, WECHAT_PRIVATE_KEY } = context.env;
+  const { WECHAT_APPID } = context.env;
+  const WECHAT_APPSECRET = context.env.WECHAT_APPSECRET || context.env.WECHAT_PRIVATE_KEY;
   const logger = createLogger('security-api');
 
   try {
@@ -23,6 +25,8 @@ export async function onRequestPost(context) {
       return rateLimitResult.response;
     }
 
+    if (!await miniProgramIdentity(context)) return createErrorResponse('请先完成小程序登录', { status: 401 });
+
     let body;
     try {
       body = await context.request.json();
@@ -30,7 +34,7 @@ export async function onRequestPost(context) {
       return createErrorResponse('请求体格式错误', { status: HTTP_STATUS.BAD_REQUEST });
     }
 
-    const { image: imageBase64 } = body;
+    const { image: imageBase64 } = body || {};
 
     if (!imageBase64) {
       return createErrorResponse('缺少 image 字段', { status: HTTP_STATUS.BAD_REQUEST });
@@ -41,23 +45,21 @@ export async function onRequestPost(context) {
       return createErrorResponse(imageValidation.error || '图片格式无效', { status: HTTP_STATUS.BAD_REQUEST });
     }
 
-    logger.debug('环境变量检查 - WECHAT_APPID:', WECHAT_APPID ? '已配置 (' + WECHAT_APPID.substring(0, 8) + '...)' : '未配置');
-    logger.debug('环境变量检查 - WECHAT_PRIVATE_KEY:', WECHAT_PRIVATE_KEY ? '已配置 (' + WECHAT_PRIVATE_KEY.substring(0, 8) + '...)' : '未配置');
 
-    if (!WECHAT_APPID || !WECHAT_PRIVATE_KEY) {
+    if (!WECHAT_APPID || !WECHAT_APPSECRET) {
       logger.error('微信小程序配置未完成，拒绝上传');
       return createSuccessResponse({ 
         safe: false, 
         message: '安全检查服务未配置，无法上传',
         debug: {
           wechatAppidConfigured: !!WECHAT_APPID,
-          wechatPrivateKeyConfigured: !!WECHAT_PRIVATE_KEY
+          wechatPrivateKeyConfigured: !!WECHAT_APPSECRET
         }
       });
     }
 
     logger.debug('开始内容安全检查');
-    const securityResult = await checkImageSecurity(imageBase64, WECHAT_APPID, WECHAT_PRIVATE_KEY);
+    const securityResult = await checkImageSecurity(imageBase64, WECHAT_APPID, WECHAT_APPSECRET);
 
     if (!securityResult.safe) {
       logger.warn('内容安全检查未通过:', securityResult.message);
