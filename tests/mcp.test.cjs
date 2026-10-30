@@ -39,13 +39,16 @@ test('private MCP OAuth: real SQLite one-time code, PKCE, single owner, refresh 
   assert.equal(wrongOwner.status, 403);
   const page = await consent.onRequestGet(ctx('/api/mcp/oauth/consent', env, undefined, headers));
   assert.equal(page.status, 200); assert.equal(page.headers.get('X-Frame-Options'), 'DENY');
+  assert.equal(page.headers.get('Referrer-Policy'), 'same-origin');
   const html = await page.text(), csrf = html.match(/name="csrf" value="([^"]+)"/)[1];
   assert.match(html, /Face\+\+/); assert.doesNotMatch(html, /test-client-secret/);
   const rejectedCsrf = await consent.onRequestPost(formContext('/api/mcp/oauth/consent', env, { decision: 'approve', csrf: 'bad' }, headers));
   assert.equal(rejectedCsrf.status, 403);
   const deniedOrigin = await consent.onRequestPost(formContext('/api/mcp/oauth/consent', env, { decision: 'approve', csrf }, { ...headers, Origin: 'https://evil.test' }));
   assert.equal(deniedOrigin.status, 403);
-  const approved = await consent.onRequestPost(formContext('/api/mcp/oauth/consent', env, { decision: 'approve', csrf }, headers));
+  const nullOrigin = await consent.onRequestPost(formContext('/api/mcp/oauth/consent', env, { decision: 'approve', csrf }, { ...headers, Origin: 'null' }));
+  assert.equal(nullOrigin.status, 403);
+  const approved = await consent.onRequestPost(formContext('/api/mcp/oauth/consent', env, { decision: 'approve', csrf }, { ...headers, Origin: base.MCP_ORIGIN, 'Sec-Fetch-Site': 'same-origin' }));
   assert.equal(approved.status, 302);
   const callback = new URL(approved.headers.get('Location'));
   assert.equal(callback.origin, 'https://chatgpt.com'); assert.equal(callback.searchParams.get('state'), params.state); assert.equal(callback.searchParams.get('iss'), base.MCP_ORIGIN);
