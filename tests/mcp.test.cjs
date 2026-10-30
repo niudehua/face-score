@@ -44,6 +44,9 @@ test('private MCP OAuth: real SQLite one-time code, PKCE, single owner, refresh 
   const page = await consent.onRequestGet(ctx('/api/mcp/oauth/consent', env, undefined, headers));
   assert.equal(page.status, 200); assert.equal(page.headers.get('X-Frame-Options'), 'DENY');
   assert.equal(page.headers.get('Referrer-Policy'), 'strict-origin');
+  // Chromium checks form-action against the OAuth POST redirect destination too.
+  assert.ok(page.headers.get('Content-Security-Policy').includes("form-action 'self' " + base.MCP_REDIRECT_URI + ';'));
+  assert.ok(!page.headers.get('Content-Security-Policy').includes('https:;'));
   const html = await page.text(), csrf = html.match(/name="csrf" value="([^"]+)"/)[1];
   assert.match(html, /Face\+\+/); assert.doesNotMatch(html, /test-client-secret/);
   const rejectedCsrf = await consent.onRequestPost(formContext('/api/mcp/oauth/consent', env, { decision: 'approve', csrf: 'bad' }, headers));

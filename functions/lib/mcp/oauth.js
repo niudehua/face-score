@@ -143,7 +143,7 @@ export async function consentPage(context) {
   const { id } = await pendingFlow(context, c, explicitId);
   const csrf = await signToken(context.env, 'mcp-consent', { flow: id, session }, 600);
   return new Response(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>连接私人萌牛测颜</title><body><h1>授权 ChatGPT 使用萌牛测颜</h1><p>当前账号：${escape(c.owner)}</p><p>允许三个工具分析你主动选择的照片。调用时照片会下载到后端并发送给 Face++；配置微信安全服务时也会发送给微信检查。本服务不保存照片，不调用 Workers AI，检测结果交给 ChatGPT 生成娱乐文案。</p><p>照片不能用来判断真实人格、健康或恋爱关系。此授权不允许浏览、删除档案或执行维护操作。</p><form method="post" action="/api/mcp/oauth/consent"><input type="hidden" name="csrf" value="${escape(csrf)}"><button name="decision" value="approve">允许连接</button><button name="decision" value="deny">取消</button></form></body></html>`, {
-    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'strict-origin', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "default-src 'none'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'" }
+    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'strict-origin', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': `default-src 'none'; form-action 'self' ${c.redirect}; frame-ancestors 'none'; base-uri 'none'` }
   });
 }
 export async function consent(context) {
