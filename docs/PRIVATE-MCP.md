@@ -71,7 +71,7 @@ npm test
 | 内容安全暂时不可用 | 检查既有微信 AppSecret/权限/配额；MCP 不会通过关闭检查放行 |
 | 服务返回 JSON-RPC 错误 | 使用 Streamable HTTP；POST Content-Type 为 application/json，Accept 同时包含 application/json 与 text/event-stream |
 
-内置文件主机是保守的精确允许列表，覆盖已观察到的两个 Azure 区域账户。它不是 OpenAI 承诺的完整主机清单；未知区域账户仍需核对，不按 `oaisdmntpr*` 或 `*.blob.core.windows.net` 自动放行，因为名称前缀或多租户后缀不能证明账户归属。已有 `MCP_FILE_HOSTS` 是追加配置，不会覆盖内置名单。所有下载禁止自动重定向，禁止 IP 字面量、localhost 等目的地，单张下载与检测分别有超时限制。没有配置内容检查时，MCP 的行为与现有网页相同：`REQUIRE_IMAGE_SECURITY=true` 强制检查；提供微信 AppID/AppSecret 时自动检查。
+内置文件主机是保守的精确允许列表，覆盖已观察到的两个 Azure 区域账户。它不是 OpenAI 承诺的完整主机清单；未知区域账户仍需核对，不按 `oaisdmntpr*` 或 `*.blob.core.windows.net` 自动放行，因为名称前缀或多租户后缀不能证明账户归属。已有 `MCP_FILE_HOSTS` 是追加配置，不会覆盖内置名单。下载不使用自动重定向，最多手动跟随 3 次，并在每一跳重新执行完整 HTTPS/精确域名校验，不转发 Cookie 或认证头；禁止 IP 字面量、localhost 等目的地。整个下载链（含响应体）共享 15 秒期限，人脸检测另有超时限制。下载错误区分网络、超时、HTTP 状态及传输中断，日志仅记录域名、状态码、跳数和固定错误类型，不记录签名 URL、Location 或响应正文。没有配置内容检查时，MCP 的行为与现有网页相同：`REQUIRE_IMAGE_SECURITY=true` 强制检查；提供微信 AppID/AppSecret 时自动检查。
 
 ## 凭证周期与关闭
 

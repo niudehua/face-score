@@ -149,7 +149,7 @@ test('all three tools download approved photos and return attributes without AI,
   const env = { ...base, AI: { run() { throw new Error('Workers AI must not be called'); } }, FACE_IMAGES: { put() { throw new Error('Must not store photo'); } }, FACE_SCORE_DB: { prepare() { throw new Error('Must not store analysis'); } } };
   let downloads = 0, detections = 0;
   r.context.fetch = async (url, options) => {
-    if (String(url).includes('files.oaiusercontent.com')) { downloads++; assert.equal(options.redirect, 'error'); assert.equal(options.headers, undefined); return new Response(Buffer.from(image, 'base64')); }
+    if (String(url).includes('files.oaiusercontent.com')) { downloads++; assert.equal(options.redirect, 'manual'); assert.equal(options.headers, undefined); return new Response(Buffer.from(image, 'base64')); }
     detections++; assert.ok(options.body.get('image_base64')); return Response.json({ faces: [{ ...face(), face_token: 'provider-face-token' }] });
   };
   for (const [name, count] of [['analyze_face', 1], ['analyze_temperament', 1], ['analyze_couple', 2]]) {
@@ -173,7 +173,7 @@ test('file handling blocks SSRF, redirects, wrong MIME, oversized streams, multi
   r.context.fetch = async () => new Response(Buffer.alloc(2 * 1024 * 1024 + 1));
   await assert.rejects(analyze('analyze_face', { photos: [file()] }, base), /过大/);
   r.context.fetch = async () => { throw new Error('redirect denied'); };
-  await assert.rejects(analyze('analyze_face', { photos: [file()] }, base), /重定向/);
+  await assert.rejects(analyze('analyze_face', { photos: [file()] }, base), /网络连接失败/);
   r.context.fetch = async url => String(url).includes('files.oaiusercontent.com') ? new Response(Buffer.from(image, 'base64')) : Response.json({ faces: [face(), face()] });
   await assert.rejects(analyze('analyze_face', { photos: [file()] }, base), /仅包含一张人脸/);
   let faceCalls = 0;
@@ -252,4 +252,30 @@ test('ChatGPT file hosts include observed Azure regions even with legacy configu
     'https://oaisdmntpreastus2.blob.core.windows.net:8443/photo',
     'https://oaisdmntpreastus2.blob.core.windows.net/photo#fragment'
   ]) assert.throws(() => permittedUrl(raw, extra), /域名未被允许/);
+});
+
+
+test('file download follows only bounded validated redirects and reports safe HTTP/network diagnostics', async () => {
+  const r = runtime(), { download } = await r.module('functions/lib/mcp/tools.js');
+  let calls = [];
+  r.context.fetch = async (url, options) => {
+    calls.push(String(url)); assert.equal(options.redirect, 'manual'); assert.equal(options.headers, undefined);
+    return calls.length === 1 ? new Response(null, { status: 302, headers: { Location: 'https://oaisdmntpreastus2.blob.core.windows.net/photos/test?sig=private-token' } }) : new Response(Buffer.from(image, 'base64'));
+  };
+  assert.equal(await download(file(), base), image); assert.equal(calls.length, 2);
+  for (const destination of ['https://127.0.0.1/a', 'http://files.openai.com/a', 'https://evil.test/a']) {
+    calls = [];
+    r.context.fetch = async url => { calls.push(String(url)); return new Response(null, { status: 307, headers: { Location: destination } }); };
+    await assert.rejects(download(file(), base), /域名未被允许/); assert.equal(calls.length, 1);
+  }
+  let count = 0;
+  r.context.fetch = async () => new Response(null, { status: 302, headers: { Location: '/next?sig=secret-' + ++count } });
+  await assert.rejects(download(file(), base), /超过 3 次/); assert.equal(count, 4);
+  r.context.fetch = async () => new Response(null, { status: 302, headers: { Location: file().download_url } });
+  await assert.rejects(download(file(), base), /重定向循环/);
+  r.context.fetch = async () => new Response('provider secret response', { status: 403 });
+  await assert.rejects(download(file(), base), error => /HTTP 403/.test(error.message) && !/signed-query|provider secret/.test(error.message));
+  r.context.fetch = async () => { throw new Error('private full URL secret'); };
+  await assert.rejects(download(file(), base), error => /network/.test(error.message) && !/private full URL/.test(error.message));
+  assert.doesNotMatch(JSON.stringify(r.logs), /private-token|signed-query|secret-|provider secret|private full URL/);
 });

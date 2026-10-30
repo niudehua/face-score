@@ -50,16 +50,45 @@ function validFile(file) {
     typeof file.download_url === 'string' && file.download_url.length <= 8192 && typeof file.file_id === 'string' && file.file_id.length > 0 && file.file_id.length <= 512 &&
     ['mime_type', 'file_name'].every(k => file[k] === undefined || typeof file[k] === 'string');
 }
-async function download(file, env) {
+// Follow only validated HTTPS destinations; never forward credentials or cookies.
+export async function download(file, env) {
   if (file.mime_type && !['image/jpeg', 'image/png'].includes(file.mime_type)) throw new McpError('请提供 JPEG 或 PNG 照片');
-  const url = permittedUrl(file.download_url, env);
-  let response;
-  try { response = await fetch(url.href, { redirect: 'error', signal: AbortSignal.timeout(15000) }); }
-  catch { throw new McpError('照片下载失败或发生重定向，请重新上传照片获取新链接', 502); }
-  if (!response.ok) { await response.body?.cancel(); throw new McpError('照片链接已失效或下载失败，请重新上传照片', 502); }
+  let url = permittedUrl(file.download_url, env), response;
+  const signal = AbortSignal.timeout(15000), visited = new Set();
+  for (let hop = 0; ; hop++) {
+    if (visited.has(url.href)) throw new McpError('图片下载重定向循环，请重新上传照片', 502);
+    visited.add(url.href);
+    try { response = await fetch(url.href, { redirect: 'manual', signal }); }
+    catch {
+      const kind = signal.aborted ? 'timeout' : 'network';
+      console.warn('mcp_image_download', { host: url.hostname, kind, hop });
+      throw new McpError(`图片下载${kind === 'timeout' ? '超时' : '网络连接失败'}（${url.hostname}；${kind}），请稍后重试`, 502);
+    }
+    if (![301, 302, 303, 307, 308].includes(response.status)) break;
+    const location = response.headers.get('Location');
+    await response.body?.cancel();
+    console.log('mcp_image_download', { host: url.hostname, kind: 'redirect', status: response.status, hop });
+    if (!location || hop >= 3) throw new McpError('图片下载重定向缺少目标或超过 3 次，请重新上传照片', 502);
+    // Validate every hop before fetching; never log Location or signed query strings.
+    let next;
+    try { next = new URL(location, url); } catch { throw new McpError('图片下载重定向地址无效', 502); }
+    url = permittedUrl(next.href, env);
+  }
+  if (!response.ok) {
+    await response.body?.cancel();
+    console.warn('mcp_image_download', { host: url.hostname, kind: 'http', status: response.status });
+    throw new McpError(`照片下载失败（${url.hostname}；HTTP ${response.status}）${[401, 403, 404, 410].includes(response.status) ? '，临时链接可能失效，请重新上传照片' : '，请稍后重试'}`, 502);
+  }
   const length = Number(response.headers.get('Content-Length'));
   if (Number.isFinite(length) && length > MAX_IMAGE_BYTES) { await response.body?.cancel(); throw new McpError('照片超过 2 MiB，请压缩后重新上传', 413); }
-  const bytes = await readLimited(response.body, MAX_IMAGE_BYTES);
+  let bytes;
+  try { bytes = await readLimited(response.body, MAX_IMAGE_BYTES); }
+  catch (error) {
+    if (error instanceof McpError) throw error;
+    const kind = signal.aborted ? 'timeout' : 'stream';
+    console.warn('mcp_image_download', { host: url.hostname, kind });
+    throw new McpError(`图片下载${kind === 'timeout' ? '超时' : '传输中断'}（${url.hostname}；${kind}），请稍后重试`, 502);
+  }
   let binary = '';
   for (let i = 0; i < bytes.length; i += 8192) binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
   const base64 = btoa(binary), validation = validateBase64Image(base64);
